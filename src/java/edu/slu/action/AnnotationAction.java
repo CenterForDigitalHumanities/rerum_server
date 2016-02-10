@@ -370,7 +370,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
                 //set @id to objectID and update the annotation
                 BasicDBObject dboWithObjectID = new BasicDBObject(dbo);
-                dboWithObjectID.replace("@id", newObjectID);
+                //used to be replace, not put.  Not sure why.
+                dboWithObjectID.put("@id", newObjectID);
                 mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
                 JSONObject jo = new JSONObject();
                 jo.element("code", HttpServletResponse.SC_OK);
@@ -391,7 +392,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
                 //set @id to objectID and update the annotation
                 BasicDBObject dboWithObjectID = new BasicDBObject(dbo);
-                dboWithObjectID.replace("@id", newObjectID);
+                //used to be replace, not put.  Not sure why.
+                dboWithObjectID.put("@id", newObjectID);
                 mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
                 JSONObject jo = new JSONObject();
                 jo.element("code", HttpServletResponse.SC_OK);
