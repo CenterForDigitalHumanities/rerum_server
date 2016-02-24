@@ -34,6 +34,7 @@ public interface MongoDBDAOInterface {
     void delete(String collectionName, DBObject queryEntity);
     void update(String collectionName, DBObject queryEntity, DBObject targetEntity);
     String save(String collectionName, DBObject targetEntity);
+    String[] bulkSaveFromCopy(String collectionName, DBObject entity_array);
     Long count(String collectionName);
     Long count(String collectionName, DBObject queryEntity);
 }

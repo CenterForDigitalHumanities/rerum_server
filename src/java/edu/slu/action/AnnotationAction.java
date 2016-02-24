@@ -5,6 +5,7 @@
  */
 package edu.slu.action;
 
+import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.util.JSON;
@@ -14,6 +15,7 @@ import edu.slu.mongoEntity.AcceptedServer;
 import edu.slu.service.MongoDBService;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -42,6 +44,71 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     private HttpServletResponse response;
     
     private PrintWriter out;
+
+    public void batchSaveFromCopy(){
+        if(null != content){
+//            System.out.println("1111111111111111111111111111");
+            JSONArray received_array = JSONArray.fromObject(content);
+            BasicDBObject serverQuery = new BasicDBObject();
+            serverQuery.append("ip", request.getRemoteAddr());
+//            System.out.println("333333333333333333333333333333");
+            DBObject asdbo = mongoDBService.findOneByExample(Constant.COLLECTION_ACCEPTEDSERVER, serverQuery);
+//            System.out.println("444444444444444444444444444444");
+            BasicDBObject asbdbo = (BasicDBObject) asdbo;
+            for(int b=0; b<received_array.size(); b++){
+                JSONObject received = received_array.getJSONObject(b);
+                received.accumulate("addedTime", System.currentTimeMillis());
+//            set the version to empty String
+                received.accumulate("originalAnnoID", "");//set versionID for a new fork
+                received.accumulate("version", 1);
+                if(!received.containsKey("permission")){
+                    received.accumulate("permission", Constant.PERMISSION_PRIVATE);
+                }
+                if(null == received.get("forkFromID") || "".equals(received.get("forkFromID"))){
+                    received.accumulate("forkFromID", "");
+                }  
+                received.accumulate("addedTime", System.currentTimeMillis());
+//            set the version to empty String
+                received.accumulate("originalAnnoID", "");//set versionID for a new fork
+                received.accumulate("version", 1);
+                if(!received.containsKey("permission")){
+                    received.accumulate("permission", Constant.PERMISSION_PRIVATE);
+                }
+                if(null == received.get("forkFromID") || "".equals(received.get("forkFromID"))){
+                    received.accumulate("forkFromID", "");
+                }
+                received.accumulate("serverName", asbdbo.get("name"));
+                received.accumulate("serverIP", asbdbo.get("ip"));
+                received_array.set(b,received);
+            }
+            
+            BasicDBList dbo = (BasicDBList) JSON.parse(received_array.toString());
+//            System.out.println("777777777777777777777777777777======== " + dbo.toString());
+            String[] newObjectIDs = mongoDBService.bulkSaveFromCopy(Constant.COLLECTION_ANNOTATION, dbo);
+            //bulk save will automatically call bulk update so there is no real need to return these values.  We will for later use.
+            JSONObject jo = new JSONObject();
+//            System.out.println("cccccccccccccccccccccccccccccc");
+            jo.element("code", HttpServletResponse.SC_CREATED);
+//            System.out.println("dddddddddddddddddddddddddddddd");
+            jo.element("ids", newObjectIDs);
+            try {
+                out = response.getWriter();
+                out.print(jo);
+            } catch (IOException ex) {
+                Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }else{
+            JSONObject jo = new JSONObject();
+            jo.element("code", HttpServletResponse.SC_BAD_REQUEST);
+            jo.element("msg", "Didn't receive any data. ");
+            try {
+                out = response.getWriter();
+                out.print(jo);
+            } catch (IOException ex) {
+                Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+    }
     
     /**
      * Get all my annotations. Include latest version of original annotations, all forks and revisions. 

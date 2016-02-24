@@ -15,6 +15,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
+import org.bson.BSONObject;
 
 /**
  * @author hanyan
@@ -205,6 +208,35 @@ public abstract class MongoDBAbstractDAO implements MongoDBDAOInterface {
         DBCollection coll = db.getCollection(collectionName);
         coll.save(targetEntity);
         return targetEntity.get("_id").toString();
+    }
+
+    public void bulkSaveFromCopy(String collectionName, BasicDBList entity_array ){
+        
+        DBCollection coll = db.getCollection(collectionName);
+        coll.save(entity_array);
+        System.out.println("BULK SAVE "+entity_array.size()+"!!!!");
+        String[] ids = new String[entity_array.size()];
+        for(int j=0; j<entity_array.size(); j++){
+            DBObject targetEntity = (DBObject) entity_array.get(j);
+            System.out.println("NEW _id ====== "+targetEntity.get("_id").toString());
+            ids[j] = targetEntity.get("_id").toString();
+        }
+        bulkUpdate(collectionName, entity_array);
+        
+    }
+    
+    public BSONObject bulkUpdate(String collectionName, BasicDBList entity_array){
+        
+        DBCollection coll = db.getCollection(collectionName);
+        System.out.println("BULK Update "+entity_array.size()+"!!!!");
+        for(int j=0; j<entity_array.size(); j++){
+            JSONObject targetEntity = (JSONObject) entity_array.get(j);
+            System.out.println("@id is     "+"http://165.134.241.141/annotationstore/annotation/"+(targetEntity.get("_id").toString()));
+            targetEntity.element("@id", "http://165.134.241.141/annotationstore/annotation/"+(targetEntity.get("_id").toString()));
+            entity_array.set(j, targetEntity);
+        }
+        coll.save(entity_array);
+        return (BSONObject)entity_array;
     }
     
     
