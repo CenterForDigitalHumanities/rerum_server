@@ -15,7 +15,6 @@ import edu.slu.mongoEntity.AcceptedServer;
 import edu.slu.service.MongoDBService;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -47,8 +46,9 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
 
     public void batchSaveFromCopy(){
         if(null != content){
-//            System.out.println("1111111111111111111111111111");
+            System.out.println("Batch save!!!!!");
             JSONArray received_array = JSONArray.fromObject(content);
+            //System.out.println(received_array);
             BasicDBObject serverQuery = new BasicDBObject();
             serverQuery.append("ip", request.getRemoteAddr());
 //            System.out.println("333333333333333333333333333333");
@@ -82,16 +82,18 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 received_array.set(b,received);
             }
             
+            //System.out.println(received_array);
             BasicDBList dbo = (BasicDBList) JSON.parse(received_array.toString());
-//            System.out.println("777777777777777777777777777777======== " + dbo.toString());
-            String[] newObjectIDs = mongoDBService.bulkSaveFromCopy(Constant.COLLECTION_ANNOTATION, dbo);
+            JSONArray newResources = mongoDBService.bulkSaveFromCopy(Constant.COLLECTION_ANNOTATION, dbo);
             //bulk save will automatically call bulk update so there is no real need to return these values.  We will for later use.
             JSONObject jo = new JSONObject();
 //            System.out.println("cccccccccccccccccccccccccccccc");
             jo.element("code", HttpServletResponse.SC_CREATED);
 //            System.out.println("dddddddddddddddddddddddddddddd");
-            jo.element("ids", newObjectIDs);
+            jo.element("new_resources", newResources);
+            
             try {
+                System.out.println("out !!!!!!!!!!!!!");
                 out = response.getWriter();
                 out.print(jo);
             } catch (IOException ex) {

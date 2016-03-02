@@ -4,21 +4,22 @@
  */
 package edu.slu.service.impl;
 
+import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 import edu.slu.DAO.MongoDBDAO;
 import edu.slu.service.MongoDBService;
+import net.sf.json.JSONArray;
 
 /**
  *
  * @author hanyan
  */
-public class MongoDBServiceImpl implements MongoDBService {
-    
+public class MongoDBServiceImpl implements MongoDBService { 
     private MongoDBDAO mongoDBDAO;
-
+    
     @Override
     public List<DBObject> findAll(String collectionName, int firstResult, int maxResults) {
         return mongoDBDAO.findAll(collectionName, firstResult, maxResults);
@@ -88,7 +89,12 @@ public class MongoDBServiceImpl implements MongoDBService {
     public String save(String collectionName, DBObject targetEntity) {
         return mongoDBDAO.save(collectionName, targetEntity);
     }
-
+    
+//    @Override
+//    public String save(String collectionName, BasicDBList targetEntity) {
+//        return mongoDBDAO.save(collectionName, targetEntity);
+//    }
+    
     @Override
     public Long count(String collectionName) {
         return mongoDBDAO.count(collectionName);
@@ -146,6 +152,16 @@ public class MongoDBServiceImpl implements MongoDBService {
     @Override
     public DBObject findOneByExampleCaseInsesitive(String collectionName, Map<String, String> conditions) {
         return mongoDBDAO.findOneByExampleCaseInsesitive(collectionName, conditions);
+    }
+
+    @Override
+    public JSONArray bulkSaveFromCopy(String collectionName, BasicDBList entity_array) {
+        return mongoDBDAO.bulkSaveFromCopy(collectionName, entity_array);
+    }
+
+    @Override
+    public JSONArray bulkSetIDProperty(String collectionName, DBObject[] entity_array) {
+        return mongoDBDAO.bulkSetIDProperty(collectionName, entity_array);
     }
 
 }

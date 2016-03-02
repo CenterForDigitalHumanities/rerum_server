@@ -4,10 +4,12 @@
  */
 package edu.slu.abstractUtil;
 
+import com.mongodb.BasicDBList;
 import com.mongodb.DBObject;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import net.sf.json.JSONArray;
 
 /**
  * @author hanyan
@@ -28,14 +30,15 @@ public interface MongoDBDAOInterface {
     List<DBObject> findByExampleLikeAnyWhereFromHead(String collectionName, Map<String, String> conditions, int firstResult, int maxResult);
     List<DBObject> findByExampleLikeAnyWhereFromHead(String collectionName, Map<String, String> conditions, String OROperator, int firstResult, int maxResult);
     List<DBObject> findByExampleWithOrder(String collectionName, DBObject queryEntity, DBObject orderBy);
+    JSONArray bulkSaveFromCopy(String collectionName, BasicDBList entity_array);
+    JSONArray bulkSetIDProperty(String collectionName, DBObject[] entity_array);
     DBObject findOneByExample(String collectionName, DBObject entity);
     DBObject findOneByExampleWithOrder(String collectionName, DBObject queryEntity, DBObject returnFields, DBObject orderBy);
     DBObject findOneByExampleCaseInsesitive(String collectionName, Map<String, String> conditions);
     void delete(String collectionName, DBObject queryEntity);
     void update(String collectionName, DBObject queryEntity, DBObject targetEntity);
     String save(String collectionName, DBObject targetEntity);
-    void bulkSaveFromCopy(String collectionName, DBObject entity_array);
-    BSONObject bulkSetIDProperty(String collectionName, DBObject entity_array);
+    //String save(String collectionName, BasicDBList targetEntity);
     Long count(String collectionName);
     Long count(String collectionName, DBObject queryEntity);
 }

@@ -33,7 +33,7 @@
         <!-- INTERCEPTOR -->
         <interceptors>
             <interceptor name="requestServerAuthenticationFilter" class="edu.slu.filter.RequestServerAuthenticationFilter">
-                <param name="includeMethods">saveNewAnnotation, updateAnnotation, saveNewVersionOfAnnotation, deleteAnnotationByObjectID, 
+                <param name="includeMethods">saveNewAnnotation, batchSaveFromCopy, updateAnnotation, saveNewVersionOfAnnotation, deleteAnnotationByObjectID, 
                 deleteAnnotationByAtID, forkAnnotation, saveForkAnnotation</param>
             </interceptor>
             <interceptor name="getRequestClientInfoRecorder" class="edu.slu.filter.GetRequestClientInfoRecorder">
@@ -68,6 +68,7 @@
         <action name="deleteAnnotationByAtID" class="annotationAction" method="deleteAnnotationByAtID"></action>
         <action name="forkAnnotation" class="annotationAction" method="forkAnnotation"></action>
         <action name="saveForkAnnotation" class="annotationAction" method="saveForkAnnotation"></action>
+        <action name="batchSaveFromCopy" class="annotationAction" method="batchSaveFromCopy"></action>
     </package>
     
     <!-- ACCEPTED SERVER -->

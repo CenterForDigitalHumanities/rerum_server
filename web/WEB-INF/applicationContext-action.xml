@@ -10,7 +10,7 @@
 >
     
     
-<!--    <bean id="annotationAction" class="edu.slu.action.AnnotationAction" scope="prototype">
+    <bean id="annotationAction" class="edu.slu.action.AnnotationAction" scope="prototype">
         <property name="mongoDBService" ref="mongoDBService" />
     </bean>
     
@@ -20,5 +20,5 @@
     
     <bean id="userAction" class="edu.slu.action.UserAction" scope="prototype">
         <property name="mongoDBService" ref="mongoDBService" />
-    </bean>-->
+    </bean>
 </beans>

@@ -16,8 +16,6 @@ import java.util.Map;
 import java.util.regex.Pattern;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
-import org.bson.BSONObject;
 
 /**
  * @author hanyan
@@ -209,34 +207,47 @@ public abstract class MongoDBAbstractDAO implements MongoDBDAOInterface {
         coll.save(targetEntity);
         return targetEntity.get("_id").toString();
     }
+    
+//    public String save(String collectionName, BasicDBList targetEntity){
+//        System.out.println("SAVE2           !!!!!!!!!!");
+//        DBObject target_obj = (DBObject) targetEntity;
+//        DBCollection coll = db.getCollection(collectionName);
+//        coll.save(target_obj);
+//        return target_obj.get("_id").toString();
+//    }
 
-    public void bulkSaveFromCopy(String collectionName, BasicDBList entity_array ){
-        
+    public JSONArray bulkSaveFromCopy(String collectionName, BasicDBList entity_array ){
         DBCollection coll = db.getCollection(collectionName);
-        coll.save(entity_array);
-        System.out.println("BULK SAVE "+entity_array.size()+"!!!!");
-        String[] ids = new String[entity_array.size()];
-        for(int j=0; j<entity_array.size(); j++){
-            DBObject targetEntity = (DBObject) entity_array.get(j);
-            System.out.println("NEW _id ====== "+targetEntity.get("_id").toString());
-            ids[j] = targetEntity.get("_id").toString();
-        }
-        bulkUpdate(collectionName, entity_array);
+        //DBObject arrayAsObject = (DBObject) entity_array;
+        DBObject[] listAsObj = new DBObject[entity_array.size()];
         
+        for(int i=0; i<entity_array.size();i++){
+            DBObject objectToAdd = (DBObject) entity_array.get(i);
+            objectToAdd.put("newbtest", "newbtest");
+            listAsObj[i] = (DBObject) entity_array.get(i);
+        }
+        coll.insert(listAsObj);      
+        return bulkSetIDProperty(collectionName, listAsObj);
     }
     
-    public BSONObject bulkUpdate(String collectionName, BasicDBList entity_array){
-        
+    public JSONArray bulkSetIDProperty(String collectionName, DBObject[] entity_array){
+        //update does not accept a bulk argument.  If you pass a key value pair in findThis that can match multiple documents, you can make a 'bulk update' this way.  In our case, we have to go one by one.
+        System.out.println("BULK Set ID.");
+        int size = entity_array.length;
         DBCollection coll = db.getCollection(collectionName);
-        System.out.println("BULK Update "+entity_array.size()+"!!!!");
-        for(int j=0; j<entity_array.size(); j++){
-            JSONObject targetEntity = (JSONObject) entity_array.get(j);
-            System.out.println("@id is     "+"http://165.134.241.141/annotationstore/annotation/"+(targetEntity.get("_id").toString()));
-            targetEntity.element("@id", "http://165.134.241.141/annotationstore/annotation/"+(targetEntity.get("_id").toString()));
-            entity_array.set(j, targetEntity);
+        JSONArray listAsArr = new JSONArray();
+        for(int j=0; j<size; j++){
+            DBObject targetEntity = (DBObject) entity_array[j];
+            targetEntity.put("@id", "http://165.134.241.141/annotationstore/annotation/"+(targetEntity.get("_id").toString()));
+            entity_array[j]=targetEntity; //update this so the updated object can be returned
+            listAsArr.add(targetEntity);
+            DBObject findThis = new BasicDBObject();
+            DBObject toUpdate = new BasicDBObject();
+            toUpdate.put("@id", "http://165.134.241.141/annotationstore/annotation/"+(targetEntity.get("_id").toString()));
+            findThis.put("_id",targetEntity.get("_id").toString());
+            coll.update(findThis, toUpdate);
         }
-        coll.save(entity_array);
-        return (BSONObject)entity_array;
+        return listAsArr;
     }
     
     
