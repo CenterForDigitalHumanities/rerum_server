@@ -223,7 +223,8 @@ public abstract class MongoDBAbstractDAO implements MongoDBDAOInterface {
         
         for(int i=0; i<entity_array.size();i++){
             DBObject objectToAdd = (DBObject) entity_array.get(i);
-            listAsObj[i] = (DBObject) entity_array.get(i);
+           // objectToAdd.put("copy", "bulkCopy");
+            listAsObj[i] = objectToAdd;
         }
         coll.insert(listAsObj);      
         return bulkSetIDProperty(collectionName, listAsObj);
