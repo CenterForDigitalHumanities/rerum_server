@@ -207,14 +207,6 @@ public abstract class MongoDBAbstractDAO implements MongoDBDAOInterface {
         coll.save(targetEntity);
         return targetEntity.get("_id").toString();
     }
-    
-//    public String save(String collectionName, BasicDBList targetEntity){
-//        System.out.println("SAVE2           !!!!!!!!!!");
-//        DBObject target_obj = (DBObject) targetEntity;
-//        DBCollection coll = db.getCollection(collectionName);
-//        coll.save(target_obj);
-//        return target_obj.get("_id").toString();
-//    }
 
     public JSONArray bulkSaveFromCopy(String collectionName, BasicDBList entity_array ){
         DBCollection coll = db.getCollection(collectionName);
@@ -231,8 +223,6 @@ public abstract class MongoDBAbstractDAO implements MongoDBDAOInterface {
     }
     
     public JSONArray bulkSetIDProperty(String collectionName, DBObject[] entity_array){
-        //update does not accept a bulk argument.  If you pass a key value pair in findThis that can match multiple documents, you can make a 'bulk update' this way.  In our case, we have to go one by one.
-        System.out.println("BULK Set ID.");
         int size = entity_array.length;
         DBCollection coll = db.getCollection(collectionName);
         JSONArray listAsArr = new JSONArray();

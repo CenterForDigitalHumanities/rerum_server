@@ -93,7 +93,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             jo.element("new_resources", newResources);
             
             try {
-                System.out.println("out !!!!!!!!!!!!!");
                 out = response.getWriter();
                 out.print(jo);
             } catch (IOException ex) {
