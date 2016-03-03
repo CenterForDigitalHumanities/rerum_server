@@ -33,7 +33,7 @@ public class TestSaveAnnotationApache {
     public static void main(String[] args){
         try {
 //            HttpPost httpPost = new HttpPost("http://165.134.241.141:80/annotationstore/anno/saveNewAnnotation");
-            HttpPost httpPost = new HttpPost("http://localhost:8084/annotationstore/anno/saveNewAnnotation");
+            HttpPost httpPost = new HttpPost("http://165.134.241.141:8084/annotationstore/anno/saveNewAnnotation");
             List<BasicNameValuePair> nvps = new ArrayList();
             JSONObject jo = new JSONObject();
             jo.accumulate("namespace", "mycom/hanyan");
