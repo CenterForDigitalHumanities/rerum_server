@@ -223,7 +223,6 @@ public abstract class MongoDBAbstractDAO implements MongoDBDAOInterface {
         
         for(int i=0; i<entity_array.size();i++){
             DBObject objectToAdd = (DBObject) entity_array.get(i);
-            objectToAdd.put("newbtest", "newbtest");
             listAsObj[i] = (DBObject) entity_array.get(i);
         }
         coll.insert(listAsObj);      
