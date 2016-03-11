@@ -15,6 +15,8 @@ import edu.slu.mongoEntity.AcceptedServer;
 import edu.slu.service.MongoDBService;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -44,7 +46,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     
     private PrintWriter out;
 
-    public void batchSaveFromCopy(){
+    public void batchSaveFromCopy() throws UnsupportedEncodingException{
         if(null != content){
             System.out.println("Batch save!!!!!");
             JSONArray received_array = JSONArray.fromObject(content);
