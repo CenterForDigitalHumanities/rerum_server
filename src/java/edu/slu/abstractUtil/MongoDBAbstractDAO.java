@@ -211,22 +211,26 @@ public abstract class MongoDBAbstractDAO implements MongoDBDAOInterface {
     public JSONArray bulkSaveFromCopy(String collectionName, BasicDBList entity_array ){
         DBCollection coll = db.getCollection(collectionName);
         //DBObject arrayAsObject = (DBObject) entity_array;
+       // System.out.println("Bulk Save From Copy.  Size: "+entity_array.size());
         DBObject[] listAsObj = new DBObject[entity_array.size()];
-        
         for(int i=0; i<entity_array.size();i++){
+          //  System.out.println("Add object "+i);
             DBObject objectToAdd = (DBObject) entity_array.get(i);
            // objectToAdd.put("copy", "bulkCopy");
             listAsObj[i] = objectToAdd;
         }
+        //System.out.println("Perform bulk insert in bulk save");
         coll.insert(listAsObj);      
         return bulkSetIDProperty(collectionName, listAsObj);
     }
     
     public JSONArray bulkSetIDProperty(String collectionName, DBObject[] entity_array){
+       // System.out.println("Bulk Set ID");
         int size = entity_array.length;
         DBCollection coll = db.getCollection(collectionName);
         JSONArray listAsArr = new JSONArray();
         for(int j=0; j<size; j++){
+          //  System.out.println("set id "+j);
             DBObject targetEntity = (DBObject) entity_array[j];
             targetEntity.put("@id", "http://165.134.241.141/annotationstore/annotation/"+(targetEntity.get("_id").toString()));
             entity_array[j]=targetEntity; //update this so the updated object can be returned

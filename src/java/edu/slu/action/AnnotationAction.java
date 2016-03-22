@@ -48,7 +48,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
 
     public void batchSaveFromCopy() throws UnsupportedEncodingException{
         if(null != content){
-            System.out.println("Batch save!!!!!");
+            //System.out.println("Batch save!!!!!");
             JSONArray received_array = JSONArray.fromObject(content);
             //System.out.println(received_array);
             BasicDBObject serverQuery = new BasicDBObject();
@@ -86,7 +86,17 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             
             //System.out.println(received_array);
             BasicDBList dbo = (BasicDBList) JSON.parse(received_array.toString());
-            JSONArray newResources = mongoDBService.bulkSaveFromCopy(Constant.COLLECTION_ANNOTATION, dbo);
+            //System.out.println("Go into bulk save from batch save with this: ");
+            //System.out.println(dbo);
+            JSONArray newResources = new JSONArray();
+            //if the size is 0, no need to bulk save.  Nothing is there.
+            System.out.println("dbo size:  "+dbo.size());
+            if(dbo.size() > 0){
+                newResources = mongoDBService.bulkSaveFromCopy(Constant.COLLECTION_ANNOTATION, dbo);
+            }
+            else{
+             //   System.out.println("Skipping bulk save on account of empty array.");
+            }
             //bulk save will automatically call bulk update so there is no real need to return these values.  We will for later use.
             JSONObject jo = new JSONObject();
 //            System.out.println("cccccccccccccccccccccccccccccc");
