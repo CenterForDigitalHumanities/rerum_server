@@ -208,13 +208,14 @@ public abstract class MongoDBAbstractDAO implements MongoDBDAOInterface {
         return targetEntity.get("_id").toString();
     }
 
+    /* Bulk save objects into collection */
     public JSONArray bulkSaveFromCopy(String collectionName, BasicDBList entity_array ){
         DBCollection coll = db.getCollection(collectionName);
         //DBObject arrayAsObject = (DBObject) entity_array;
        // System.out.println("Bulk Save From Copy.  Size: "+entity_array.size());
         DBObject[] listAsObj = new DBObject[entity_array.size()];
         for(int i=0; i<entity_array.size();i++){
-          //  System.out.println("Add object "+i);
+           // System.out.println("Add object "+i);
             DBObject objectToAdd = (DBObject) entity_array.get(i);
            // objectToAdd.put("copy", "bulkCopy");
             listAsObj[i] = objectToAdd;
@@ -224,6 +225,7 @@ public abstract class MongoDBAbstractDAO implements MongoDBDAOInterface {
         return bulkSetIDProperty(collectionName, listAsObj);
     }
     
+    /* Go through each newly copied object and update its @id property */
     public JSONArray bulkSetIDProperty(String collectionName, DBObject[] entity_array){
        // System.out.println("Bulk Set ID");
         int size = entity_array.length;

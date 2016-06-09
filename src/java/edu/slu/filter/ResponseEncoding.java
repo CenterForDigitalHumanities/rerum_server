@@ -21,6 +21,11 @@ public class ResponseEncoding extends MethodFilterInterceptor {
     protected String doIntercept(ActionInvocation ai) throws Exception {
        HttpServletResponse response = ServletActionContext.getResponse();
         response.setCharacterEncoding("UTF-8");
+       // response.addHeader("Access-Control-Allow-Origin", "*");
+        response.addHeader("Access-Control-Allow-Credentials", "true");
+        response.addHeader("Access-Control-Allow-Headers", "Content-Type");
+        response.addHeader("Access-Control-Allow-Methods", "GET, POST");
+        //response.addHeader("Access-Control-Expose-Headers", "Access-Control-Allow-Origin,Access-Control-Allow-Credentials");
         return ai.invoke(); 
     }
     

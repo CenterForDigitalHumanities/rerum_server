@@ -39,9 +39,9 @@ public class ClientInfoRecorder extends MethodFilterInterceptor {
         DBCursor cursor = coll.find(query);
         List<DBObject> ls_results = cursor.toArray();
         if(ls_results.size() > 0){
-            System.out.println("[Not Modifying Data Request]: ip ========== " + requestIP + "@" + sdf.format(new Date()) + " +++++ From Registered Server");
+            //System.out.println("[Not Modifying Data Request]: ip ========== " + requestIP + "@" + sdf.format(new Date()) + " +++++ From Registered Server");
         }else{
-            System.out.println("[Not Modifying Data Request]: ip ========== " + requestIP + "@" + sdf.format(new Date()) + " +++++ Not From Registered Server");
+            //System.out.println("[Not Modifying Data Request]: ip ========== " + requestIP + "@" + sdf.format(new Date()) + " +++++ Not From Registered Server");
         }
         return ai.invoke();
     }

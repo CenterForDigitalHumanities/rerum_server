@@ -46,6 +46,16 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     
     private PrintWriter out;
 
+    /* 
+        Each canvas has an annotation list with 0 - infinity annotations.  A copy requires a new annotation list with the copied annotations and a new @id.
+        Mongo allows us to bulk save.  
+    
+    `   The content is from an HTTP request posting in an array filled with annotations to copy.  
+        
+        @see MongoDBAbstractDAO.bulkSaveFromCopy(String collectionName, BasicDBList entity_array);
+        @see MongoDBAbstractDAO.bulkSetIDProperty(String collectionName, BasicDBObject[] entity_array);
+        
+    */ 
     public void batchSaveFromCopy() throws UnsupportedEncodingException{
         if(null != content){
             //System.out.println("Batch save!!!!!");
@@ -69,7 +79,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 if(null == received.get("forkFromID") || "".equals(received.get("forkFromID"))){
                     received.accumulate("forkFromID", "");
                 }  
-                received.accumulate("addedTime", System.currentTimeMillis());
+                //received.accumulate("addedTime", System.currentTimeMillis());
 //            set the version to empty String
                 received.accumulate("originalAnnoID", "");//set versionID for a new fork
                 received.accumulate("version", 1);
@@ -90,7 +100,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             //System.out.println(dbo);
             JSONArray newResources = new JSONArray();
             //if the size is 0, no need to bulk save.  Nothing is there.
-            System.out.println("dbo size:  "+dbo.size());
+            //System.out.println("dbo size:  "+dbo.size());
             if(dbo.size() > 0){
                 newResources = mongoDBService.bulkSaveFromCopy(Constant.COLLECTION_ANNOTATION, dbo);
             }
@@ -224,6 +234,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 jo.remove("_id");
                 jo.accumulate("_id", oid);
                 try {
+                    response.addHeader("Content-Type", "application/json");
                     out = response.getWriter();
                     out.print(jo);
                 } catch (IOException ex) {
@@ -233,6 +244,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 JSONObject jo = new JSONObject();
                 jo.accumulate("code", HttpServletResponse.SC_NOT_FOUND);
                 try {
+                    response.addHeader("Content-Type", "application/json");
                     out = response.getWriter();
                     out.print(jo);
                 } catch (IOException ex) {
@@ -241,33 +253,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             }
         }
     }
-    
-//    /**
-//     * Get annotation by resource and outterRelative. 
-//     * @param annotation.resource
-//     * @param annotation.outterRelative
-//     * @param annotation.namespace
-//     * @return annotation or not found
-//     */
-//    public void getAnnoByResourceOutterRelativeNamespace(){
-//        BasicDBObject query = new BasicDBObject();
-//        query.append("resource", annotation.getResource());
-//        query.append("outterRelative", annotation.getOutterRelative());
-//        query.append("namespace", annotation.getNamespace());
-//        DBObject anno = mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query);
-//        JSONObject jo = new JSONObject();
-//        if(null != anno){
-//            jo.element("annotation", new Annotation_old((BasicDBObject)anno).toMap());
-//        }else{
-//            jo.element("code", HttpServletResponse.SC_NOT_FOUND);
-//        }
-//        try {
-//            out = response.getWriter();
-//            out.print(jo);
-//        } catch (IOException ex) {
-//            Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
-//        }
-//    }
     
     /**
      * Get annotation by given properties. 
@@ -288,6 +273,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 ja.add((BasicDBObject) dbo);
             }
             try {
+                response.addHeader("Content-Type","application/json");
                 out = response.getWriter();
                 out.print(ja);
             } catch (IOException ex) {
@@ -298,6 +284,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             jo.element("code", HttpServletResponse.SC_BAD_REQUEST);
             jo.element("msg", "Didn't receive any data. ");
             try {
+                response.addHeader("Content-Type","application/json");
                 out = response.getWriter();
                 out.print(jo);
             } catch (IOException ex) {
@@ -367,6 +354,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             jo.element("code", HttpServletResponse.SC_BAD_REQUEST);
             jo.element("msg", "Didn't receive any data. ");
             try {
+                //response.addHeader("Access-Control-Allow-Origin", "*");
                 out = response.getWriter();
                 out.print(jo);
             } catch (IOException ex) {
