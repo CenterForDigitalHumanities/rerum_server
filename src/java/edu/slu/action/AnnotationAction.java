@@ -44,6 +44,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     private HttpServletRequest request;
     private HttpServletResponse response;
     
+    
     private PrintWriter out;
 
     /* 
@@ -150,6 +151,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                     ja.add(bdbo.toMap());
                 }
                 try {
+                    response.addHeader("Access-Control-Allow-Origin", "*");
                     out = response.getWriter();
                     out.print(ja);
                 } catch (IOException ex) {
@@ -169,6 +171,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             JSONObject jo = new JSONObject();
             jo.element("code", HttpServletResponse.SC_BAD_REQUEST);
             try {
+                response.addHeader("Access-Control-Allow-Origin", "*");
                 out = response.getWriter();
                 out.print(jo);
             } catch (IOException ex) {
@@ -198,6 +201,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 ls_versions.add(myAnno);//add the original annotation (because its orginalAnnoID is empty String)
                 JSONArray ja = JSONArray.fromObject(ls_versions);
                 try {
+                    response.addHeader("Access-Control-Allow-Origin", "*");
                     out = response.getWriter();
                     out.print(ja);
                 } catch (IOException ex) {
@@ -207,6 +211,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 JSONObject jo = new JSONObject();
                 jo.accumulate("code", HttpServletResponse.SC_NOT_FOUND);
                 try {
+                    response.addHeader("Access-Control-Allow-Origin", "*");
                     out = response.getWriter();
                     out.print(jo);
                 } catch (IOException ex) {
@@ -235,6 +240,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 jo.accumulate("_id", oid);
                 try {
                     response.addHeader("Content-Type", "application/json");
+                    response.addHeader("Access-Control-Allow-Origin", "*");
                     out = response.getWriter();
                     out.print(jo);
                 } catch (IOException ex) {
@@ -245,6 +251,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 jo.accumulate("code", HttpServletResponse.SC_NOT_FOUND);
                 try {
                     response.addHeader("Content-Type", "application/json");
+                    response.addHeader("Access-Control-Allow-Origin", "*");
                     out = response.getWriter();
                     out.print(jo);
                 } catch (IOException ex) {
@@ -274,6 +281,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             }
             try {
                 response.addHeader("Content-Type","application/json");
+                response.addHeader("Access-Control-Allow-Origin", "*");
                 out = response.getWriter();
                 out.print(ja);
             } catch (IOException ex) {
@@ -285,6 +293,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             jo.element("msg", "Didn't receive any data. ");
             try {
                 response.addHeader("Content-Type","application/json");
+                response.addHeader("Access-Control-Allow-Origin", "*");
                 out = response.getWriter();
                 out.print(jo);
             } catch (IOException ex) {
@@ -344,6 +353,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             jo.element("@id", uid);
 //            System.out.println("eeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
             try {
+                response.addHeader("Access-Control-Allow-Origin", "*");
                 out = response.getWriter();
                 out.print(jo);
             } catch (IOException ex) {
@@ -354,7 +364,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             jo.element("code", HttpServletResponse.SC_BAD_REQUEST);
             jo.element("msg", "Didn't receive any data. ");
             try {
-                //response.addHeader("Access-Control-Allow-Origin", "*");
+                response.addHeader("Access-Control-Allow-Origin", "*");
                 out = response.getWriter();
                 out.print(jo);
             } catch (IOException ex) {
@@ -390,6 +400,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             JSONObject jo = new JSONObject();
             jo.element("code", HttpServletResponse.SC_OK);
             try {
+                response.addHeader("Access-Control-Allow-Origin", "*");
                 out = response.getWriter();
                 out.print(jo);
             } catch (IOException ex) {
@@ -399,6 +410,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             JSONObject jo = new JSONObject();
             jo.element("code", HttpServletResponse.SC_NOT_FOUND);
             try {
+                response.addHeader("Access-Control-Allow-Origin", "*");
                 out = response.getWriter();
                 out.print(jo);
             } catch (IOException ex) {
@@ -508,6 +520,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         JSONObject jo = new JSONObject();
         jo.element("code", HttpServletResponse.SC_OK);
         try {
+            response.addHeader("Access-Control-Allow-Origin", "*");
             out = response.getWriter();
             out.print(jo);
         } catch (IOException ex) {
