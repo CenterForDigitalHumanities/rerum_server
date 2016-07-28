@@ -46,6 +46,84 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     
     
     private PrintWriter out;
+    
+    public void batchSaveMetadataForm() throws UnsupportedEncodingException{
+        if(null != content){
+            //System.out.println("Batch save!!!!!");
+            JSONArray received_array = JSONArray.fromObject(content);
+            //System.out.println(received_array);
+            BasicDBObject serverQuery = new BasicDBObject();
+            serverQuery.append("ip", request.getRemoteAddr());
+//            System.out.println("333333333333333333333333333333");
+            DBObject asdbo = mongoDBService.findOneByExample(Constant.COLLECTION_ACCEPTEDSERVER, serverQuery);
+//            System.out.println("444444444444444444444444444444");
+            BasicDBObject asbdbo = (BasicDBObject) asdbo;
+            for(int b=0; b<received_array.size(); b++){
+                JSONObject received = received_array.getJSONObject(b);
+                received.accumulate("addedTime", System.currentTimeMillis());
+//            set the version to empty String
+                received.accumulate("originalAnnoID", "");//set versionID for a new fork
+                received.accumulate("version", 1);
+                if(!received.containsKey("permission")){
+                    received.accumulate("permission", Constant.PERMISSION_PRIVATE);
+                }
+                if(null == received.get("forkFromID") || "".equals(received.get("forkFromID"))){
+                    received.accumulate("forkFromID", "");
+                }  
+                //received.accumulate("addedTime", System.currentTimeMillis());
+//            set the version to empty String
+                received.accumulate("originalAnnoID", "");//set versionID for a new fork
+                received.accumulate("version", 1);
+                if(!received.containsKey("permission")){
+                    received.accumulate("permission", Constant.PERMISSION_PRIVATE);
+                }
+                if(null == received.get("forkFromID") || "".equals(received.get("forkFromID"))){
+                    received.accumulate("forkFromID", "");
+                }
+                received.accumulate("serverName", asbdbo.get("name"));
+                received.accumulate("serverIP", asbdbo.get("ip"));
+                received_array.set(b,received);
+            }
+            
+            //System.out.println(received_array);
+            BasicDBList dbo = (BasicDBList) JSON.parse(received_array.toString());
+            //System.out.println("Go into bulk save from batch save with this: ");
+            //System.out.println(dbo);
+            JSONArray reviewedResources = new JSONArray();
+            //if the size is 0, no need to bulk save.  Nothing is there.
+            //System.out.println("dbo size:  "+dbo.size());
+            if(dbo.size() > 0){
+                reviewedResources = mongoDBService.bulkSaveMetadataForm(Constant.COLLECTION_ANNOTATION, dbo);
+            }
+            else{
+             //   System.out.println("Skipping bulk save on account of empty array.");
+            }
+            //bulk save will automatically call bulk update so there is no real need to return these values.  We will for later use.
+            JSONObject jo = new JSONObject();
+//            System.out.println("cccccccccccccccccccccccccccccc");
+            jo.element("code", HttpServletResponse.SC_CREATED);
+//            System.out.println("dddddddddddddddddddddddddddddd");
+            jo.element("reviewed_resources", reviewedResources);
+            
+            try {
+                out = response.getWriter();
+                out.print(jo);
+            } catch (IOException ex) {
+                Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }else{
+            JSONObject jo = new JSONObject();
+            jo.element("code", HttpServletResponse.SC_BAD_REQUEST);
+            jo.element("msg", "Didn't receive any data. ");
+            try {
+                out = response.getWriter();
+                out.print(jo);
+            } catch (IOException ex) {
+                Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+    }
+    
 
     /* 
         Each canvas has an annotation list with 0 - infinity annotations.  A copy requires a new annotation list with the copied annotations and a new @id.

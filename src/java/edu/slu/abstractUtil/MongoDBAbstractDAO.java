@@ -207,6 +207,23 @@ public abstract class MongoDBAbstractDAO implements MongoDBDAOInterface {
         coll.save(targetEntity);
         return targetEntity.get("_id").toString();
     }
+    
+    public JSONArray bulkSaveMetadataForm(String collectionName, BasicDBList entity_array){
+        DBCollection coll = db.getCollection(collectionName);
+        //DBObject arrayAsObject = (DBObject) entity_array;
+       // System.out.println("Bulk Save From Copy.  Size: "+entity_array.size());
+        DBObject[] listAsObj = new DBObject[entity_array.size()];
+        for(int i=0; i<entity_array.size();i++){
+           // System.out.println("Add object "+i);
+            DBObject objectToAdd = (DBObject) entity_array.get(i);
+            coll.save(objectToAdd);  
+           // objectToAdd.put("copy", "bulkCopy");
+            listAsObj[i] = objectToAdd;
+        }
+        //System.out.println("Perform bulk insert in bulk save");
+        //coll.save(listAsObj); //this should decide whether it is an insert or an update
+        return bulkSetIDProperty(collectionName, listAsObj);
+    }
 
     /* Bulk save objects into collection */
     public JSONArray bulkSaveFromCopy(String collectionName, BasicDBList entity_array ){
@@ -221,6 +238,7 @@ public abstract class MongoDBAbstractDAO implements MongoDBDAOInterface {
             listAsObj[i] = objectToAdd;
         }
         //System.out.println("Perform bulk insert in bulk save");
+        //coll.save(listAsObj); //this should decide whether it is an insert or an update
         coll.insert(listAsObj);      
         return bulkSetIDProperty(collectionName, listAsObj);
     }

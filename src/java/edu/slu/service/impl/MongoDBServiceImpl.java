@@ -153,6 +153,11 @@ public class MongoDBServiceImpl implements MongoDBService {
     public DBObject findOneByExampleCaseInsesitive(String collectionName, Map<String, String> conditions) {
         return mongoDBDAO.findOneByExampleCaseInsesitive(collectionName, conditions);
     }
+    
+    @Override
+    public JSONArray bulkSaveMetadataForm(String collectionName, BasicDBList entity_array) {
+        return mongoDBDAO.bulkSaveMetadataForm(collectionName, entity_array);
+    }
 
     @Override
     public JSONArray bulkSaveFromCopy(String collectionName, BasicDBList entity_array) {

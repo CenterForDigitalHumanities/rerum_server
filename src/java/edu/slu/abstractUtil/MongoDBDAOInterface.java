@@ -30,6 +30,7 @@ public interface MongoDBDAOInterface {
     List<DBObject> findByExampleLikeAnyWhereFromHead(String collectionName, Map<String, String> conditions, int firstResult, int maxResult);
     List<DBObject> findByExampleLikeAnyWhereFromHead(String collectionName, Map<String, String> conditions, String OROperator, int firstResult, int maxResult);
     List<DBObject> findByExampleWithOrder(String collectionName, DBObject queryEntity, DBObject orderBy);
+    JSONArray bulkSaveMetadataForm(String collectionName, BasicDBList entity_array);
     JSONArray bulkSaveFromCopy(String collectionName, BasicDBList entity_array);
     JSONArray bulkSetIDProperty(String collectionName, DBObject[] entity_array);
     DBObject findOneByExample(String collectionName, DBObject entity);
