@@ -47,6 +47,16 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     
     private PrintWriter out;
     
+    /*
+    *The batch save to intended to work with Broken Books, but coud be applied elsewhere.  This batch will use the save() mongo function instead of insert() to determine whether 
+    to do an update() or insert() for each item in the batch.  
+    
+        The content is from an HTTP request posting in an array filled with annotations to copy.  
+        
+        @see MongoDBAbstractDAO.bulkSaveMetadataForm(String collectionName, BasicDBList entity_array);
+        @see MongoDBAbstractDAO.bulkSetIDProperty(String collectionName, BasicDBObject[] entity_array);
+    */
+    
     public void batchSaveMetadataForm() throws UnsupportedEncodingException{
         if(null != content){
             //System.out.println("Batch save!!!!!");
