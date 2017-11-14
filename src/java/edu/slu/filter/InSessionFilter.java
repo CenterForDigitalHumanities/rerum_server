@@ -25,6 +25,7 @@ public class InSessionFilter extends MethodFilterInterceptor {
         if(null != session){
             return ai.invoke();
         }else{
+            System.out.println("403 because session was null");
             return HttpServletResponse.SC_UNAUTHORIZED + "";
         }
     }

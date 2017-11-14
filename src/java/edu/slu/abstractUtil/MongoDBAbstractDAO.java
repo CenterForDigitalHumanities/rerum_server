@@ -252,12 +252,12 @@ public abstract class MongoDBAbstractDAO implements MongoDBDAOInterface {
         for(int j=0; j<size; j++){
           //  System.out.println("set id "+j);
             DBObject targetEntity = (DBObject) entity_array[j];
-            targetEntity.put("@id", "http://165.134.241.141/annotationstore/annotation/"+(targetEntity.get("_id").toString()));
+            targetEntity.put("@id", "http://165.134.105.29/annotationstore/annotation/"+(targetEntity.get("_id").toString()));
             entity_array[j]=targetEntity; //update this so the updated object can be returned
             listAsArr.add(targetEntity);
             DBObject findThis = new BasicDBObject();
             DBObject toUpdate = new BasicDBObject();
-            toUpdate.put("@id", "http://165.134.241.141/annotationstore/annotation/"+(targetEntity.get("_id").toString()));
+            toUpdate.put("@id", "http://165.134.105.29/annotationstore/annotation/"+(targetEntity.get("_id").toString()));
             findThis.put("_id",targetEntity.get("_id").toString());
             coll.update(findThis, toUpdate);
         }

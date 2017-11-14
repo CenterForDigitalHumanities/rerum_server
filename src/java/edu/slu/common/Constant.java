@@ -10,6 +10,7 @@ package edu.slu.common;
  * @author hanyan
  */
 public class Constant {
+    
     //permission of annotation
     public static final int PERMISSION_PRIVATE = 0;
     public static final int PERMISSION_PROJECT = 1;
@@ -29,7 +30,7 @@ public class Constant {
     public static final int NUMBER_OF_ANNO_VERSION = 10;
     
     //get by objectID url
-    public static final String GET_BY_OBJECTid_URL = "http://165.134.241.141:80/annotationstore/anno/getAnnotationByObjectID";
+    public static final String GET_BY_OBJECTid_URL = "http://165.134.105.29/annotationstore/anno/getAnnotationByObjectID";
     
     //return result message
     public static final String DUPLICATED = "duplicated";
@@ -38,3 +39,4 @@ public class Constant {
     public static final String GOOD = "good";
     public static final String OK = "ok";
 }
+

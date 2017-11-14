@@ -13,6 +13,7 @@ import edu.slu.mongoEntity.Agent;
 import edu.slu.mongoEntity.Person;
 import edu.slu.mongoEntity.ProjectUserProfile;
 import edu.slu.service.MongoDBService;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -46,12 +47,36 @@ public class UserAction extends ActionSupport implements ServletRequestAware, Se
     private HttpServletRequest request;
     private HttpServletResponse response;
     private PrintWriter out;
+    private StringBuilder bodyString;
+    private BufferedReader bodyReader;
+    /*
+    * Request processor so that data doesn't have to be passed through the API like {contet:{}}
+    * It is backwards compatible to support this behavior
+    */
+    public String processRequestBody() throws IOException{
+        if(null != content && !content.equals("")){ //If the payload was passed in wrapped in content, treat as usual
+            return content;
+        }
+        else{ //Otherwise treat properly and return the new value to store to content
+            String requestBody;
+            bodyReader = request.getReader();
+            bodyString = new StringBuilder();
+            String line="";
+            while ((line = bodyReader.readLine()) != null)
+            {
+              bodyString.append(line + "\n");
+            }
+            requestBody = bodyString.toString();
+            return requestBody;
+        }
+    }
     
     /**
      * Check duplicated person email.
      * @param person.email
      */
-    public void checkDuEmail(){
+    public void checkDuEmail() throws IOException{
+        content = processRequestBody();
         JSONObject received = JSONObject.fromObject(content);
         if(received.containsKey("email")){
             BasicDBObject dbo = new BasicDBObject();
@@ -84,7 +109,8 @@ public class UserAction extends ActionSupport implements ServletRequestAware, Se
      * @param All agent properties and person properties
      * @return 200: save successful, 400: no correct properties or no sufficient properties. 
      */
-    public void saveNewAgentPerson(){
+    public void saveNewAgentPerson() throws IOException{
+        content = processRequestBody();
         JSONObject received = JSONObject.fromObject(content);
         if(received.containsKey("person")){
             //save new person
@@ -154,7 +180,8 @@ public class UserAction extends ActionSupport implements ServletRequestAware, Se
      * Update person info. 
      * @param person.objectID, person.email, person.pwd, person properties
      */
-    public void updateAgentInfo(){
+    public void updateAgentInfo() throws IOException{
+        content = processRequestBody();
         JSONObject received = JSONObject.fromObject(content);
         HttpSession session = request.getSession();
         BasicDBObject personQuery = new BasicDBObject();
@@ -192,7 +219,8 @@ public class UserAction extends ActionSupport implements ServletRequestAware, Se
      * Check if an agent exists. 
      * @param person.aID
      */
-    public void checkExistAgent(){
+    public void checkExistAgent() throws IOException{
+        content = processRequestBody();
         JSONObject received = JSONObject.fromObject(content);
         if(received.containsKey("agent")){
             JSONObject agent = received.getJSONObject("agent");
@@ -225,7 +253,8 @@ public class UserAction extends ActionSupport implements ServletRequestAware, Se
      * Add project to person's profile. The project server must be saved in trusted server table before this action. 
      * @param projectUserProfile.alias, projectUserProfile.serverIP, projectUserProfile.config
      */
-    public void addProjectToUser(){
+    public void addProjectToUser() throws IOException{
+        content = processRequestBody();
         JSONObject received = JSONObject.fromObject(content);
         HttpSession session = request.getSession();
         if(received.containsKey("projectUserProfile")){
@@ -292,7 +321,8 @@ public class UserAction extends ActionSupport implements ServletRequestAware, Se
      * Update person info in a given project. 
      * @param projectUserProfile(any thing to update)
      */
-    public void updateProjectUserProfile(){
+    public void updateProjectUserProfile() throws IOException{
+        content = processRequestBody();
         JSONObject received = JSONObject.fromObject(content);
         HttpSession session = request.getSession();
         if(received.containsKey("projectUserProfile") && received.containsKey("email")){
@@ -336,6 +366,7 @@ public class UserAction extends ActionSupport implements ServletRequestAware, Se
                             try {
                                 out = response.getWriter();
                                 JSONObject jo = new JSONObject();
+                                System.out.println("403 because of server being unregistered.");
                                 jo.element("code", HttpServletResponse.SC_UNAUTHORIZED);
                                 out.print(jo);
                             } catch (IOException ex) {
@@ -361,7 +392,8 @@ public class UserAction extends ActionSupport implements ServletRequestAware, Se
      * To check if the person is registered at IIIF store. 
      * @param person.email and password
      */
-    public void personLogin(){
+    public void personLogin() throws IOException{
+        content = processRequestBody();
         JSONObject received = JSONObject.fromObject(content);
         if(received.containsKey("person")){
             JSONObject jsonUser = received.getJSONObject("person");
@@ -405,7 +437,8 @@ public class UserAction extends ActionSupport implements ServletRequestAware, Se
     /**
      * Remove agent by objectID
      */
-    public void delAgentByID(){
+    public void delAgentByID() throws IOException{
+        content = processRequestBody();
         JSONObject received = JSONObject.fromObject(content);
         if(received.containsKey("agent")){
             if(received.containsKey("id")){

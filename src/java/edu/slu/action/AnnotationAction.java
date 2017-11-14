@@ -13,6 +13,7 @@ import com.opensymphony.xwork2.ActionSupport;
 import edu.slu.common.Constant;
 import edu.slu.mongoEntity.AcceptedServer;
 import edu.slu.service.MongoDBService;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
@@ -22,6 +23,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import net.sf.json.JSONArray;
@@ -34,18 +36,101 @@ import org.bson.types.ObjectId;
  *
  * @author hanyan
  */
-public class AnnotationAction extends ActionSupport implements ServletRequestAware, ServletResponseAware {
+public class AnnotationAction extends ActionSupport implements ServletRequestAware, ServletResponseAware{
 //    private Annotation_old annotation;
     private String content;
     private String oid;
     private AcceptedServer acceptedServer;
     
+    
     private MongoDBService mongoDBService;
     private HttpServletRequest request;
     private HttpServletResponse response;
-    
-    
+    private StringBuilder bodyString;
+    private BufferedReader bodyReader;
+
     private PrintWriter out;
+    
+    /*
+    * Request processor so that data doesn't have to be passed through the API like {contet:{}}
+    * It is backwards compatible to support this behavior. 
+    */
+    public String processRequestBody(HttpServletRequest http_request) throws IOException, ServletException, Exception{
+        String cType = http_request.getContentType();
+        String requestBody;
+        JSONObject test;
+        JSONArray test2;
+        
+        System.out.println(System.getProperty("line.separator"));
+        System.out.println(System.getProperty("line.separator"));
+        System.out.println("Processing request...");
+        System.out.println("Content at the top of processing is "+content);
+
+        /* This means the type was application/x-www-form-urlencoded and they passed it like {content:{data}} so I already have content, just go forward using that.  This is backwards compatability */
+        if(null != content && !content.equals("")){ 
+            System.out.println("Content is already set, so return it");           
+//            System.out.println(System.getProperty("line.separator"));
+//            System.out.println(System.getProperty("line.separator"));          
+            try{ //Try to parse as a JSONObject
+                test = JSONObject.fromObject(content);
+            }
+            catch(Exception ex){ //was not a JSONObject but might be a JSONArray
+                //System.out.println("Was not an object...");
+                try{ //Try to parse as a JSONArray
+                    test2 = JSONArray.fromObject(content);
+                }
+                catch(Exception ex2){ //Was not a JSONObject or a JSONArray.  Not valid JSON.  Throw error. 
+                    throw new Exception("{error: 'The data passed was not valid JSON.'}");
+                }
+            }
+            //System.out.println(content);
+            return content;
+        }
+        if(cType.contains("application/x-www-form-urlencoded")){ //They passed this content type but did not follow the {content:{data}} format.
+            //TODO: Throw improper request body error!!@@
+            //System.out.println("application/x-www-form-urlencoded type not in proper {content:{data}} format ");
+            requestBody = "{error: 'Improper request body.  Must use {content:{data}} format for content type application/x-www-form-urlencoded or instead use application/json or application/ld+json Content Type with valid JSON.'}";
+            throw new Exception(requestBody);
+        }
+        else if(cType.contains("application/json") || cType.contains("application/ld+json")){
+            //System.out.println("content was not set, check the request body...");
+            //System.out.println(System.getProperty("line.separator"));
+            bodyReader = http_request.getReader();
+            bodyString = new StringBuilder();
+            String line="";
+            //System.out.println("See lines from the reader on the body...");
+            while ((line = bodyReader.readLine()) != null)
+            {
+             //System.out.println("line is "+line);
+              bodyString.append(line + "\n");
+            }
+           // System.out.println(System.getProperty("line.separator"));
+            requestBody = bodyString.toString();
+            try{ //Try to parse as a JSONObject
+              test = JSONObject.fromObject(requestBody);
+              }
+              catch(Exception ex){ //was not a JSONObject but might be a JSONArray
+                  //System.out.println("Was not an object...");
+                  try{ //Try to parse as a JSONArray
+                      test2 = JSONArray.fromObject(requestBody);
+                  }
+                  catch(Exception ex2){ //Was not a JSONObject or a JSONArray.  Not valid JSON.  Throw error. 
+                      throw new Exception("{error: 'The data passed was not valid JSON.'}");
+                  }
+              }
+//            System.out.println("See string built...");
+//            System.out.println(requestBody);
+//            System.out.println(System.getProperty("line.separator"));
+//            System.out.println(System.getProperty("line.separator"));
+            return requestBody;
+        }
+        else{ //I do not understand the content type being passed.
+            //System.out.println("Weird content type.   ");
+            requestBody = "{error: 'Improper request body.  Must use application/json or application/ld+json Content Type'}";
+            throw new Exception(requestBody);
+        }
+
+    }
     
     /*
     *The batch save to intended to work with Broken Books, but coud be applied elsewhere.  This batch will use the save() mongo function instead of insert() to determine whether 
@@ -57,7 +142,11 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         @see MongoDBAbstractDAO.bulkSetIDProperty(String collectionName, BasicDBObject[] entity_array);
     */
     
-    public void batchSaveMetadataForm() throws UnsupportedEncodingException{
+    public void batchSaveMetadataForm() throws UnsupportedEncodingException, IOException, ServletException, Exception{
+        System.out.println("in batch save, off to process");
+        content = processRequestBody(request);
+        System.out.println("back from process.  What is content?");
+        System.out.println(content);
         if(null != content){
             //System.out.println("Batch save!!!!!");
             JSONArray received_array = JSONArray.fromObject(content);
@@ -121,7 +210,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             } catch (IOException ex) {
                 Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
             }
-        }else{
+        }
+        else{
             JSONObject jo = new JSONObject();
             jo.element("code", HttpServletResponse.SC_BAD_REQUEST);
             jo.element("msg", "Didn't receive any data. ");
@@ -145,7 +235,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         @see MongoDBAbstractDAO.bulkSetIDProperty(String collectionName, BasicDBObject[] entity_array);
         
     */ 
-    public void batchSaveFromCopy() throws UnsupportedEncodingException{
+    public void batchSaveFromCopy() throws UnsupportedEncodingException, IOException, ServletException, Exception{
+        content = processRequestBody(request);
         if(null != content){
             //System.out.println("Batch save!!!!!");
             JSONArray received_array = JSONArray.fromObject(content);
@@ -226,7 +317,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * Get all my annotations. Include latest version of original annotations, all forks and revisions. 
      * @param annotation.content("namespace","...")
      */
-    public void getAllMyAnnotations(){
+    public void getAllMyAnnotations() throws IOException, ServletException, Exception{
+        content = processRequestBody(request);
         JSONObject received = JSONObject.fromObject(content);
         if(received.containsKey("namespace")){
             BasicDBObject query = new BasicDBObject();
@@ -272,7 +364,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * Get all version of annotations by ObjectID. 
      * @param annotation.objectID
      */
-    public void getAllVersionsOfAnnotationByObjectID(){
+    public void getAllVersionsOfAnnotationByObjectID() throws IOException, ServletException, Exception{
+        content = processRequestBody(request);
         JSONObject received = JSONObject.fromObject(content);
         if(received.containsKey("objectID")){
             //find one version by objectID
@@ -314,7 +407,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * @param objectID (oid)
      * @return annotation object
      */
-    public void getAnnotationByObjectID(){
+    public void getAnnotationByObjectID() throws IOException, ServletException, Exception{
+        //content = processRequestBody(request);
         if(null != oid){
             //find one version by objectID
             BasicDBObject query = new BasicDBObject();
@@ -334,7 +428,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 } catch (IOException ex) {
                     Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
                 }
-            }else{
+            }
+            else{
                 JSONObject jo = new JSONObject();
                 jo.accumulate("code", HttpServletResponse.SC_NOT_FOUND);
                 try {
@@ -354,7 +449,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * @param key->value pair(s)
      * @reutrn list of annotations that match the given conditions.
      */
-    public void getAnnotationByProperties(){
+    public void getAnnotationByProperties() throws IOException, ServletException, Exception{
+        content = processRequestBody(request);
         if(null != content){
             JSONObject received = JSONObject.fromObject(content);
             BasicDBObject query = new BasicDBObject();
@@ -394,7 +490,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * Save a new annotation. 
      * @param all annotation properties.
      */
-    public void saveNewAnnotation(){
+    public void saveNewAnnotation() throws IOException, ServletException, Exception{
+        content = processRequestBody(request);
         if(null != content){
 //            System.out.println("1111111111111111111111111111");
             JSONObject received = JSONObject.fromObject(content);
@@ -428,7 +525,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             //set @id to objectID and update the annotation
             BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
 //            System.out.println("999999999999999999999999999999");
-            String uid = "http://165.134.241.141/annotationstore/annotation/" + dboWithObjectID.getObjectId("_id").toString();
+            String uid = "http://165.134.105.29/annotationstore/annotation/" + dboWithObjectID.getObjectId("_id").toString();
 //            System.out.println("000000000000000000000000000000");
             dboWithObjectID.append("@id", uid);
 //            System.out.println("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
@@ -466,7 +563,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * @param annotation.objectID
      * @param all annotation properties include updated properties. 
      */
-    public void updateAnnotation(){
+    public void updateAnnotation() throws IOException, ServletException, Exception{
+        content = processRequestBody(request);
         BasicDBObject query = new BasicDBObject();
         JSONObject received = JSONObject.fromObject(content);
         query.append("@id", received.getString("@id").trim());
@@ -512,7 +610,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * @param objectID
      * @param any to be updated annotation properties. 
      */
-    public void saveNewVersionOfAnnotation(){
+    public void saveNewVersionOfAnnotation() throws IOException, ServletException, Exception{
+        content = processRequestBody(request);
         BasicDBObject query = new BasicDBObject();
         JSONObject received = new JSONObject();
         received = JSONObject.fromObject(content);
@@ -589,7 +688,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * Delete a given annotation. 
      * @param annotation.objectID
      */
-    public void deleteAnnotationByObjectID(){
+    public void deleteAnnotationByObjectID() throws IOException, ServletException, Exception{
+        content = processRequestBody(request);
         BasicDBObject query = new BasicDBObject();
         JSONObject received = JSONObject.fromObject(content);
         query.append("_id", received.getString("objectID").trim());
@@ -600,7 +700,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * Delete a given annotation. 
      * @param annotation.@id
      */
-    public void deleteAnnotationByAtID(){
+    public void deleteAnnotationByAtID() throws IOException, ServletException, Exception{
+        content = processRequestBody(request);
         BasicDBObject query = new BasicDBObject();
         JSONObject received = JSONObject.fromObject(content);
         query.append("@id", received.getString("@id").trim());
@@ -621,7 +722,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * @param annotation.objectID
      * @param annotation.permission (optional, if null, set to private by default)
      */
-    public void forkAnnotation(){
+    public void forkAnnotation() throws IOException, ServletException, Exception{
+        content = processRequestBody(request);
         BasicDBObject query = new BasicDBObject();
         JSONObject received = JSONObject.fromObject(content);
         query.append("_id", received.getString("objectID").trim());
@@ -653,7 +755,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * @param annotation
      * @return what saveNewAnnotation() returns
      */
-    public void saveForkAnnotation(){
+    public void saveForkAnnotation() throws IOException, ServletException, Exception{
         saveNewAnnotation();
     }
     
