@@ -143,10 +143,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     */
     
     public void batchSaveMetadataForm() throws UnsupportedEncodingException, IOException, ServletException, Exception{
-        System.out.println("in batch save, off to process");
         content = processRequestBody(request);
-        System.out.println("back from process.  What is content?");
-        System.out.println(content);
         if(null != content){
             //System.out.println("Batch save!!!!!");
             JSONArray received_array = JSONArray.fromObject(content);
@@ -203,9 +200,14 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             jo.element("code", HttpServletResponse.SC_CREATED);
 //            System.out.println("dddddddddddddddddddddddddddddd");
             jo.element("reviewed_resources", reviewedResources);
-            
+            String locations = "";
+            for(int j=0; j<reviewedResources.size(); j++){
+                JSONObject getMyID = reviewedResources.getJSONObject(j);
+                locations += getMyID.getString("@id");
+            }
             try {
                 out = response.getWriter();
+                response.addHeader("Location", locations);
                 out.print(jo);
             } catch (IOException ex) {
                 Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
@@ -293,9 +295,14 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             jo.element("code", HttpServletResponse.SC_CREATED);
 //            System.out.println("dddddddddddddddddddddddddddddd");
             jo.element("new_resources", newResources);
-            
+            String locations = "";
+            for(int j=0; j<newResources.size(); j++){
+                JSONObject getMyID = newResources.getJSONObject(j);
+                locations += getMyID.getString("@id");
+            }
             try {
                 out = response.getWriter();
+                response.addHeader("Location", locations);
                 out.print(jo);
             } catch (IOException ex) {
                 Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
@@ -539,9 +546,11 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
 //            System.out.println("eeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
             try {
                 response.addHeader("Access-Control-Allow-Origin", "*");
+                response.addHeader("Location", uid);
                 out = response.getWriter();
                 out.print(jo);
-            } catch (IOException ex) {
+            } 
+            catch (IOException ex) {
                 Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
             }
         }else{
