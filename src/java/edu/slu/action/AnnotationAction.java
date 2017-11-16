@@ -203,11 +203,17 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             String locations = "";
             for(int j=0; j<reviewedResources.size(); j++){
                 JSONObject getMyID = reviewedResources.getJSONObject(j);
-                locations += getMyID.getString("@id");
+                if(j == reviewedResources.size()-1){
+                    locations += getMyID.getString("@id");
+                }
+                else{
+                    locations += getMyID.getString("@id")+",";
+                }
             }
             try {
                 out = response.getWriter();
                 response.addHeader("Location", locations);
+                response.setStatus(HttpServletResponse.SC_CREATED);
                 out.print(jo);
             } catch (IOException ex) {
                 Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
@@ -218,6 +224,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             jo.element("code", HttpServletResponse.SC_BAD_REQUEST);
             jo.element("msg", "Didn't receive any data. ");
             try {
+                response.setStatus(HttpServletResponse.SC_NO_CONTENT);
                 out = response.getWriter();
                 out.print(jo);
             } catch (IOException ex) {
@@ -298,10 +305,16 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             String locations = "";
             for(int j=0; j<newResources.size(); j++){
                 JSONObject getMyID = newResources.getJSONObject(j);
-                locations += getMyID.getString("@id");
+                if(j == newResources.size()-1){
+                    locations += getMyID.getString("@id");
+                }
+                else{
+                    locations += getMyID.getString("@id")+",";
+                }
             }
             try {
                 out = response.getWriter();
+                response.setStatus(HttpServletResponse.SC_CREATED);
                 response.addHeader("Location", locations);
                 out.print(jo);
             } catch (IOException ex) {
@@ -312,6 +325,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             jo.element("code", HttpServletResponse.SC_BAD_REQUEST);
             jo.element("msg", "Didn't receive any data. ");
             try {
+                response.setStatus(HttpServletResponse.SC_NO_CONTENT);
                 out = response.getWriter();
                 out.print(jo);
             } catch (IOException ex) {
@@ -345,19 +359,22 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                     Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }else{
-                JSONObject jo = new JSONObject();
-                jo.element("code", HttpServletResponse.SC_NOT_FOUND);
-                try {
-                    out = response.getWriter();
-                    out.print(jo);
-                } catch (IOException ex) {
-                    Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
-                }
+                //JSONObject jo = new JSONObject();
+                //jo.element("code", HttpServletResponse.SC_NOT_FOUND);
+                //try {
+                    response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+               //     out = response.getWriter();
+               //     out.print(jo);
+                //} catch (IOException ex) {
+                //    Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
+                //}
             }
         }else{
             JSONObject jo = new JSONObject();
             jo.element("code", HttpServletResponse.SC_BAD_REQUEST);
+            jo.element("msg", "Could not find field 'namespace' in object.");
             try {
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                 response.addHeader("Access-Control-Allow-Origin", "*");
                 out = response.getWriter();
                 out.print(jo);
@@ -390,22 +407,37 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 JSONArray ja = JSONArray.fromObject(ls_versions);
                 try {
                     response.addHeader("Access-Control-Allow-Origin", "*");
+                    response.setStatus(HttpServletResponse.SC_OK);
                     out = response.getWriter();
                     out.print(ja);
                 } catch (IOException ex) {
                     Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }else{
-                JSONObject jo = new JSONObject();
-                jo.accumulate("code", HttpServletResponse.SC_NOT_FOUND);
-                try {
+                //JSONObject jo = new JSONObject();
+                //jo.accumulate("code", HttpServletResponse.SC_NOT_FOUND);
+                //try {
                     response.addHeader("Access-Control-Allow-Origin", "*");
-                    out = response.getWriter();
-                    out.print(jo);
-                } catch (IOException ex) {
-                    Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
-                }
+                    response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                 //   out = response.getWriter();
+                //   out.print(jo);
+                //} catch (IOException ex) {
+                //    Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
+                //}
             }
+        }
+        else{
+          JSONObject jo = new JSONObject();
+            jo.accumulate("code", HttpServletResponse.SC_BAD_REQUEST);
+            jo.accumulate("msg", "Object did not contain key objectID.");
+            try {
+                response.addHeader("Access-Control-Allow-Origin", "*");
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                out = response.getWriter();
+               out.print(jo);
+            } catch (IOException ex) {
+                Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
+            }   
         }
     }
     
@@ -430,6 +462,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 try {
                     response.addHeader("Content-Type", "application/json");
                     response.addHeader("Access-Control-Allow-Origin", "*");
+                    response.setStatus(HttpServletResponse.SC_OK);
                     out = response.getWriter();
                     out.print(jo);
                 } catch (IOException ex) {
@@ -437,16 +470,31 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 }
             }
             else{
-                JSONObject jo = new JSONObject();
-                jo.accumulate("code", HttpServletResponse.SC_NOT_FOUND);
-                try {
-                    response.addHeader("Content-Type", "application/json");
-                    response.addHeader("Access-Control-Allow-Origin", "*");
-                    out = response.getWriter();
-                    out.print(jo);
-                } catch (IOException ex) {
-                    Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
-                }
+                //JSONObject jo = new JSONObject();
+                //jo.accumulate("code", HttpServletResponse.SC_NOT_FOUND);
+                //try {
+                //    response.addHeader("Content-Type", "application/json");
+                //    response.addHeader("Access-Control-Allow-Origin", "*");
+                    response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                //    out = response.getWriter();
+               //     out.print(jo);
+               // } catch (IOException ex) {
+               //     Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
+                //}
+            }
+        }
+        else{
+            JSONObject jo = new JSONObject();
+            jo.accumulate("code", HttpServletResponse.SC_NOT_FOUND);
+            jo.accumulate("msg", "No object id provided");
+            try {
+                response.addHeader("Content-Type", "application/json");
+                response.addHeader("Access-Control-Allow-Origin", "*");
+                response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                out = response.getWriter();
+                out.print(jo);
+            } catch (IOException ex) {
+                Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
     }
@@ -470,21 +518,28 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             for(DBObject dbo : ls_result){
                 ja.add((BasicDBObject) dbo);
             }
-            try {
-                response.addHeader("Content-Type","application/json");
-                response.addHeader("Access-Control-Allow-Origin", "*");
-                out = response.getWriter();
-                out.print(ja);
-            } catch (IOException ex) {
-                Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
+            if(ls_result.size() > 0){
+                try {
+                    response.addHeader("Content-Type","application/json");
+                    response.addHeader("Access-Control-Allow-Origin", "*");
+                    response.setStatus(HttpServletResponse.SC_OK);
+                    out = response.getWriter();
+                    out.print(ja);
+                } catch (IOException ex) {
+                    Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+            else{
+                response.setStatus(HttpServletResponse.SC_NOT_FOUND);
             }
         }else{
             JSONObject jo = new JSONObject();
-            jo.element("code", HttpServletResponse.SC_BAD_REQUEST);
+            jo.element("code", HttpServletResponse.SC_NO_CONTENT);
             jo.element("msg", "Didn't receive any data. ");
             try {
                 response.addHeader("Content-Type","application/json");
                 response.addHeader("Access-Control-Allow-Origin", "*");
+                response.setStatus(HttpServletResponse.SC_NO_CONTENT);
                 out = response.getWriter();
                 out.print(jo);
             } catch (IOException ex) {
@@ -500,70 +555,79 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     public void saveNewAnnotation() throws IOException, ServletException, Exception{
         content = processRequestBody(request);
         if(null != content){
+            try{
 //            System.out.println("1111111111111111111111111111");
-            JSONObject received = JSONObject.fromObject(content);
-//            System.out.println("received ========= " + received);
-            received.accumulate("addedTime", System.currentTimeMillis());
-//            set the version to empty String
-            received.accumulate("originalAnnoID", "");//set versionID for a new fork
-            received.accumulate("version", 1);
-            if(!received.containsKey("permission")){
-                received.accumulate("permission", Constant.PERMISSION_PRIVATE);
+                JSONObject received = JSONObject.fromObject(content);
+    //            System.out.println("received ========= " + received);
+                received.accumulate("addedTime", System.currentTimeMillis());
+    //            set the version to empty String
+                received.accumulate("originalAnnoID", "");//set versionID for a new fork
+                received.accumulate("version", 1);
+                if(!received.containsKey("permission")){
+                    received.accumulate("permission", Constant.PERMISSION_PRIVATE);
+                }
+                if(null == received.get("forkFromID") || "".equals(received.get("forkFromID"))){
+                    received.accumulate("forkFromID", "");
+                }
+    //            System.out.println("222222222222222222222222222222");
+                BasicDBObject serverQuery = new BasicDBObject();
+                serverQuery.append("ip", request.getRemoteAddr());
+    //            System.out.println("333333333333333333333333333333");
+                DBObject asdbo = mongoDBService.findOneByExample(Constant.COLLECTION_ACCEPTEDSERVER, serverQuery);
+    //            System.out.println("444444444444444444444444444444");
+                BasicDBObject asbdbo = (BasicDBObject) asdbo;
+    //            System.out.println("555555555555555555555555555555");
+                received.accumulate("serverName", asbdbo.get("name"));
+                received.accumulate("serverIP", asbdbo.get("ip"));
+    //            System.out.println("666666666666666666666666666666");
+                //create BasicDBObject
+            
+                DBObject dbo = (DBObject) JSON.parse(received.toString());
+            
+    //            System.out.println("777777777777777777777777777777======== " + dbo.toString());
+                String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
+    //            System.out.println("888888888888888888888888888888========== " + newObjectID);
+                //set @id to objectID and update the annotation
+                BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
+    //            System.out.println("999999999999999999999999999999");
+                String uid = "http://165.134.105.29/annotationstore/annotation/" + dboWithObjectID.getObjectId("_id").toString();
+    //            System.out.println("000000000000000000000000000000");
+                dboWithObjectID.append("@id", uid);
+    //            System.out.println("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+                mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
+    //            System.out.println("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
+                JSONObject jo = new JSONObject();
+    //            System.out.println("cccccccccccccccccccccccccccccc");
+                jo.element("code", HttpServletResponse.SC_CREATED);
+    //            System.out.println("dddddddddddddddddddddddddddddd");
+                jo.element("@id", uid);
+    //            System.out.println("eeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
+                try {
+                    response.addHeader("Access-Control-Allow-Origin", "*");
+                    response.addHeader("Location", uid);
+                    response.setStatus(HttpServletResponse.SC_CREATED);
+                    out = response.getWriter();
+                    out.print(jo);
+                } 
+                catch (IOException ex) {
+                    Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
-            if(null == received.get("forkFromID") || "".equals(received.get("forkFromID"))){
-                received.accumulate("forkFromID", "");
-            }
-//            System.out.println("222222222222222222222222222222");
-            BasicDBObject serverQuery = new BasicDBObject();
-            serverQuery.append("ip", request.getRemoteAddr());
-//            System.out.println("333333333333333333333333333333");
-            DBObject asdbo = mongoDBService.findOneByExample(Constant.COLLECTION_ACCEPTEDSERVER, serverQuery);
-//            System.out.println("444444444444444444444444444444");
-            BasicDBObject asbdbo = (BasicDBObject) asdbo;
-//            System.out.println("555555555555555555555555555555");
-            received.accumulate("serverName", asbdbo.get("name"));
-            received.accumulate("serverIP", asbdbo.get("ip"));
-//            System.out.println("666666666666666666666666666666");
-            //create BasicDBObject
-            DBObject dbo = (DBObject) JSON.parse(received.toString());
-//            System.out.println("777777777777777777777777777777======== " + dbo.toString());
-            String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
-//            System.out.println("888888888888888888888888888888========== " + newObjectID);
-            //set @id to objectID and update the annotation
-            BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
-//            System.out.println("999999999999999999999999999999");
-            String uid = "http://165.134.105.29/annotationstore/annotation/" + dboWithObjectID.getObjectId("_id").toString();
-//            System.out.println("000000000000000000000000000000");
-            dboWithObjectID.append("@id", uid);
-//            System.out.println("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
-            mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
-//            System.out.println("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
-            JSONObject jo = new JSONObject();
-//            System.out.println("cccccccccccccccccccccccccccccc");
-            jo.element("code", HttpServletResponse.SC_CREATED);
-//            System.out.println("dddddddddddddddddddddddddddddd");
-            jo.element("@id", uid);
-//            System.out.println("eeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
-            try {
-                response.addHeader("Access-Control-Allow-Origin", "*");
-                response.addHeader("Location", uid);
-                out = response.getWriter();
-                out.print(jo);
-            } 
-            catch (IOException ex) {
-                Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
+            catch (Exception ex){ //could not parse JSON.
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             }
         }else{
-            JSONObject jo = new JSONObject();
-            jo.element("code", HttpServletResponse.SC_BAD_REQUEST);
-            jo.element("msg", "Didn't receive any data. ");
-            try {
+            //JSONObject jo = new JSONObject();
+            //jo.element("code", HttpServletResponse.SC_BAD_REQUEST);
+            //jo.element("msg", "Didn't receive any data. ");
+            //try {
                 response.addHeader("Access-Control-Allow-Origin", "*");
-                out = response.getWriter();
-                out.print(jo);
-            } catch (IOException ex) {
-                Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
-            }
+                response.setStatus(HttpServletResponse.SC_NO_CONTENT);
+           //     out = response.getWriter();
+           //     out.print(jo);
+            //} catch (IOException ex) {
+            //    Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
+            //}
         }
     }
     
@@ -574,43 +638,51 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      */
     public void updateAnnotation() throws IOException, ServletException, Exception{
         content = processRequestBody(request);
-        BasicDBObject query = new BasicDBObject();
-        JSONObject received = JSONObject.fromObject(content);
-        query.append("@id", received.getString("@id").trim());
-        BasicDBObject result = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query);
-        if(null != result){
-            Set<String> set_keys = received.keySet();
-            for(String key : set_keys){
-                if(result.containsKey(key) 
-                        && (!key.equals("@id") 
-                                || !key.equals("version") 
-                                || !key.equals("forkFromID")
-                                || !key.equals("originalAnnoID")
-                                || !key.equals("objectID"))){
-                    result.remove(key);
-                    result.append(key, received.get(key));
+        try{
+            BasicDBObject query = new BasicDBObject();
+            JSONObject received = JSONObject.fromObject(content);
+            query.append("@id", received.getString("@id").trim());
+            BasicDBObject result = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query);
+            if(null != result){
+                Set<String> set_keys = received.keySet();
+                for(String key : set_keys){
+                    if(result.containsKey(key) 
+                            && (!key.equals("@id") 
+                                    || !key.equals("version") 
+                                    || !key.equals("forkFromID")
+                                    || !key.equals("originalAnnoID")
+                                    || !key.equals("objectID"))){
+                        result.remove(key);
+                        result.append(key, received.get(key));
+                    }
+                }
+                mongoDBService.update(Constant.COLLECTION_ANNOTATION, query, result);
+                JSONObject jo = new JSONObject();
+                jo.element("code", HttpServletResponse.SC_OK);
+                try {
+                    response.addHeader("Access-Control-Allow-Origin", "*");
+                    response.setStatus(HttpServletResponse.SC_OK);
+                    out = response.getWriter();
+                    out.print(jo);
+                } catch (IOException ex) {
+                    Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
+                }
+
+            }else{
+                JSONObject jo = new JSONObject();
+                jo.element("code", HttpServletResponse.SC_NOT_FOUND);
+                try {
+                    response.addHeader("Access-Control-Allow-Origin", "*");
+                    response.setStatus(HttpServletResponse.SC_NO_CONTENT);
+                    out = response.getWriter();
+                    out.print(jo);
+                } catch (IOException ex) {
+                    Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
-            mongoDBService.update(Constant.COLLECTION_ANNOTATION, query, result);
-            JSONObject jo = new JSONObject();
-            jo.element("code", HttpServletResponse.SC_OK);
-            try {
-                response.addHeader("Access-Control-Allow-Origin", "*");
-                out = response.getWriter();
-                out.print(jo);
-            } catch (IOException ex) {
-                Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }else{
-            JSONObject jo = new JSONObject();
-            jo.element("code", HttpServletResponse.SC_NOT_FOUND);
-            try {
-                response.addHeader("Access-Control-Allow-Origin", "*");
-                out = response.getWriter();
-                out.print(jo);
-            } catch (IOException ex) {
-                Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
-            }
+        }
+        catch(Exception ex){ //could not parse JSON
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
         }
     }
     
@@ -621,75 +693,84 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      */
     public void saveNewVersionOfAnnotation() throws IOException, ServletException, Exception{
         content = processRequestBody(request);
-        BasicDBObject query = new BasicDBObject();
-        JSONObject received = new JSONObject();
-        received = JSONObject.fromObject(content);
-        query.append("_id", received.getString("@id").trim());
-        BasicDBObject result = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query);
-        if(null != result){
-            BasicDBObject versionQuery = new BasicDBObject();
-            versionQuery.append("originalAnnoID", result.get("originalAnnoID"));
-            BasicDBObject orderby = new BasicDBObject();
-            orderby.append("version", 1);
-            List<DBObject> ls_count = mongoDBService.findByExampleWithOrder(Constant.COLLECTION_ANNOTATION, versionQuery, orderby);
-            if(ls_count.size() >= 10){
-                //the upper limit of version number is 10, when the 11th comes in, it will delete the first one and put 11th as 10th. 
-                BasicDBObject first = (BasicDBObject) ls_count.get(0);
-                BasicDBObject last = (BasicDBObject) ls_count.get(ls_count.size() - 1);
-                //delete the 1st record.
-                mongoDBService.delete(Constant.COLLECTION_ANNOTATION, first);
-                int versionNum = last.getInt("version");
-                received.remove("version");
-                received.accumulate("version", versionNum + 1);
-                Map<String, Object> values = received;
-                BasicDBObject dbo = new BasicDBObject(values);
-                String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
-                //set @id to objectID and update the annotation
-                BasicDBObject dboWithObjectID = new BasicDBObject(dbo);
-                //used to be replace, not put.  Not sure why.
-                dboWithObjectID.put("@id", newObjectID);
-                mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
-                JSONObject jo = new JSONObject();
-                jo.element("code", HttpServletResponse.SC_OK);
-                jo.element("newObjectID", newObjectID);
-                try {
-                    out = response.getWriter();
-                    out.print(jo);
-                } catch (IOException ex) {
-                    Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
+        try{
+            BasicDBObject query = new BasicDBObject();
+            JSONObject received = new JSONObject();
+            received = JSONObject.fromObject(content);
+            query.append("_id", received.getString("@id").trim());
+            BasicDBObject result = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query);
+            if(null != result){
+                BasicDBObject versionQuery = new BasicDBObject();
+                versionQuery.append("originalAnnoID", result.get("originalAnnoID"));
+                BasicDBObject orderby = new BasicDBObject();
+                orderby.append("version", 1);
+                List<DBObject> ls_count = mongoDBService.findByExampleWithOrder(Constant.COLLECTION_ANNOTATION, versionQuery, orderby);
+                if(ls_count.size() >= 10){
+                    //the upper limit of version number is 10, when the 11th comes in, it will delete the first one and put 11th as 10th. 
+                    BasicDBObject first = (BasicDBObject) ls_count.get(0);
+                    BasicDBObject last = (BasicDBObject) ls_count.get(ls_count.size() - 1);
+                    //delete the 1st record.
+                    mongoDBService.delete(Constant.COLLECTION_ANNOTATION, first);
+                    int versionNum = last.getInt("version");
+                    received.remove("version");
+                    received.accumulate("version", versionNum + 1);
+                    Map<String, Object> values = received;
+                    BasicDBObject dbo = new BasicDBObject(values);
+                    String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
+                    //set @id to objectID and update the annotation
+                    BasicDBObject dboWithObjectID = new BasicDBObject(dbo);
+                    //used to be replace, not put.  Not sure why.
+                    dboWithObjectID.put("@id", newObjectID);
+                    mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
+                    JSONObject jo = new JSONObject();
+                    jo.element("code", HttpServletResponse.SC_OK);
+                    jo.element("newObjectID", newObjectID);
+                    try {
+                        response.setStatus(HttpServletResponse.SC_CREATED); //FIXME: Or should this be OK?
+                        out = response.getWriter();
+                        out.print(jo);
+                    } catch (IOException ex) {
+                        Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                }else{
+                    BasicDBObject last = (BasicDBObject) ls_count.get(ls_count.size() - 1);
+                    int versionNum = last.getInt("veresion");
+                    received.remove("version");
+                    received.accumulate("version", versionNum + 1);
+                    Map<String, Object> values = received;
+                    BasicDBObject dbo = new BasicDBObject(values);
+                    String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
+                    //set @id to objectID and update the annotation
+                    BasicDBObject dboWithObjectID = new BasicDBObject(dbo);
+                    //used to be replace, not put.  Not sure why.
+                    dboWithObjectID.put("@id", newObjectID);
+                    mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
+                    JSONObject jo = new JSONObject();
+                    jo.element("code", HttpServletResponse.SC_OK);
+                    jo.element("newObjectID", newObjectID);
+                    try {
+                        response.setStatus(HttpServletResponse.SC_CREATED); //FIXME: or should this be OK?
+                        out = response.getWriter();
+                        out.print(jo);
+                    } catch (IOException ex) {
+                        Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
+                    }
                 }
             }else{
-                BasicDBObject last = (BasicDBObject) ls_count.get(ls_count.size() - 1);
-                int versionNum = last.getInt("veresion");
-                received.remove("version");
-                received.accumulate("version", versionNum + 1);
-                Map<String, Object> values = received;
-                BasicDBObject dbo = new BasicDBObject(values);
-                String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
-                //set @id to objectID and update the annotation
-                BasicDBObject dboWithObjectID = new BasicDBObject(dbo);
-                //used to be replace, not put.  Not sure why.
-                dboWithObjectID.put("@id", newObjectID);
-                mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
                 JSONObject jo = new JSONObject();
-                jo.element("code", HttpServletResponse.SC_OK);
-                jo.element("newObjectID", newObjectID);
+                jo.element("code", HttpServletResponse.SC_NOT_FOUND);
+                jo.element("msg", "The annotation you are trying to make a new version of does not exist.");
                 try {
+                    response.setStatus(HttpServletResponse.SC_NOT_FOUND);
                     out = response.getWriter();
                     out.print(jo);
                 } catch (IOException ex) {
                     Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
-        }else{
-            JSONObject jo = new JSONObject();
-            jo.element("code", HttpServletResponse.SC_NOT_FOUND);
-            try {
-                out = response.getWriter();
-                out.print(jo);
-            } catch (IOException ex) {
-                Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
-            }
+        }
+        catch(Exception ex){ //could not parse JSON
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
         }
     }
     
@@ -699,10 +780,27 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      */
     public void deleteAnnotationByObjectID() throws IOException, ServletException, Exception{
         content = processRequestBody(request);
-        BasicDBObject query = new BasicDBObject();
-        JSONObject received = JSONObject.fromObject(content);
-        query.append("_id", received.getString("objectID").trim());
-        mongoDBService.delete(Constant.COLLECTION_ANNOTATION, query);
+        if(null != content){ 
+            BasicDBObject query = new BasicDBObject();
+            try{
+                JSONObject received = JSONObject.fromObject(content);
+                if(received.containsKey("objectID")){
+                    query.append("_id", received.getString("objectID").trim());
+                    mongoDBService.delete(Constant.COLLECTION_ANNOTATION, query);
+                    response.setStatus(HttpServletResponse.SC_OK);
+                }
+                else{
+                    response.setStatus(HttpServletResponse.SC_NO_CONTENT); //FIXME or should this be BAD_REQUEST
+                }
+            }
+            catch (Exception ex){ //could not parse JSON
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                throw new Exception("annotation provided for delete was not JSON, could not get id to delete");
+            }
+        }
+        else{
+            response.setStatus(HttpServletResponse.SC_NO_CONTENT);
+        }
     }
     
     /**
@@ -711,19 +809,37 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      */
     public void deleteAnnotationByAtID() throws IOException, ServletException, Exception{
         content = processRequestBody(request);
-        BasicDBObject query = new BasicDBObject();
-        JSONObject received = JSONObject.fromObject(content);
-        query.append("@id", received.getString("@id").trim());
-        mongoDBService.delete(Constant.COLLECTION_ANNOTATION, query);
-        JSONObject jo = new JSONObject();
-        jo.element("code", HttpServletResponse.SC_OK);
-        try {
-            response.addHeader("Access-Control-Allow-Origin", "*");
-            out = response.getWriter();
-            out.print(jo);
-        } catch (IOException ex) {
-            Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
+        if(null != content){ 
+            BasicDBObject query = new BasicDBObject();
+            try{
+                JSONObject received = JSONObject.fromObject(content);
+                if(received.containsKey("@id")){
+                    query.append("@id", received.getString("@id").trim());
+                    mongoDBService.delete(Constant.COLLECTION_ANNOTATION, query);
+                    response.setStatus(HttpServletResponse.SC_OK);
+                }
+                else{
+                    response.setStatus(HttpServletResponse.SC_NO_CONTENT); //FIXME or should this be BAD_REQUEST
+                }
+            }
+            catch (Exception ex){ //could not parse JSON
+                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                throw new Exception("annotation provided for delete was not JSON, could not get id to delete");
+            }
         }
+        else{
+            response.setStatus(HttpServletResponse.SC_NO_CONTENT);
+        }
+
+//        JSONObject jo = new JSONObject();
+ //       jo.element("code", HttpServletResponse.SC_OK);
+//        try {
+//            response.addHeader("Access-Control-Allow-Origin", "*");
+//            out = response.getWriter();
+//            out.print(jo);
+//        } catch (IOException ex) {
+//            Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
+//        }
     }
     
     /**
@@ -742,6 +858,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             fork.append("forkFromID", result.get("_id"));
             JSONObject jo = JSONObject.fromObject(fork);
             try {
+                response.setStatus(HttpServletResponse.SC_CREATED);
                 out = response.getWriter();
                 out.print(jo);
             } catch (IOException ex) {
@@ -750,6 +867,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         }else{
             JSONObject jo = new JSONObject();
             jo.element("code", HttpServletResponse.SC_NOT_FOUND);
+            jo.element("msg", "The annotation you are trying to fork does not exist.");
             try {
                 out = response.getWriter();
                 out.print(jo);
