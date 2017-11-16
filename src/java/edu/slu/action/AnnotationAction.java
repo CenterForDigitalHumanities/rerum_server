@@ -80,6 +80,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                     test2 = JSONArray.fromObject(content);
                 }
                 catch(Exception ex2){ //Was not a JSONObject or a JSONArray.  Not valid JSON.  Throw error. 
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                     throw new Exception("{error: 'The data passed was not valid JSON.'}");
                 }
             }
@@ -90,6 +91,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             //TODO: Throw improper request body error!!@@
             //System.out.println("application/x-www-form-urlencoded type not in proper {content:{data}} format ");
             requestBody = "{error: 'Improper request body.  Must use {content:{data}} format for content type application/x-www-form-urlencoded or instead use application/json or application/ld+json Content Type with valid JSON.'}";
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             throw new Exception(requestBody);
         }
         else if(cType.contains("application/json") || cType.contains("application/ld+json")){
@@ -115,6 +117,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                       test2 = JSONArray.fromObject(requestBody);
                   }
                   catch(Exception ex2){ //Was not a JSONObject or a JSONArray.  Not valid JSON.  Throw error. 
+                      response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                       throw new Exception("{error: 'The data passed was not valid JSON.'}");
                   }
               }
@@ -127,6 +130,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         else{ //I do not understand the content type being passed.
             //System.out.println("Weird content type.   ");
             requestBody = "{error: 'Improper request body.  Must use application/json or application/ld+json Content Type'}";
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             throw new Exception(requestBody);
         }
 
