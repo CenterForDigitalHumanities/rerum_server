@@ -45,6 +45,8 @@ public class ServerAction extends ActionSupport implements ServletRequestAware, 
     /*
     * Request processor so that data doesn't have to be passed through the API like {contet:{}}
     * It is backwards compatible to support this behavior. 
+    *
+    * Not 100% sure we need it for these actions, need to test around.  If it turns out we do, then add it to the individual methods below. 
     */
     public String processRequestBody(HttpServletRequest http_request) throws IOException, ServletException, Exception{
         String cType = http_request.getContentType();
@@ -55,7 +57,7 @@ public class ServerAction extends ActionSupport implements ServletRequestAware, 
         System.out.println(System.getProperty("line.separator"));
         System.out.println(System.getProperty("line.separator"));
         System.out.println("Processing request...");
-        System.out.println("Content at the top of processing is "+acceptedServer);
+        System.out.println("Server info at the top of processing is "+acceptedServer);
 
         /* This means the type was application/x-www-form-urlencoded and they passed it like {content:{data}} so I already have content, just go forward using that.  This is backwards compatability */
         if(null != acceptedServer && !acceptedServer.equals("")){ 

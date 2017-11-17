@@ -41,8 +41,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     private String content;
     private String oid;
     private AcceptedServer acceptedServer;
-    
-    
     private MongoDBService mongoDBService;
     private HttpServletRequest request;
     private HttpServletResponse response;
@@ -67,10 +65,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         System.out.println("Content at the top of processing is "+content);
 
         /* This means the type was application/x-www-form-urlencoded and they passed it like {content:{data}} so I already have content, just go forward using that.  This is backwards compatability */
-        if(null != content && !content.equals("")){ 
-            System.out.println("Content is already set, so return it");           
-//            System.out.println(System.getProperty("line.separator"));
-//            System.out.println(System.getProperty("line.separator"));          
+        if(null != content && !content.equals("")){                  
             try{ //Try to parse as a JSONObject
                 test = JSONObject.fromObject(content);
             }
@@ -84,35 +79,26 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                     throw new Exception("{error: 'The data passed was not valid JSON.'}");
                 }
             }
-            //System.out.println(content);
             return content;
         }
         if(cType.contains("application/x-www-form-urlencoded")){ //They passed this content type but did not follow the {content:{data}} format.
-            //TODO: Throw improper request body error!!@@
-            //System.out.println("application/x-www-form-urlencoded type not in proper {content:{data}} format ");
             requestBody = "{error: 'Improper request body.  Must use {content:{data}} format for content type application/x-www-form-urlencoded or instead use application/json or application/ld+json Content Type with valid JSON.'}";
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             throw new Exception(requestBody);
         }
         else if(cType.contains("application/json") || cType.contains("application/ld+json")){
-            //System.out.println("content was not set, check the request body...");
-            //System.out.println(System.getProperty("line.separator"));
             bodyReader = http_request.getReader();
             bodyString = new StringBuilder();
             String line="";
-            //System.out.println("See lines from the reader on the body...");
             while ((line = bodyReader.readLine()) != null)
             {
-             //System.out.println("line is "+line);
               bodyString.append(line + "\n");
             }
-           // System.out.println(System.getProperty("line.separator"));
             requestBody = bodyString.toString();
             try{ //Try to parse as a JSONObject
               test = JSONObject.fromObject(requestBody);
               }
               catch(Exception ex){ //was not a JSONObject but might be a JSONArray
-                  //System.out.println("Was not an object...");
                   try{ //Try to parse as a JSONArray
                       test2 = JSONArray.fromObject(requestBody);
                   }
@@ -121,14 +107,9 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                       throw new Exception("{error: 'The data passed was not valid JSON.'}");
                   }
               }
-//            System.out.println("See string built...");
-//            System.out.println(requestBody);
-//            System.out.println(System.getProperty("line.separator"));
-//            System.out.println(System.getProperty("line.separator"));
             return requestBody;
         }
-        else{ //I do not understand the content type being passed.
-            //System.out.println("Weird content type.   ");
+        else{ //I do not understand the content type being passed.  They attempted something JSON-y but failed.
             requestBody = "{error: 'Improper request body.  Must use application/json or application/ld+json Content Type'}";
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             throw new Exception(requestBody);
@@ -149,19 +130,14 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     public void batchSaveMetadataForm() throws UnsupportedEncodingException, IOException, ServletException, Exception{
         content = processRequestBody(request);
         if(null != content){
-            //System.out.println("Batch save!!!!!");
             JSONArray received_array = JSONArray.fromObject(content);
-            //System.out.println(received_array);
             BasicDBObject serverQuery = new BasicDBObject();
             serverQuery.append("ip", request.getRemoteAddr());
-//            System.out.println("333333333333333333333333333333");
             DBObject asdbo = mongoDBService.findOneByExample(Constant.COLLECTION_ACCEPTEDSERVER, serverQuery);
-//            System.out.println("444444444444444444444444444444");
             BasicDBObject asbdbo = (BasicDBObject) asdbo;
             for(int b=0; b<received_array.size(); b++){
                 JSONObject received = received_array.getJSONObject(b);
                 received.accumulate("addedTime", System.currentTimeMillis());
-//            set the version to empty String
                 received.accumulate("originalAnnoID", "");//set versionID for a new fork
                 received.accumulate("version", 1);
                 if(!received.containsKey("permission")){
@@ -171,7 +147,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                     received.accumulate("forkFromID", "");
                 }  
                 //received.accumulate("addedTime", System.currentTimeMillis());
-//            set the version to empty String
                 received.accumulate("originalAnnoID", "");//set versionID for a new fork
                 received.accumulate("version", 1);
                 if(!received.containsKey("permission")){
@@ -185,13 +160,9 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 received_array.set(b,received);
             }
             
-            //System.out.println(received_array);
             BasicDBList dbo = (BasicDBList) JSON.parse(received_array.toString());
-            //System.out.println("Go into bulk save from batch save with this: ");
-            //System.out.println(dbo);
             JSONArray reviewedResources = new JSONArray();
             //if the size is 0, no need to bulk save.  Nothing is there.
-            //System.out.println("dbo size:  "+dbo.size());
             if(dbo.size() > 0){
                 reviewedResources = mongoDBService.bulkSaveMetadataForm(Constant.COLLECTION_ANNOTATION, dbo);
             }
@@ -200,9 +171,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             }
             //bulk save will automatically call bulk update so there is no real need to return these values.  We will for later use.
             JSONObject jo = new JSONObject();
-//            System.out.println("cccccccccccccccccccccccccccccc");
             jo.element("code", HttpServletResponse.SC_CREATED);
-//            System.out.println("dddddddddddddddddddddddddddddd");
             jo.element("reviewed_resources", reviewedResources);
             String locations = "";
             for(int j=0; j<reviewedResources.size(); j++){
@@ -251,19 +220,14 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     public void batchSaveFromCopy() throws UnsupportedEncodingException, IOException, ServletException, Exception{
         content = processRequestBody(request);
         if(null != content){
-            //System.out.println("Batch save!!!!!");
             JSONArray received_array = JSONArray.fromObject(content);
-            //System.out.println(received_array);
             BasicDBObject serverQuery = new BasicDBObject();
             serverQuery.append("ip", request.getRemoteAddr());
-//            System.out.println("333333333333333333333333333333");
             DBObject asdbo = mongoDBService.findOneByExample(Constant.COLLECTION_ACCEPTEDSERVER, serverQuery);
-//            System.out.println("444444444444444444444444444444");
             BasicDBObject asbdbo = (BasicDBObject) asdbo;
             for(int b=0; b<received_array.size(); b++){
                 JSONObject received = received_array.getJSONObject(b);
                 received.accumulate("addedTime", System.currentTimeMillis());
-//            set the version to empty String
                 received.accumulate("originalAnnoID", "");//set versionID for a new fork
                 received.accumulate("version", 1);
                 if(!received.containsKey("permission")){
@@ -273,7 +237,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                     received.accumulate("forkFromID", "");
                 }  
                 //received.accumulate("addedTime", System.currentTimeMillis());
-//            set the version to empty String
                 received.accumulate("originalAnnoID", "");//set versionID for a new fork
                 received.accumulate("version", 1);
                 if(!received.containsKey("permission")){
@@ -287,13 +250,9 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 received_array.set(b,received);
             }
             
-            //System.out.println(received_array);
             BasicDBList dbo = (BasicDBList) JSON.parse(received_array.toString());
-            //System.out.println("Go into bulk save from batch save with this: ");
-            //System.out.println(dbo);
             JSONArray newResources = new JSONArray();
             //if the size is 0, no need to bulk save.  Nothing is there.
-            //System.out.println("dbo size:  "+dbo.size());
             if(dbo.size() > 0){
                 newResources = mongoDBService.bulkSaveFromCopy(Constant.COLLECTION_ANNOTATION, dbo);
             }
@@ -302,9 +261,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             }
             //bulk save will automatically call bulk update so there is no real need to return these values.  We will for later use.
             JSONObject jo = new JSONObject();
-//            System.out.println("cccccccccccccccccccccccccccccc");
             jo.element("code", HttpServletResponse.SC_CREATED);
-//            System.out.println("dddddddddddddddddddddddddddddd");
             jo.element("new_resources", newResources);
             String locations = "";
             for(int j=0; j<newResources.size(); j++){
@@ -560,11 +517,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         content = processRequestBody(request);
         if(null != content){
             try{
-//            System.out.println("1111111111111111111111111111");
                 JSONObject received = JSONObject.fromObject(content);
-    //            System.out.println("received ========= " + received);
                 received.accumulate("addedTime", System.currentTimeMillis());
-    //            set the version to empty String
                 received.accumulate("originalAnnoID", "");//set versionID for a new fork
                 received.accumulate("version", 1);
                 if(!received.containsKey("permission")){
@@ -573,39 +527,23 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 if(null == received.get("forkFromID") || "".equals(received.get("forkFromID"))){
                     received.accumulate("forkFromID", "");
                 }
-    //            System.out.println("222222222222222222222222222222");
                 BasicDBObject serverQuery = new BasicDBObject();
                 serverQuery.append("ip", request.getRemoteAddr());
-    //            System.out.println("333333333333333333333333333333");
                 DBObject asdbo = mongoDBService.findOneByExample(Constant.COLLECTION_ACCEPTEDSERVER, serverQuery);
-    //            System.out.println("444444444444444444444444444444");
                 BasicDBObject asbdbo = (BasicDBObject) asdbo;
-    //            System.out.println("555555555555555555555555555555");
                 received.accumulate("serverName", asbdbo.get("name"));
                 received.accumulate("serverIP", asbdbo.get("ip"));
-    //            System.out.println("666666666666666666666666666666");
-                //create BasicDBObject
-            
+                //create BasicDBObject           
                 DBObject dbo = (DBObject) JSON.parse(received.toString());
-            
-    //            System.out.println("777777777777777777777777777777======== " + dbo.toString());
                 String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
-    //            System.out.println("888888888888888888888888888888========== " + newObjectID);
                 //set @id to objectID and update the annotation
                 BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
-    //            System.out.println("999999999999999999999999999999");
                 String uid = "http://165.134.105.29/annotationstore/annotation/" + dboWithObjectID.getObjectId("_id").toString();
-    //            System.out.println("000000000000000000000000000000");
                 dboWithObjectID.append("@id", uid);
-    //            System.out.println("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
                 mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
-    //            System.out.println("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
                 JSONObject jo = new JSONObject();
-    //            System.out.println("cccccccccccccccccccccccccccccc");
                 jo.element("code", HttpServletResponse.SC_CREATED);
-    //            System.out.println("dddddddddddddddddddddddddddddd");
                 jo.element("@id", uid);
-    //            System.out.println("eeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
                 try {
                     response.addHeader("Access-Control-Allow-Origin", "*");
                     response.addHeader("Location", uid);
@@ -834,16 +772,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         else{
             response.setStatus(HttpServletResponse.SC_NO_CONTENT);
         }
-
-//        JSONObject jo = new JSONObject();
- //       jo.element("code", HttpServletResponse.SC_OK);
-//        try {
-//            response.addHeader("Access-Control-Allow-Origin", "*");
-//            out = response.getWriter();
-//            out.print(jo);
-//        } catch (IOException ex) {
-//            Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
-//        }
     }
     
     /**
