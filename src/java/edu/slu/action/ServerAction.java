@@ -11,13 +11,16 @@ import com.opensymphony.xwork2.ActionSupport;
 import edu.slu.common.Constant;
 import edu.slu.mongoEntity.AcceptedServer;
 import edu.slu.service.MongoDBService;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.struts2.interceptor.ServletRequestAware;
 import org.apache.struts2.interceptor.ServletResponseAware;
@@ -35,6 +38,94 @@ public class ServerAction extends ActionSupport implements ServletRequestAware, 
     private HttpServletResponse response;
     
     private PrintWriter out;
+    
+    private StringBuilder bodyString;
+    private BufferedReader bodyReader;
+    
+    /*
+    * Request processor so that data doesn't have to be passed through the API like {contet:{}}
+    * It is backwards compatible to support this behavior. 
+    */
+    public String processRequestBody(HttpServletRequest http_request) throws IOException, ServletException, Exception{
+        String cType = http_request.getContentType();
+        String requestBody;
+        JSONObject test;
+        JSONArray test2;
+        
+        System.out.println(System.getProperty("line.separator"));
+        System.out.println(System.getProperty("line.separator"));
+        System.out.println("Processing request...");
+        System.out.println("Content at the top of processing is "+acceptedServer);
+
+        /* This means the type was application/x-www-form-urlencoded and they passed it like {content:{data}} so I already have content, just go forward using that.  This is backwards compatability */
+        if(null != acceptedServer && !acceptedServer.equals("")){ 
+            System.out.println("Content is already set, so return it");           
+//            System.out.println(System.getProperty("line.separator"));
+//            System.out.println(System.getProperty("line.separator"));          
+            try{ //Try to parse as a JSONObject
+                test = JSONObject.fromObject(acceptedServer);
+            }
+            catch(Exception ex){ //was not a JSONObject but might be a JSONArray
+                //System.out.println("Was not an object...");
+                try{ //Try to parse as a JSONArray
+                    test2 = JSONArray.fromObject(acceptedServer);
+                }
+                catch(Exception ex2){ //Was not a JSONObject or a JSONArray.  Not valid JSON.  Throw error. 
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    throw new Exception("{error: 'The data passed was not valid JSON.'}");
+                }
+            }
+            //System.out.println(content);
+            return acceptedServer.toString();
+        }
+        if(cType.contains("application/x-www-form-urlencoded")){ //They passed this content type but did not follow the {content:{data}} format.
+            //TODO: Throw improper request body error!!@@
+            //System.out.println("application/x-www-form-urlencoded type not in proper {content:{data}} format ");
+            requestBody = "{error: 'Improper request body.  Must use {content:{data}} format for content type application/x-www-form-urlencoded or instead use application/json or application/ld+json Content Type with valid JSON.'}";
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            throw new Exception(requestBody);
+        }
+        else if(cType.contains("application/json") || cType.contains("application/ld+json")){
+            //System.out.println("content was not set, check the request body...");
+            //System.out.println(System.getProperty("line.separator"));
+            bodyReader = http_request.getReader();
+            bodyString = new StringBuilder();
+            String line="";
+            //System.out.println("See lines from the reader on the body...");
+            while ((line = bodyReader.readLine()) != null)
+            {
+             //System.out.println("line is "+line);
+              bodyString.append(line + "\n");
+            }
+           // System.out.println(System.getProperty("line.separator"));
+            requestBody = bodyString.toString();
+            try{ //Try to parse as a JSONObject
+              test = JSONObject.fromObject(requestBody);
+              }
+              catch(Exception ex){ //was not a JSONObject but might be a JSONArray
+                  //System.out.println("Was not an object...");
+                  try{ //Try to parse as a JSONArray
+                      test2 = JSONArray.fromObject(requestBody);
+                  }
+                  catch(Exception ex2){ //Was not a JSONObject or a JSONArray.  Not valid JSON.  Throw error. 
+                      response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                      throw new Exception("{error: 'The data passed was not valid JSON.'}");
+                  }
+              }
+//            System.out.println("See string built...");
+//            System.out.println(requestBody);
+//            System.out.println(System.getProperty("line.separator"));
+//            System.out.println(System.getProperty("line.separator"));
+            return requestBody;
+        }
+        else{ //I do not understand the content type being passed.
+            //System.out.println("Weird content type.   ");
+            requestBody = "{error: 'Improper request body.  Must use application/json or application/ld+json Content Type'}";
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            throw new Exception(requestBody);
+        }
+
+    }
     
     /**
      * Save a new server's domain and IP
