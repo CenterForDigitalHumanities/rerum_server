@@ -46,8 +46,54 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     private HttpServletResponse response;
     private StringBuilder bodyString;
     private BufferedReader bodyReader;
-
     private PrintWriter out;
+    
+    public Boolean methodApproval(HttpServletRequest http_request, String request_type) throws Exception{
+        String requestMethod = http_request.getMethod();
+        boolean proper = false;
+        switch(request_type){
+            case "update":
+                if(requestMethod.equals("PUT") || requestMethod.equals("PATCH")){
+                    proper = true;
+                }
+                else{
+                    response.setStatus(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    throw new Exception("Improper request method for this type of request, please use PUT or PATCH.");
+                }
+            break;
+            case "create":
+                if(requestMethod.equals("POST")){
+                    proper = true;
+                }
+                else{
+                    response.setStatus(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    throw new Exception("Improper request method for this type of request, please use POST.");
+                }
+            break;
+            case "delete":
+                if(requestMethod.equals("DELETE")){
+                    proper = true;
+                }
+                else{
+                    response.setStatus(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    throw new Exception("Improper request method for this type of request, please use DELETE.");
+                }
+            break;
+            case "get":
+                if(requestMethod.equals("GET")){
+                    proper = true;
+                }
+                else{
+                    response.setStatus(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    throw new Exception("Improper request method for this type of request, please use GET.");
+                }
+            default:
+                response.setStatus(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                throw new Exception("Improper request method for this type of request.");
+                
+        }
+        return proper;
+    }
     
     /*
     * Request processor so that data doesn't have to be passed through the API like {contet:{}}
@@ -58,7 +104,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         String requestBody;
         JSONObject test;
         JSONArray test2;
-        
         System.out.println(System.getProperty("line.separator"));
         System.out.println(System.getProperty("line.separator"));
         System.out.println("Processing request...");
@@ -70,7 +115,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 test = JSONObject.fromObject(content);
             }
             catch(Exception ex){ //was not a JSONObject but might be a JSONArray
-                //System.out.println("Was not an object...");
                 try{ //Try to parse as a JSONArray
                     test2 = JSONArray.fromObject(content);
                 }
@@ -128,6 +172,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     */
     
     public void batchSaveMetadataForm() throws UnsupportedEncodingException, IOException, ServletException, Exception{
+        Boolean approved = methodApproval(request, "create");
         content = processRequestBody(request);
         if(null != content){
             JSONArray received_array = JSONArray.fromObject(content);
@@ -218,6 +263,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         
     */ 
     public void batchSaveFromCopy() throws UnsupportedEncodingException, IOException, ServletException, Exception{
+        Boolean approved = methodApproval(request, "create");
         content = processRequestBody(request);
         if(null != content){
             JSONArray received_array = JSONArray.fromObject(content);
@@ -300,6 +346,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * @param annotation.content("namespace","...")
      */
     public void getAllMyAnnotations() throws IOException, ServletException, Exception{
+        Boolean approved = methodApproval(request, "get");
         content = processRequestBody(request);
         JSONObject received = JSONObject.fromObject(content);
         if(received.containsKey("namespace")){
@@ -350,6 +397,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * @param annotation.objectID
      */
     public void getAllVersionsOfAnnotationByObjectID() throws IOException, ServletException, Exception{
+        Boolean approved = methodApproval(request, "get");
         content = processRequestBody(request);
         JSONObject received = JSONObject.fromObject(content);
         if(received.containsKey("objectID")){
@@ -538,7 +586,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
                 //set @id to objectID and update the annotation
                 BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
-                String uid = "http://165.134.105.29/annotationstore/annotation/" + dboWithObjectID.getObjectId("_id").toString();
+                String uid = "http://store.rerum.io/rerumstore/id/" + dboWithObjectID.getObjectId("_id").toString();
                 dboWithObjectID.append("@id", uid);
                 mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
                 JSONObject jo = new JSONObject();

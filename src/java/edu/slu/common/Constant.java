@@ -30,7 +30,7 @@ public class Constant {
     public static final int NUMBER_OF_ANNO_VERSION = 10;
     
     //get by objectID url
-    public static final String GET_BY_OBJECTid_URL = "http://165.134.105.29/annotationstore/anno/getAnnotationByObjectID";
+    //public static final String GET_BY_OBJECTid_URL = "http://store.rerum.io/rerumstore/anno/getAnnotationByObjectID";
     
     //return result message
     public static final String DUPLICATED = "duplicated";
