@@ -459,8 +459,11 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         //content = processRequestBody(request);
         if(null != oid){
             //find one version by objectID
+            System.out.println("gloabl oid is "+oid);
             BasicDBObject query = new BasicDBObject();
             query.append("_id", new ObjectId(oid));
+            System.out.println("what is the query");
+            System.out.println(query.toString());
             DBObject myAnno = mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query);
             if(null != myAnno){
                 BasicDBObject bdbo = (BasicDBObject) myAnno;
