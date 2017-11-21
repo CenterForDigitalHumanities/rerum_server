@@ -50,6 +50,22 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     private PrintWriter out;
     private ObjectMapper mapper = new ObjectMapper();
     
+    public void authenticateAgainstIP(HttpServletRequest http_request) throws IOException, Exception{
+        String ip = http_request.getRemoteAddr();
+        BasicDBObject serverQuery = new BasicDBObject();
+        serverQuery.append("ip", ip);
+        DBObject asdbo = mongoDBService.findOneByExample(Constant.COLLECTION_ACCEPTEDSERVER, serverQuery);
+        System.out.println("ip is "+ip);
+        System.out.println("Does the obejct have the field? "+asdbo.containsField("ip"));
+        if(!asdbo.containsField("ip")){
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            throw new Exception("Server not registered.");
+        }
+        else{
+            System.out.println("Yes..."+asdbo.get("ip"));
+        }
+    }
+    
     /**
      * The action first comes to this function.  It says what type of request it is and checks the the method is appropriately RESTful
     */
@@ -58,13 +74,21 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         boolean proper = false;
         System.out.println("Request type is "+request_type);
         System.out.println("Request method is "+requestMethod);
+        if(requestMethod.equals("OPTIONS")){ //This is a browser pre flight...
+            //This breaks everything because the pre flight request doesn't pass any data.  
+            //This happens when using a bookmarklet from a different domain.  I do not know how to handle it.
+            response.setStatus(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+            throw new Exception("Browser pre-flight requests are not supported.  Call this API from within an application on a server.");
+        }
         switch(request_type){
             case "update":
                 if(requestMethod.equals("PUT") || requestMethod.equals("PATCH")){
                     proper = true;
                 }
                 else{
-                    response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Improper request method for this type of request, please use PUT or PATCH.");
+                    //response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Improper request method for this type of request, please use PUT or PATCH.");
+                    response.setStatus(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    throw new Exception("Improper request method for this type of request, please use PUT or PATCH.");
                 }
             break;
             case "create":
@@ -72,7 +96,10 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                     proper = true;
                 }
                 else{
-                    response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Improper request method for this type of request, please use POST.");
+                    response.setStatus(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    throw new Exception("Improper request method for this type of request, please use POST.");
+                    //response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Improper request method for this type of request, please use POST.");
+                    //throw new Exception("Improper request method");
                 }
             break;
             case "delete":
@@ -80,7 +107,10 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                     proper = true;
                 }
                 else{
-                    response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Improper request method for this type of request, please use DELETE.");
+                    response.setStatus(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    throw new Exception("Improper request method for this type of request, please use DELETE.");
+                    //response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Improper request method for this type of request, please use DELETE.");
+                    //throw new Exception("Improper request method");
                 }
             break;
             case "get":
@@ -88,13 +118,20 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                     proper = true;
                 }
                 else{
-                    response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Improper request method for this type of request, please use GET.");
+                    response.setStatus(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    throw new Exception("Improper request method for this type of request, please use GET.");
+                    //response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Improper request method for this type of request, please use GET.");
+                    //throw new Exception("Improper request method");
                 }
             break;
             default:
-                response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Improper request method for this type of request.");
-                
+                response.setStatus(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                throw new Exception("Improper request method for this type of request.");
+                //response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Improper request method for this type of request.");
+                //throw new Exception("Improper request method");
+
         }
+        
         return proper;
     }
     
@@ -104,6 +141,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     public String processRequestBody(HttpServletRequest http_request) throws IOException, ServletException, Exception{
         response.setContentType("application/json");
         String cType = http_request.getContentType();
+        String methodCheck = http_request.getMethod();
         String requestBody;
         JSONObject test;
         JSONArray test2;
@@ -112,8 +150,14 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
 //        System.out.println(System.getProperty("line.separator"));
 //        System.out.println("Processing request...");
 //        System.out.println("Content at the top of processing is "+content);
-
-        if(cType.contains("application/json") || cType.contains("application/ld+json")){
+        
+        if(methodCheck.equals("OPTIONS")){//This is a browser pre flight...
+            //This breaks everything because the pre flight request doesn't pass any data.  
+            //This happens when using a bookmarklet from a different domain.  I do not know how to handle it.
+            response.setStatus(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+            throw new Exception("Browser pre-flight requests are not supported.  Call this API from within an application on a server.");
+        }
+        else if(cType.contains("application/json") || cType.contains("application/ld+json")){
             bodyReader = http_request.getReader();
             bodyString = new StringBuilder();
             String line="";
@@ -132,17 +176,17 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 }
                 catch(Exception ex2){ //Was not a JSONObject or a JSONArray.  Not valid JSON.  Throw error. 
                     response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                    throw new Exception("{error: 'The data passed was not valid JSON.'}");
+                    throw new Exception("The data passed was not valid JSON");
+                    //response.sendError(HttpServletResponse.SC_BAD_REQUEST, "The data passed was not valid JSON");
+                    //throw new Exception("Invalid JSON detected");
                 }
             }          
-            return requestBody;
         }
         else{ //I do not understand the content type being passed. 
-            requestBody = "{error: 'Improper request.  Must use application/json or application/ld+json Content Type'}";
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            throw new Exception(requestBody);
+            throw new Exception("Improper request.  Must use application/json or application/ld+json Content Type");
         }
-
+        return requestBody;
     }
     
     /**
@@ -156,8 +200,10 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     */
     
     public void batchSaveMetadataForm() throws UnsupportedEncodingException, IOException, ServletException, Exception{
+        authenticateAgainstIP(request);
         Boolean approved = methodApproval(request, "create");
         content = processRequestBody(request);
+        
         if(null != content){
             JSONArray received_array = JSONArray.fromObject(content);
             BasicDBObject serverQuery = new BasicDBObject();
@@ -247,8 +293,10 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         
     */ 
     public void batchSaveFromCopy() throws UnsupportedEncodingException, IOException, ServletException, Exception{
+        authenticateAgainstIP(request);
         Boolean approved = methodApproval(request, "create");
         content = processRequestBody(request);
+        
         if(null != content){
             JSONArray received_array = JSONArray.fromObject(content);
             BasicDBObject serverQuery = new BasicDBObject();
@@ -539,8 +587,10 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * @param all annotation properties.
      */
     public void saveNewAnnotation() throws IOException, ServletException, Exception{
+        authenticateAgainstIP(request);
         Boolean approved = methodApproval(request, "create");
         content = processRequestBody(request);
+        
         if(null != content){
             try{
                 JSONObject received = JSONObject.fromObject(content);
@@ -588,6 +638,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         else{
             response.addHeader("Access-Control-Allow-Origin", "*");
             response.setStatus(HttpServletResponse.SC_NO_CONTENT);
+            throw new Exception("No data to save");
         }
     }
     
@@ -597,8 +648,10 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * @param all annotation properties include updated properties. 
      */
     public void updateAnnotation() throws IOException, ServletException, Exception{
+        authenticateAgainstIP(request);
         Boolean approved = methodApproval(request, "update");
         content = processRequestBody(request);
+        
         try{
             BasicDBObject query = new BasicDBObject();
             JSONObject received = JSONObject.fromObject(content);
@@ -656,8 +709,10 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * @param any to be updated annotation properties. 
      */
     public void saveNewVersionOfAnnotation() throws IOException, ServletException, Exception{
+        authenticateAgainstIP(request);
         Boolean approved = methodApproval(request, "create");
         content = processRequestBody(request);
+        
         try{
             BasicDBObject query = new BasicDBObject();
             JSONObject received = new JSONObject();
@@ -749,8 +804,10 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * @param annotation.objectID
      */
     public void deleteAnnotationByObjectID() throws IOException, ServletException, Exception{
+        authenticateAgainstIP(request);
         Boolean approved = methodApproval(request, "delete");
         content = processRequestBody(request);
+        
         if(null != content){ 
             BasicDBObject query = new BasicDBObject();
             try{
@@ -779,8 +836,10 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * @param annotation.@id
      */
     public void deleteAnnotationByAtID() throws IOException, ServletException, Exception{
+        authenticateAgainstIP(request);
         Boolean approved = methodApproval(request, "delete");
         content = processRequestBody(request);
+        
         if(null != content){ 
             BasicDBObject query = new BasicDBObject();
             try{
@@ -810,8 +869,10 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * @param annotation.permission (optional, if null, set to private by default)
      */
     public void forkAnnotation() throws IOException, ServletException, Exception{
+        authenticateAgainstIP(request);
         Boolean approved = methodApproval(request, "create");
         content = processRequestBody(request);
+        
         BasicDBObject query = new BasicDBObject();
         JSONObject received = JSONObject.fromObject(content);
         query.append("_id", received.getString("objectID").trim());

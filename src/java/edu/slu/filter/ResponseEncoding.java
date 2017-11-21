@@ -24,7 +24,7 @@ public class ResponseEncoding extends MethodFilterInterceptor {
        // response.addHeader("Access-Control-Allow-Origin", "*");
         //response.addHeader("Access-Control-Allow-Credentials", "true");
         response.addHeader("Access-Control-Allow-Headers", "Content-Type");
-        response.addHeader("Access-Control-Allow-Methods", "GET, POST");
+        response.addHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PATCH, PUT");
         //response.addHeader("Access-Control-Expose-Headers", "Access-Control-Allow-Origin,Access-Control-Allow-Credentials");
         return ai.invoke(); 
     }
