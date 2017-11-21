@@ -88,6 +88,9 @@
                     $('#msg').html(data.info);
                 });
             }
+            else{
+                console.log("reg test failed");
+           }
         });
    
     </script>

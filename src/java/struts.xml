@@ -14,7 +14,7 @@
     <package name="default" extends="struts-default"></package>
     
     <!-- This package is open to public -->
-    <package name="getAnnotation" extends="default" namespace="/annotation">
+    <package name="getAnnotation" extends="default" namespace="/id">
         <!-- INTERCEPTOR -->
         <interceptors>
             <interceptor name="responseEncoding" class="edu.slu.filter.ResponseEncoding"></interceptor>

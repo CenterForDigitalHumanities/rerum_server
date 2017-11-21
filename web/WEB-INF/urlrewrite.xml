@@ -23,8 +23,8 @@
         <note>
             Redirect find annotation by object id.
         </note>
-        <from>^/annotation/([a-z0-9]+)$</from>
-        <to type="forward">/annotation/getAnnotationByObjectID.action?oid=$1</to>
+        <from>^/id/([a-z0-9]+)$</from>
+        <to type="forward">/id/getAnnotationByObjectID.action?oid=$1</to>
     </rule>
 
 

@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
@@ -51,32 +52,95 @@ public class UserAction extends ActionSupport implements ServletRequestAware, Se
     private BufferedReader bodyReader;
     /*
     * Request processor so that data doesn't have to be passed through the API like {contet:{}}
-    * It is backwards compatible to support this behavior
+    * It is backwards compatible to support this behavior. 
     */
-    public String processRequestBody() throws IOException{
-        if(null != content && !content.equals("")){ //If the payload was passed in wrapped in content, treat as usual
+    public String processRequestBody(HttpServletRequest http_request) throws IOException, ServletException, Exception{
+        String cType = http_request.getContentType();
+        String requestBody;
+        JSONObject test;
+        JSONArray test2;
+        
+        System.out.println(System.getProperty("line.separator"));
+        System.out.println(System.getProperty("line.separator"));
+        System.out.println("Processing request...");
+        System.out.println("Content at the top of processing is "+content);
+
+        /* This means the type was application/x-www-form-urlencoded and they passed it like {content:{data}} so I already have content, just go forward using that.  This is backwards compatability */
+        if(null != content && !content.equals("")){ 
+            System.out.println("Content is already set, so return it");           
+//            System.out.println(System.getProperty("line.separator"));
+//            System.out.println(System.getProperty("line.separator"));          
+            try{ //Try to parse as a JSONObject
+                test = JSONObject.fromObject(content);
+            }
+            catch(Exception ex){ //was not a JSONObject but might be a JSONArray
+                //System.out.println("Was not an object...");
+                try{ //Try to parse as a JSONArray
+                    test2 = JSONArray.fromObject(content);
+                }
+                catch(Exception ex2){ //Was not a JSONObject or a JSONArray.  Not valid JSON.  Throw error. 
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    throw new Exception("{error: 'The data passed was not valid JSON.'}");
+                }
+            }
+            //System.out.println(content);
             return content;
         }
-        else{ //Otherwise treat properly and return the new value to store to content
-            String requestBody;
-            bodyReader = request.getReader();
+        if(cType.contains("application/x-www-form-urlencoded")){ //They passed this content type but did not follow the {content:{data}} format.
+            //TODO: Throw improper request body error!!@@
+            //System.out.println("application/x-www-form-urlencoded type not in proper {content:{data}} format ");
+            requestBody = "{error: 'Improper request body.  Must use {content:{data}} format for content type application/x-www-form-urlencoded or instead use application/json or application/ld+json Content Type with valid JSON.'}";
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            throw new Exception(requestBody);
+        }
+        else if(cType.contains("application/json") || cType.contains("application/ld+json")){
+            //System.out.println("content was not set, check the request body...");
+            //System.out.println(System.getProperty("line.separator"));
+            bodyReader = http_request.getReader();
             bodyString = new StringBuilder();
             String line="";
+            //System.out.println("See lines from the reader on the body...");
             while ((line = bodyReader.readLine()) != null)
             {
+             //System.out.println("line is "+line);
               bodyString.append(line + "\n");
             }
+           // System.out.println(System.getProperty("line.separator"));
             requestBody = bodyString.toString();
+            try{ //Try to parse as a JSONObject
+              test = JSONObject.fromObject(requestBody);
+              }
+              catch(Exception ex){ //was not a JSONObject but might be a JSONArray
+                  //System.out.println("Was not an object...");
+                  try{ //Try to parse as a JSONArray
+                      test2 = JSONArray.fromObject(requestBody);
+                  }
+                  catch(Exception ex2){ //Was not a JSONObject or a JSONArray.  Not valid JSON.  Throw error. 
+                      response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                      throw new Exception("{error: 'The data passed was not valid JSON.'}");
+                  }
+              }
+//            System.out.println("See string built...");
+//            System.out.println(requestBody);
+//            System.out.println(System.getProperty("line.separator"));
+//            System.out.println(System.getProperty("line.separator"));
             return requestBody;
         }
+        else{ //I do not understand the content type being passed.
+            //System.out.println("Weird content type.   ");
+            requestBody = "{error: 'Improper request body.  Must use application/json or application/ld+json Content Type'}";
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            throw new Exception(requestBody);
+        }
+
     }
     
     /**
      * Check duplicated person email.
      * @param person.email
      */
-    public void checkDuEmail() throws IOException{
-        content = processRequestBody();
+    public void checkDuEmail() throws IOException, Exception{
+        content = processRequestBody(request);
         JSONObject received = JSONObject.fromObject(content);
         if(received.containsKey("email")){
             BasicDBObject dbo = new BasicDBObject();
@@ -109,8 +173,8 @@ public class UserAction extends ActionSupport implements ServletRequestAware, Se
      * @param All agent properties and person properties
      * @return 200: save successful, 400: no correct properties or no sufficient properties. 
      */
-    public void saveNewAgentPerson() throws IOException{
-        content = processRequestBody();
+    public void saveNewAgentPerson() throws IOException, Exception{
+        content = processRequestBody(request);
         JSONObject received = JSONObject.fromObject(content);
         if(received.containsKey("person")){
             //save new person
@@ -180,8 +244,8 @@ public class UserAction extends ActionSupport implements ServletRequestAware, Se
      * Update person info. 
      * @param person.objectID, person.email, person.pwd, person properties
      */
-    public void updateAgentInfo() throws IOException{
-        content = processRequestBody();
+    public void updateAgentInfo() throws IOException, Exception{
+        content = processRequestBody(request);
         JSONObject received = JSONObject.fromObject(content);
         HttpSession session = request.getSession();
         BasicDBObject personQuery = new BasicDBObject();
@@ -219,8 +283,8 @@ public class UserAction extends ActionSupport implements ServletRequestAware, Se
      * Check if an agent exists. 
      * @param person.aID
      */
-    public void checkExistAgent() throws IOException{
-        content = processRequestBody();
+    public void checkExistAgent() throws IOException, Exception{
+        content = processRequestBody(request);
         JSONObject received = JSONObject.fromObject(content);
         if(received.containsKey("agent")){
             JSONObject agent = received.getJSONObject("agent");
@@ -253,8 +317,8 @@ public class UserAction extends ActionSupport implements ServletRequestAware, Se
      * Add project to person's profile. The project server must be saved in trusted server table before this action. 
      * @param projectUserProfile.alias, projectUserProfile.serverIP, projectUserProfile.config
      */
-    public void addProjectToUser() throws IOException{
-        content = processRequestBody();
+    public void addProjectToUser() throws IOException, Exception{
+        content = processRequestBody(request);
         JSONObject received = JSONObject.fromObject(content);
         HttpSession session = request.getSession();
         if(received.containsKey("projectUserProfile")){
@@ -321,8 +385,8 @@ public class UserAction extends ActionSupport implements ServletRequestAware, Se
      * Update person info in a given project. 
      * @param projectUserProfile(any thing to update)
      */
-    public void updateProjectUserProfile() throws IOException{
-        content = processRequestBody();
+    public void updateProjectUserProfile() throws IOException, Exception{
+        content = processRequestBody(request);
         JSONObject received = JSONObject.fromObject(content);
         HttpSession session = request.getSession();
         if(received.containsKey("projectUserProfile") && received.containsKey("email")){
@@ -392,8 +456,8 @@ public class UserAction extends ActionSupport implements ServletRequestAware, Se
      * To check if the person is registered at IIIF store. 
      * @param person.email and password
      */
-    public void personLogin() throws IOException{
-        content = processRequestBody();
+    public void personLogin() throws IOException, Exception{
+        content = processRequestBody(request);
         JSONObject received = JSONObject.fromObject(content);
         if(received.containsKey("person")){
             JSONObject jsonUser = received.getJSONObject("person");
@@ -437,8 +501,8 @@ public class UserAction extends ActionSupport implements ServletRequestAware, Se
     /**
      * Remove agent by objectID
      */
-    public void delAgentByID() throws IOException{
-        content = processRequestBody();
+    public void delAgentByID() throws IOException, Exception{
+        content = processRequestBody(request);
         JSONObject received = JSONObject.fromObject(content);
         if(received.containsKey("agent")){
             if(received.containsKey("id")){
