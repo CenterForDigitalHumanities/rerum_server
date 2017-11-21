@@ -5,6 +5,8 @@
  */
 package edu.slu.action;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
@@ -31,6 +33,8 @@ import net.sf.json.JSONObject;
 import org.apache.struts2.interceptor.ServletRequestAware;
 import org.apache.struts2.interceptor.ServletResponseAware;
 import org.bson.types.ObjectId;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  *
@@ -47,18 +51,23 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     private StringBuilder bodyString;
     private BufferedReader bodyReader;
     private PrintWriter out;
+    private ObjectMapper mapper = new ObjectMapper();
     
+    /**
+     * The action first comes to this function.  It says what type of request it is and checks the the method is appropriately RESTful
+    */
     public Boolean methodApproval(HttpServletRequest http_request, String request_type) throws Exception{
         String requestMethod = http_request.getMethod();
         boolean proper = false;
+        System.out.println("Request type is "+request_type);
+        System.out.println("Request method is "+requestMethod);
         switch(request_type){
             case "update":
                 if(requestMethod.equals("PUT") || requestMethod.equals("PATCH")){
                     proper = true;
                 }
                 else{
-                    response.setStatus(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-                    throw new Exception("Improper request method for this type of request, please use PUT or PATCH.");
+                    response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Improper request method for this type of request, please use PUT or PATCH.");
                 }
             break;
             case "create":
@@ -66,8 +75,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                     proper = true;
                 }
                 else{
-                    response.setStatus(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-                    throw new Exception("Improper request method for this type of request, please use POST.");
+                    response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Improper request method for this type of request, please use POST.");
                 }
             break;
             case "delete":
@@ -75,8 +83,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                     proper = true;
                 }
                 else{
-                    response.setStatus(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-                    throw new Exception("Improper request method for this type of request, please use DELETE.");
+                    response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Improper request method for this type of request, please use DELETE.");
                 }
             break;
             case "get":
@@ -84,56 +91,36 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                     proper = true;
                 }
                 else{
-                    response.setStatus(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-                    throw new Exception("Improper request method for this type of request, please use GET.");
+                    response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Improper request method for this type of request, please use GET.");
                 }
+            break;
             default:
-                response.setStatus(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-                throw new Exception("Improper request method for this type of request.");
+                response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED, "Improper request method for this type of request.");
                 
         }
         return proper;
     }
     
     /*
-    * Request processor so that data doesn't have to be passed through the API like {contet:{}}
-    * It is backwards compatible to support this behavior. 
+    * All actions come here to process the request body.  We check if it is JSON and pretty format.
     */
     public String processRequestBody(HttpServletRequest http_request) throws IOException, ServletException, Exception{
+        response.setContentType("application/json");
         String cType = http_request.getContentType();
         String requestBody;
         JSONObject test;
         JSONArray test2;
-        System.out.println(System.getProperty("line.separator"));
-        System.out.println(System.getProperty("line.separator"));
-        System.out.println("Processing request...");
-        System.out.println("Content at the top of processing is "+content);
+        
+//        System.out.println(System.getProperty("line.separator"));
+//        System.out.println(System.getProperty("line.separator"));
+//        System.out.println("Processing request...");
+//        System.out.println("Content at the top of processing is "+content);
 
-        /* This means the type was application/x-www-form-urlencoded and they passed it like {content:{data}} so I already have content, just go forward using that.  This is backwards compatability */
-        if(null != content && !content.equals("")){                  
-            try{ //Try to parse as a JSONObject
-                test = JSONObject.fromObject(content);
-            }
-            catch(Exception ex){ //was not a JSONObject but might be a JSONArray
-                try{ //Try to parse as a JSONArray
-                    test2 = JSONArray.fromObject(content);
-                }
-                catch(Exception ex2){ //Was not a JSONObject or a JSONArray.  Not valid JSON.  Throw error. 
-                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                    throw new Exception("{error: 'The data passed was not valid JSON.'}");
-                }
-            }
-            return content;
-        }
-        if(cType.contains("application/x-www-form-urlencoded")){ //They passed this content type but did not follow the {content:{data}} format.
-            requestBody = "{error: 'Improper request body.  Must use {content:{data}} format for content type application/x-www-form-urlencoded or instead use application/json or application/ld+json Content Type with valid JSON.'}";
-            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-            throw new Exception(requestBody);
-        }
-        else if(cType.contains("application/json") || cType.contains("application/ld+json")){
+        if(cType.contains("application/json") || cType.contains("application/ld+json")){
             bodyReader = http_request.getReader();
             bodyString = new StringBuilder();
             String line="";
+            
             while ((line = bodyReader.readLine()) != null)
             {
               bodyString.append(line + "\n");
@@ -141,20 +128,20 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             requestBody = bodyString.toString();
             try{ //Try to parse as a JSONObject
               test = JSONObject.fromObject(requestBody);
-              }
-              catch(Exception ex){ //was not a JSONObject but might be a JSONArray
-                  try{ //Try to parse as a JSONArray
-                      test2 = JSONArray.fromObject(requestBody);
-                  }
-                  catch(Exception ex2){ //Was not a JSONObject or a JSONArray.  Not valid JSON.  Throw error. 
-                      response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                      throw new Exception("{error: 'The data passed was not valid JSON.'}");
-                  }
-              }
+            }
+            catch(Exception ex){ //was not a JSONObject but might be a JSONArray
+                try{ //Try to parse as a JSONArray
+                    test2 = JSONArray.fromObject(requestBody);
+                }
+                catch(Exception ex2){ //Was not a JSONObject or a JSONArray.  Not valid JSON.  Throw error. 
+                    response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    throw new Exception("{error: 'The data passed was not valid JSON.'}");
+                }
+            }          
             return requestBody;
         }
-        else{ //I do not understand the content type being passed.  They attempted something JSON-y but failed.
-            requestBody = "{error: 'Improper request body.  Must use application/json or application/ld+json Content Type'}";
+        else{ //I do not understand the content type being passed. 
+            requestBody = "{error: 'Improper request.  Must use application/json or application/ld+json Content Type'}";
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             throw new Exception(requestBody);
         }
@@ -232,7 +219,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 out = response.getWriter();
                 response.addHeader("Location", locations);
                 response.setStatus(HttpServletResponse.SC_CREATED);
-                out.print(jo);
+                out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
             } catch (IOException ex) {
                 Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -244,7 +231,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             try {
                 response.setStatus(HttpServletResponse.SC_NO_CONTENT);
                 out = response.getWriter();
-                out.print(jo);
+                out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
             } catch (IOException ex) {
                 Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -323,7 +310,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 out = response.getWriter();
                 response.setStatus(HttpServletResponse.SC_CREATED);
                 response.addHeader("Location", locations);
-                out.print(jo);
+                out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
             } catch (IOException ex) {
                 Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -334,7 +321,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             try {
                 response.setStatus(HttpServletResponse.SC_NO_CONTENT);
                 out = response.getWriter();
-                out.print(jo);
+                out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
             } catch (IOException ex) {
                 Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -362,7 +349,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 try {
                     response.addHeader("Access-Control-Allow-Origin", "*");
                     out = response.getWriter();
-                    out.print(ja);
+                    out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(ja));
                 } catch (IOException ex) {
                     Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
                 }
@@ -372,7 +359,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 //try {
                     response.setStatus(HttpServletResponse.SC_NOT_FOUND);
                //     out = response.getWriter();
-               //     out.print(jo);
+               //     out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
                 //} catch (IOException ex) {
                 //    Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
                 //}
@@ -385,7 +372,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                 response.addHeader("Access-Control-Allow-Origin", "*");
                 out = response.getWriter();
-                out.print(jo);
+                out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
             } catch (IOException ex) {
                 Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -418,21 +405,15 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                     response.addHeader("Access-Control-Allow-Origin", "*");
                     response.setStatus(HttpServletResponse.SC_OK);
                     out = response.getWriter();
-                    out.print(ja);
+                    out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(ja));
                 } catch (IOException ex) {
                     Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }else{
-                //JSONObject jo = new JSONObject();
-                //jo.accumulate("code", HttpServletResponse.SC_NOT_FOUND);
-                //try {
+
                     response.addHeader("Access-Control-Allow-Origin", "*");
                     response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-                 //   out = response.getWriter();
-                //   out.print(jo);
-                //} catch (IOException ex) {
-                //    Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
-                //}
+
             }
         }
         else{
@@ -443,7 +424,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 response.addHeader("Access-Control-Allow-Origin", "*");
                 response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                 out = response.getWriter();
-               out.print(jo);
+               out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
             } catch (IOException ex) {
                 Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
             }   
@@ -457,6 +438,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      */
     public void getAnnotationByObjectID() throws IOException, ServletException, Exception{
         //content = processRequestBody(request);
+        Boolean approved = methodApproval(request, "get");
         if(null != oid){
             //find one version by objectID
             System.out.println("gloabl oid is "+oid);
@@ -467,32 +449,29 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             DBObject myAnno = mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query);
             if(null != myAnno){
                 BasicDBObject bdbo = (BasicDBObject) myAnno;
-                String oid = bdbo.getObjectId("_id").toString();
                 JSONObject jo = JSONObject.fromObject(myAnno.toMap());
+                //The following are rerum properties that should be stripped.  They should be in __rerum.
                 jo.remove("_id");
-                jo.accumulate("_id", oid);
+                jo.remove("addedTime");
+                jo.remove("originalAnnoID");
+                jo.remove("version");
+                jo.remove("permission");
+                jo.remove("forkFromID");
+                jo.remove("serverName");
+                jo.remove("serverIP");
+                jo.remove("__rerum");
                 try {
-                    response.addHeader("Content-Type", "application/json");
+                    response.addHeader("Content-Type", "application/ld+json");
                     response.addHeader("Access-Control-Allow-Origin", "*");
                     response.setStatus(HttpServletResponse.SC_OK);
                     out = response.getWriter();
-                    out.print(jo);
+                    out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
                 } catch (IOException ex) {
                     Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
             else{
-                //JSONObject jo = new JSONObject();
-                //jo.accumulate("code", HttpServletResponse.SC_NOT_FOUND);
-                //try {
-                //    response.addHeader("Content-Type", "application/json");
-                //    response.addHeader("Access-Control-Allow-Origin", "*");
-                    response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-                //    out = response.getWriter();
-               //     out.print(jo);
-               // } catch (IOException ex) {
-               //     Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
-                //}
+                response.setStatus(HttpServletResponse.SC_NOT_FOUND);
             }
         }
         else{
@@ -504,7 +483,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 response.addHeader("Access-Control-Allow-Origin", "*");
                 response.setStatus(HttpServletResponse.SC_NOT_FOUND);
                 out = response.getWriter();
-                out.print(jo);
+                out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
             } catch (IOException ex) {
                 Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -517,6 +496,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * @reutrn list of annotations that match the given conditions.
      */
     public void getAnnotationByProperties() throws IOException, ServletException, Exception{
+        Boolean approved = methodApproval(request, "get");
         content = processRequestBody(request);
         if(null != content){
             JSONObject received = JSONObject.fromObject(content);
@@ -536,7 +516,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                     response.addHeader("Access-Control-Allow-Origin", "*");
                     response.setStatus(HttpServletResponse.SC_OK);
                     out = response.getWriter();
-                    out.print(ja);
+                    out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(ja));
                 } catch (IOException ex) {
                     Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
                 }
@@ -553,7 +533,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 response.addHeader("Access-Control-Allow-Origin", "*");
                 response.setStatus(HttpServletResponse.SC_NO_CONTENT);
                 out = response.getWriter();
-                out.print(jo);
+                out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
             } catch (IOException ex) {
                 Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -565,6 +545,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * @param all annotation properties.
      */
     public void saveNewAnnotation() throws IOException, ServletException, Exception{
+        Boolean approved = methodApproval(request, "create");
         content = processRequestBody(request);
         if(null != content){
             try{
@@ -600,7 +581,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                     response.addHeader("Location", uid);
                     response.setStatus(HttpServletResponse.SC_CREATED);
                     out = response.getWriter();
-                    out.print(jo);
+                    out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
                 } 
                 catch (IOException ex) {
                     Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
@@ -617,7 +598,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 response.addHeader("Access-Control-Allow-Origin", "*");
                 response.setStatus(HttpServletResponse.SC_NO_CONTENT);
            //     out = response.getWriter();
-           //     out.print(jo);
+           //     out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
             //} catch (IOException ex) {
             //    Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
             //}
@@ -630,6 +611,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * @param all annotation properties include updated properties. 
      */
     public void updateAnnotation() throws IOException, ServletException, Exception{
+        Boolean approved = methodApproval(request, "update");
         content = processRequestBody(request);
         try{
             BasicDBObject query = new BasicDBObject();
@@ -656,7 +638,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                     response.addHeader("Access-Control-Allow-Origin", "*");
                     response.setStatus(HttpServletResponse.SC_OK);
                     out = response.getWriter();
-                    out.print(jo);
+                    out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
                 } catch (IOException ex) {
                     Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
                 }
@@ -668,7 +650,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                     response.addHeader("Access-Control-Allow-Origin", "*");
                     response.setStatus(HttpServletResponse.SC_NO_CONTENT);
                     out = response.getWriter();
-                    out.print(jo);
+                    out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
                 } catch (IOException ex) {
                     Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
                 }
@@ -685,6 +667,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * @param any to be updated annotation properties. 
      */
     public void saveNewVersionOfAnnotation() throws IOException, ServletException, Exception{
+        Boolean approved = methodApproval(request, "create");
         content = processRequestBody(request);
         try{
             BasicDBObject query = new BasicDBObject();
@@ -721,7 +704,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                     try {
                         response.setStatus(HttpServletResponse.SC_CREATED); //FIXME: Or should this be OK?
                         out = response.getWriter();
-                        out.print(jo);
+                        out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
                     } catch (IOException ex) {
                         Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
                     }
@@ -744,7 +727,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                     try {
                         response.setStatus(HttpServletResponse.SC_CREATED); //FIXME: or should this be OK?
                         out = response.getWriter();
-                        out.print(jo);
+                        out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
                     } catch (IOException ex) {
                         Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
                     }
@@ -756,7 +739,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 try {
                     response.setStatus(HttpServletResponse.SC_NOT_FOUND);
                     out = response.getWriter();
-                    out.print(jo);
+                    out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
                 } catch (IOException ex) {
                     Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
                 }
@@ -772,6 +755,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * @param annotation.objectID
      */
     public void deleteAnnotationByObjectID() throws IOException, ServletException, Exception{
+        Boolean approved = methodApproval(request, "delete");
         content = processRequestBody(request);
         if(null != content){ 
             BasicDBObject query = new BasicDBObject();
@@ -801,6 +785,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * @param annotation.@id
      */
     public void deleteAnnotationByAtID() throws IOException, ServletException, Exception{
+        Boolean approved = methodApproval(request, "delete");
         content = processRequestBody(request);
         if(null != content){ 
             BasicDBObject query = new BasicDBObject();
@@ -831,6 +816,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * @param annotation.permission (optional, if null, set to private by default)
      */
     public void forkAnnotation() throws IOException, ServletException, Exception{
+        Boolean approved = methodApproval(request, "create");
         content = processRequestBody(request);
         BasicDBObject query = new BasicDBObject();
         JSONObject received = JSONObject.fromObject(content);
@@ -843,7 +829,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             try {
                 response.setStatus(HttpServletResponse.SC_CREATED);
                 out = response.getWriter();
-                out.print(jo);
+                out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
             } catch (IOException ex) {
                 Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -853,12 +839,14 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             jo.element("msg", "The annotation you are trying to fork does not exist.");
             try {
                 out = response.getWriter();
-                out.print(jo);
+                
+                out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
             } catch (IOException ex) {
                 Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
     }
+    
     
     /**
      * Save forked annotation. 
