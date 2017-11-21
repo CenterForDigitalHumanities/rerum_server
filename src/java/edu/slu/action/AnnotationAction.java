@@ -5,8 +5,6 @@
  */
 package edu.slu.action;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
@@ -19,7 +17,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -101,7 +98,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         return proper;
     }
     
-    /*
+    /**
     * All actions come here to process the request body.  We check if it is JSON and pretty format.
     */
     public String processRequestBody(HttpServletRequest http_request) throws IOException, ServletException, Exception{
@@ -148,7 +145,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
 
     }
     
-    /*
+    /**
     *The batch save to intended to work with Broken Books, but coud be applied elsewhere.  This batch will use the save() mongo function instead of insert() to determine whether 
     to do an update() or insert() for each item in the batch.  
     
@@ -269,7 +266,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 if(null == received.get("forkFromID") || "".equals(received.get("forkFromID"))){
                     received.accumulate("forkFromID", "");
                 }  
-                //received.accumulate("addedTime", System.currentTimeMillis());
                 received.accumulate("originalAnnoID", "");//set versionID for a new fork
                 received.accumulate("version", 1);
                 if(!received.containsKey("permission")){
@@ -353,18 +349,12 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 } catch (IOException ex) {
                     Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
                 }
-            }else{
-                //JSONObject jo = new JSONObject();
-                //jo.element("code", HttpServletResponse.SC_NOT_FOUND);
-                //try {
-                    response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-               //     out = response.getWriter();
-               //     out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
-                //} catch (IOException ex) {
-                //    Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
-                //}
             }
-        }else{
+            else{
+                    response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            }
+        }
+        else{
             JSONObject jo = new JSONObject();
             jo.element("code", HttpServletResponse.SC_BAD_REQUEST);
             jo.element("msg", "Could not find field 'namespace' in object.");
@@ -373,7 +363,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 response.addHeader("Access-Control-Allow-Origin", "*");
                 out = response.getWriter();
                 out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
-            } catch (IOException ex) {
+            } 
+            catch (IOException ex) {
                 Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
@@ -406,14 +397,14 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                     response.setStatus(HttpServletResponse.SC_OK);
                     out = response.getWriter();
                     out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(ja));
-                } catch (IOException ex) {
+                } 
+                catch (IOException ex) {
                     Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
                 }
-            }else{
-
-                    response.addHeader("Access-Control-Allow-Origin", "*");
-                    response.setStatus(HttpServletResponse.SC_NOT_FOUND);
-
+            }
+            else{
+                response.addHeader("Access-Control-Allow-Origin", "*");
+                response.setStatus(HttpServletResponse.SC_NOT_FOUND);
             }
         }
         else{
@@ -425,7 +416,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                 out = response.getWriter();
                out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
-            } catch (IOException ex) {
+            } 
+            catch (IOException ex) {
                 Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
             }   
         }
@@ -517,7 +509,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                     response.setStatus(HttpServletResponse.SC_OK);
                     out = response.getWriter();
                     out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(ja));
-                } catch (IOException ex) {
+                } 
+                catch (IOException ex) {
                     Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
@@ -534,7 +527,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 response.setStatus(HttpServletResponse.SC_NO_CONTENT);
                 out = response.getWriter();
                 out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
-            } catch (IOException ex) {
+            } 
+            catch (IOException ex) {
                 Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
@@ -590,23 +584,15 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             catch (Exception ex){ //could not parse JSON.
                 response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             }
-        }else{
-            //JSONObject jo = new JSONObject();
-            //jo.element("code", HttpServletResponse.SC_BAD_REQUEST);
-            //jo.element("msg", "Didn't receive any data. ");
-            //try {
-                response.addHeader("Access-Control-Allow-Origin", "*");
-                response.setStatus(HttpServletResponse.SC_NO_CONTENT);
-           //     out = response.getWriter();
-           //     out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
-            //} catch (IOException ex) {
-            //    Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
-            //}
+        }
+        else{
+            response.addHeader("Access-Control-Allow-Origin", "*");
+            response.setStatus(HttpServletResponse.SC_NO_CONTENT);
         }
     }
     
     /**
-     * Update a given annotation. 
+     * Update a given annotation. PUT and PATCH, set or unset support?  I think this only works with keys that already exist.
      * @param annotation.objectID
      * @param all annotation properties include updated properties. 
      */
@@ -639,11 +625,13 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                     response.setStatus(HttpServletResponse.SC_OK);
                     out = response.getWriter();
                     out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
-                } catch (IOException ex) {
+                } 
+                catch (IOException ex) {
                     Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
                 }
 
-            }else{
+            }
+            else{
                 JSONObject jo = new JSONObject();
                 jo.element("code", HttpServletResponse.SC_NOT_FOUND);
                 try {
@@ -651,7 +639,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                     response.setStatus(HttpServletResponse.SC_NO_CONTENT);
                     out = response.getWriter();
                     out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
-                } catch (IOException ex) {
+                } 
+                catch (IOException ex) {
                     Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
@@ -705,10 +694,12 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                         response.setStatus(HttpServletResponse.SC_CREATED); //FIXME: Or should this be OK?
                         out = response.getWriter();
                         out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
-                    } catch (IOException ex) {
+                    } 
+                    catch (IOException ex) {
                         Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
                     }
-                }else{
+                }
+                else{
                     BasicDBObject last = (BasicDBObject) ls_count.get(ls_count.size() - 1);
                     int versionNum = last.getInt("veresion");
                     received.remove("version");
@@ -728,11 +719,13 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                         response.setStatus(HttpServletResponse.SC_CREATED); //FIXME: or should this be OK?
                         out = response.getWriter();
                         out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
-                    } catch (IOException ex) {
+                    } 
+                    catch (IOException ex) {
                         Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
                     }
                 }
-            }else{
+            }
+            else{
                 JSONObject jo = new JSONObject();
                 jo.element("code", HttpServletResponse.SC_NOT_FOUND);
                 jo.element("msg", "The annotation you are trying to make a new version of does not exist.");
@@ -740,7 +733,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                     response.setStatus(HttpServletResponse.SC_NOT_FOUND);
                     out = response.getWriter();
                     out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
-                } catch (IOException ex) {
+                } 
+                catch (IOException ex) {
                     Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
