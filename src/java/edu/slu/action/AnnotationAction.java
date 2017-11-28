@@ -66,6 +66,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             response.setStatus(code);
             out = response.getWriter();
             out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
+            out.write(System.getProperty("line.separator"));
         } catch (IOException ex) {
             Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -207,8 +208,13 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     public void batchSaveMetadataForm() throws UnsupportedEncodingException, IOException, ServletException, Exception{
         //authenticateAgainstIP(request);
         Boolean approved = methodApproval(request, "create");
-        content = processRequestBody(request);
-        if(null != content && approved){
+        if(approved){
+            content = processRequestBody(request);
+        }
+        else{
+            content = null;
+        }
+        if(null != content){
             JSONArray received_array = JSONArray.fromObject(content);
             BasicDBObject serverQuery = new BasicDBObject();
             serverQuery.append("ip", request.getRemoteAddr());
@@ -287,9 +293,13 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     public void batchSaveFromCopy() throws UnsupportedEncodingException, IOException, ServletException, Exception{
         //authenticateAgainstIP(request);
         Boolean approved = methodApproval(request, "create");
-        content = processRequestBody(request);
-        
-        if(null != content && approved){
+        if(approved){
+            content = processRequestBody(request);
+        }
+        else{
+            content = null;
+        }
+        if(null != content){
             JSONArray received_array = JSONArray.fromObject(content);
             BasicDBObject serverQuery = new BasicDBObject();
             serverQuery.append("ip", request.getRemoteAddr());
@@ -359,8 +369,13 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      */
     public void getAllMyAnnotations() throws IOException, ServletException, Exception{
         Boolean approved = methodApproval(request, "get");
-        content = processRequestBody(request);
-        if(null!=content && approved){
+        if(approved){
+            content = processRequestBody(request);
+        }
+        else{
+            content = null;
+        }
+        if(null!=content){
             JSONObject received = JSONObject.fromObject(content);
             if(received.containsKey("namespace")){
                 BasicDBObject query = new BasicDBObject();
@@ -385,7 +400,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 }
             }
             else{
-                send_error("Could not find field 'namespace' in object.", HttpServletResponse.SC_BAD_REQUEST);
+                send_error("Could not find field 'namespace' in provided object.", HttpServletResponse.SC_BAD_REQUEST);
             }
         }
     }
@@ -396,8 +411,13 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      */
     public void getAllVersionsOfAnnotationByObjectID() throws IOException, ServletException, Exception{
         Boolean approved = methodApproval(request, "get");
-        content = processRequestBody(request);
-        if(null!=content && approved){
+        if(approved){
+            content = processRequestBody(request);
+        }
+        else{
+            content = null;
+        }
+        if(null!=content){
             JSONObject received = JSONObject.fromObject(content);
             if(received.containsKey("objectID")){
                 //find one version by objectID
@@ -429,7 +449,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 }
             }
             else{
-                send_error("Received object did not contain key objectID.", HttpServletResponse.SC_BAD_REQUEST);
+                send_error("Provided object did not contain key 'objectID'.", HttpServletResponse.SC_BAD_REQUEST);
             }
         }
     }
@@ -442,7 +462,13 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     public void getAnnotationByObjectID() throws IOException, ServletException, Exception{
         //content = processRequestBody(request);
         Boolean approved = methodApproval(request, "get");
-        if(null != oid && approved){
+        if(approved){
+            
+        }
+        else{
+            oid=null;
+        }
+        if(null != oid){
             //find one version by objectID
             System.out.println("gloabl oid is "+oid);
             BasicDBObject query = new BasicDBObject();
@@ -484,8 +510,13 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      */
     public void getAnnotationByProperties() throws IOException, ServletException, Exception{
         Boolean approved = methodApproval(request, "get");
-        content = processRequestBody(request);
-        if(null != content && approved){
+        if(approved){
+            content = processRequestBody(request);
+        }
+        else{
+            content = null;
+        }
+        if(null != content){
             JSONObject received = JSONObject.fromObject(content);
             BasicDBObject query = new BasicDBObject();
             Set<String> set_received = received.keySet();
@@ -522,9 +553,13 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     public void saveNewAnnotation() throws IOException, ServletException, Exception{
 //        authenticateAgainstIP(request);
         Boolean approved = methodApproval(request, "create");
-        content = processRequestBody(request);
-        
-        if(null != content && approved){
+        if(approved){
+            content = processRequestBody(request);
+        }
+        else{
+            content = null;
+        }
+        if(null != content){
             try{
                 JSONObject received = JSONObject.fromObject(content);
                 received.accumulate("addedTime", System.currentTimeMillis());
@@ -579,8 +614,13 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     public void updateAnnotation() throws IOException, ServletException, Exception{
  //       authenticateAgainstIP(request);
         Boolean approved = methodApproval(request, "update");
-        content = processRequestBody(request);
-        if(null!= content && approved){
+        if(approved){
+            content = processRequestBody(request);
+        }
+        else{
+            content = null;
+        }
+        if(null!= content){
             try{
                 BasicDBObject query = new BasicDBObject();
                 JSONObject received = JSONObject.fromObject(content);
@@ -631,8 +671,13 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     public void saveNewVersionOfAnnotation() throws IOException, ServletException, Exception{
  //       authenticateAgainstIP(request);
         Boolean approved = methodApproval(request, "create");
-        content = processRequestBody(request);
-        if(null!= content && approved){
+        if(approved){
+            content = processRequestBody(request);
+        }
+        else{
+            content = null;
+        }
+        if(null!= content){
             try{
                 BasicDBObject query = new BasicDBObject();
                 JSONObject received = new JSONObject();
@@ -715,11 +760,15 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * @param annotation.objectID
      */
     public void deleteAnnotationByObjectID() throws IOException, ServletException, Exception{
-        authenticateAgainstIP(request);
+        //authenticateAgainstIP(request);
         Boolean approved = methodApproval(request, "delete");
-        content = processRequestBody(request);
-        
-        if(null != content && approved){ 
+        if(approved){
+            content = processRequestBody(request);
+        }
+        else{
+            content = null;
+        }
+        if(null != content){ 
             BasicDBObject query = new BasicDBObject();
             try{
                 JSONObject received = JSONObject.fromObject(content);
@@ -746,9 +795,13 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     public void deleteAnnotationByAtID() throws IOException, ServletException, Exception{
 //        authenticateAgainstIP(request);
         Boolean approved = methodApproval(request, "delete");
-        content = processRequestBody(request);
-        
-        if(null != content && approved){ 
+        if(approved){
+            content = processRequestBody(request);
+        }
+        else{
+            content = null;
+        }
+        if(null != content){ 
             BasicDBObject query = new BasicDBObject();
             try{
                 JSONObject received = JSONObject.fromObject(content);
@@ -775,8 +828,13 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     public void forkAnnotation() throws IOException, ServletException, Exception{
   //      authenticateAgainstIP(request);
         Boolean approved = methodApproval(request, "create");
-        content = processRequestBody(request);
-        if(null!= content && approved){
+        if(approved){
+            content = processRequestBody(request);
+        }
+        else{
+            content = null;
+        }
+        if(null!= content){
             BasicDBObject query = new BasicDBObject();
             JSONObject received = JSONObject.fromObject(content);
             query.append("_id", received.getString("objectID").trim());
