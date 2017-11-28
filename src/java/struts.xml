@@ -40,10 +40,10 @@
                 <param name="includeMethods">getAnnotationByProperties, getAnnotationByObjectID, getAllMyAnnotations, getAllVersionsOfAnnotationByObjectID, 
                 getAllVersionsOfAnnotationByOriginalAnnoID, getAnnoByResourceOutterRelativeNamespace</param>
             </interceptor>
-            <interceptor name="responseEncoding" class="edu.slu.filter.ResponseEncoding"></interceptor>
+            <!--<interceptor name="responseEncoding" class="edu.slu.filter.ResponseEncoding"></interceptor>-->
             <interceptor name="inSessionFilter" class="edu.slu.filter.InSessionFilter"></interceptor>
             <interceptor-stack name="myDefault">
-                <interceptor-ref name="responseEncoding" />
+                <!--<interceptor-ref name="responseEncoding" />-->
                 <interceptor-ref name="inSessionFilter" />
                 <interceptor-ref name="requestServerAuthenticationFilter" />
                 <interceptor-ref name="getRequestClientInfoRecorder" />
@@ -51,9 +51,9 @@
             </interceptor-stack>
         </interceptors>
         <default-interceptor-ref name="myDefault" />
-        <global-results>
+<!--        <global-results>
             <result name="403">/403.jsp</result>
-        </global-results>
+        </global-results>-->
         
         <action name="getAnnotationByProperties" class="annotationAction" method="getAnnotationByProperties"></action>
         <action name="getAnnotationByObjectID" class="annotationAction" method="getAnnotationByObjectID"></action>

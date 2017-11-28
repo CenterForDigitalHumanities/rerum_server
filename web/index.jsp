@@ -4,7 +4,7 @@
     Author     : hanyan
 --%>
 
-<%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@page buffer="500000kb" contentType="text/html" pageEncoding="UTF-8" autoFlush="false"%>
 <!DOCTYPE html>
 <html>
     <% String basePath = request.getContextPath(); %>
