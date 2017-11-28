@@ -71,7 +71,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-    /*DEPRECATE this is already handled in InSessionFilter.java*/
+    /*DEPRECATE this is already handled in InSessionFilter.java.  Make sure that the correct error is returned.*/
     public void authenticateAgainstIP(HttpServletRequest http_request) throws IOException, Exception{
         
        // @see requestServerAuthenticationFiler
@@ -284,7 +284,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         Each canvas has an annotation list with 0 - infinity annotations.  A copy requires a new annotation list with the copied annotations and a new @id.
         Mongo allows us to bulk save.  
     
-    `   The content is from an HTTP request posting in an array filled with annotations to copy.  
+        The content is from an HTTP request posting in an array filled with annotations to copy.  
         
         @see MongoDBAbstractDAO.bulkSaveFromCopy(String collectionName, BasicDBList entity_array);
         @see MongoDBAbstractDAO.bulkSetIDProperty(String collectionName, BasicDBObject[] entity_array);
@@ -455,7 +455,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     }
     
     /**
-     * Get annotation by objectiD
+     * Get annotation by objectiD.  Strip all unnecessary key:value pairs before returning.
      * @param objectID (oid)
      * @return annotation object
      */
@@ -504,7 +504,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     }
     
     /**
-     * Get annotation by given properties. 
+     * Get annotations by given properties. 
      * @param key->value pair(s)
      * @reutrn list of annotations that match the given conditions.
      */
