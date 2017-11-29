@@ -540,21 +540,23 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         if(null != content){
             try{
                 JSONObject received = JSONObject.fromObject(content);
-                received.accumulate("addedTime", System.currentTimeMillis());
-                received.accumulate("originalAnnoID", "");//set versionID for a new fork
-                received.accumulate("version", 1);
+                JSONObject rerumOptions = new JSONObject();
+                
+                rerumOptions.accumulate("addedTime", System.currentTimeMillis());
+                rerumOptions.accumulate("originalAnnoID", "");//set versionID for a new fork
+                rerumOptions.accumulate("version", 1);
                 if(!received.containsKey("permission")){
-                    received.accumulate("permission", Constant.PERMISSION_PRIVATE);
+                    rerumOptions.accumulate("permission", Constant.PERMISSION_PRIVATE);
                 }
                 if(null == received.get("forkFromID") || "".equals(received.get("forkFromID"))){
-                    received.accumulate("forkFromID", "");
+                    rerumOptions.accumulate("forkFromID", "");
                 }
                 BasicDBObject serverQuery = new BasicDBObject();
                 serverQuery.append("ip", request.getRemoteAddr());
                 DBObject asdbo = mongoDBService.findOneByExample(Constant.COLLECTION_ACCEPTEDSERVER, serverQuery);
                 BasicDBObject asbdbo = (BasicDBObject) asdbo;
-                received.accumulate("serverName", asbdbo.get("name"));
-                received.accumulate("serverIP", asbdbo.get("ip"));
+                rerumOptions.accumulate("serverName", asbdbo.get("name"));
+                rerumOptions.accumulate("serverIP", asbdbo.get("ip"));
                 //create BasicDBObject           
                 DBObject dbo = (DBObject) JSON.parse(received.toString());
                 String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
@@ -564,6 +566,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 dboWithObjectID.append("@id", uid);
                 mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
                 JSONObject jo = new JSONObject();
+                received.accumulate("__rerum", rerumOptions);
                 jo.element("code", HttpServletResponse.SC_CREATED);
                 jo.element("@id", uid);
                 try {
