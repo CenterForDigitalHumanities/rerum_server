@@ -34,8 +34,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 
 /**
- *
  * @author hanyan && bhaberbe
+ * All the actions hit as an API like ex. /saveNewAnnotation.action
+ * This implementation follows RESTFUL standards.  If you make changes, please adhere to this standard.
+
  */
 public class AnnotationAction extends ActionSupport implements ServletRequestAware, ServletResponseAware{
 //    private Annotation_old annotation;
@@ -181,15 +183,12 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     }
     
     /**
-    *The batch save to intended to work with Broken Books, but coud be applied elsewhere.  This batch will use the save() mongo function instead of insert() to determine whether 
+    *The batch save to intended to work with Broken Books, but could be applied elsewhere.  This batch will use the save() mongo function instead of insert() to determine whether 
     to do an update() or insert() for each item in the batch.  
-    
-        The content is from an HTTP request posting in an array filled with annotations to copy.  
-        
-        @see MongoDBAbstractDAO.bulkSaveMetadataForm(String collectionName, BasicDBList entity_array);
-        @see MongoDBAbstractDAO.bulkSetIDProperty(String collectionName, BasicDBObject[] entity_array);
-    */
-    
+    *    The content is from an HTTP request posting in an array filled with annotations to copy.  
+    *    @see MongoDBAbstractDAO.bulkSaveMetadataForm(String collectionName, BasicDBList entity_array);
+    *    @see MongoDBAbstractDAO.bulkSetIDProperty(String collectionName, BasicDBObject[] entity_array);
+    */   
     public void batchSaveMetadataForm() throws UnsupportedEncodingException, IOException, ServletException, Exception{
         Boolean approved = methodApproval(request, "create");
         if(approved){
@@ -264,15 +263,12 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     }
     
 
-    /* 
-        Each canvas has an annotation list with 0 - infinity annotations.  A copy requires a new annotation list with the copied annotations and a new @id.
-        Mongo allows us to bulk save.  
-    
-        The content is from an HTTP request posting in an array filled with annotations to copy.  
-        
-        @see MongoDBAbstractDAO.bulkSaveFromCopy(String collectionName, BasicDBList entity_array);
-        @see MongoDBAbstractDAO.bulkSetIDProperty(String collectionName, BasicDBObject[] entity_array);
-        
+    /** 
+        * Each canvas has an annotation list with 0 - infinity annotations.  A copy requires a new annotation list with the copied annotations and a new @id.
+        * Mongo allows us to bulk save.  
+        * The content is from an HTTP request posting in an array filled with annotations to copy.  
+        * @see MongoDBAbstractDAO.bulkSaveFromCopy(String collectionName, BasicDBList entity_array);
+        * @see MongoDBAbstractDAO.bulkSetIDProperty(String collectionName, BasicDBObject[] entity_array);
     */ 
     public void batchSaveFromCopy() throws UnsupportedEncodingException, IOException, ServletException, Exception{
         Boolean approved = methodApproval(request, "create");
@@ -488,7 +484,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     
     /**
      * Get annotations by given properties. 
-     * @param key->value pair(s)
+     * @param Object with key:value pairs with conditions to match against.
      * @reutrn list of annotations that match the given conditions.
      */
     public void getAnnotationByProperties() throws IOException, ServletException, Exception{
