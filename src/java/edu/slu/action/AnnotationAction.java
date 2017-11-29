@@ -35,7 +35,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  *
- * @author hanyan
+ * @author hanyan && bhaberbe
  */
 public class AnnotationAction extends ActionSupport implements ServletRequestAware, ServletResponseAware{
 //    private Annotation_old annotation;
@@ -54,9 +54,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * Write error to response.out.  The methods that call this function handle quitting, this just writes the error because of the quit. 
      * @param msg The message to show the user
      * @param code The HTTP response code to return
-     * @throws Exception 
      */
-    public void send_error(String msg, int code) throws Exception{
+    public void send_error(String msg, int code){
         JSONObject jo = new JSONObject();
         jo.element("code", code);
         jo.element("message", msg);

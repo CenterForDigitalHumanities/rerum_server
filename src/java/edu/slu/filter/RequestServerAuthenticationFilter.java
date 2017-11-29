@@ -14,10 +14,12 @@ import com.opensymphony.xwork2.ActionInvocation;
 import com.opensymphony.xwork2.interceptor.MethodFilterInterceptor;
 import edu.slu.common.Constant;
 import edu.slu.util.MongoDBUtil;
+import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import org.apache.struts2.ServletActionContext;
 
 /**
@@ -47,6 +49,13 @@ public class RequestServerAuthenticationFilter extends MethodFilterInterceptor {
         if(ls_results.size() > 0){
             return ai.invoke();
         }else{
+            System.out.println("403 because session ip not registered");
+            HttpServletResponse respond_403 = ServletActionContext.getResponse();
+            respond_403.setStatus(403);
+            respond_403.addHeader("Access-Control-Allow-Origin", "*");
+            PrintWriter out = respond_403.getWriter();
+            out.write("You must register your IP with this service.  Visit <a>http://store.rerm.io/rerumserver/</a>");
+            //return ai.invoke();
             return "403";
         }
     }

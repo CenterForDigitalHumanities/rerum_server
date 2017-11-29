@@ -51,9 +51,10 @@
             </interceptor-stack>
         </interceptors>
         <default-interceptor-ref name="myDefault" />
-<!--        <global-results>
+        <!-- this tells the app what to do when the result is a 430 string.  @see RequestServerAuthenticationFilter.java -->
+        <global-results>
             <result name="403">/403.jsp</result>
-        </global-results>-->
+        </global-results>
         
         <action name="getAnnotationByProperties" class="annotationAction" method="getAnnotationByProperties"></action>
         <action name="getAnnotationByObjectID" class="annotationAction" method="getAnnotationByObjectID"></action>

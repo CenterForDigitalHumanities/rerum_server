@@ -4,6 +4,6 @@
     Author     : hanyan
 --%>
 
-<%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@page isErrorPage="true" contentType="text/html" pageEncoding="UTF-8"%>
 <!DOCTYPE html>
 403: Forbidden
