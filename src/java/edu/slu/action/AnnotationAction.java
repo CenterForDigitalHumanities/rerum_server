@@ -592,6 +592,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * Update a given annotation. PUT and PATCH, set or unset support?  I think this only works with keys that already exist.
      * @param annotation.objectID
      * @param all annotation properties include updated properties. 
+     * @FIXME things are in __rerum now
      */
     public void updateAnnotation() throws IOException, ServletException, Exception{
         Boolean approved = methodApproval(request, "update");
@@ -648,6 +649,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * Save current annotation to a new version. 
      * @param objectID
      * @param any to be updated annotation properties. 
+     * @FIXME things are in __rerum now
      */
     public void saveNewVersionOfAnnotation() throws IOException, ServletException, Exception{
         Boolean approved = methodApproval(request, "create");
@@ -677,6 +679,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                         //delete the 1st record.
                         mongoDBService.delete(Constant.COLLECTION_ANNOTATION, first);
                         int versionNum = last.getInt("version");
+                        
                         received.remove("version");
                         received.accumulate("version", versionNum + 1);
                         Map<String, Object> values = received;
@@ -802,6 +805,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * Fork a given annotation
      * @param annotation.objectID
      * @param annotation.permission (optional, if null, set to private by default)
+     * @FIXME things are in __rerum now
      */
     public void forkAnnotation() throws IOException, ServletException, Exception{
         Boolean approved = methodApproval(request, "create");
