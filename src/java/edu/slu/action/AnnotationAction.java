@@ -70,20 +70,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-    /*DEPRECATE this is already handled in InSessionFilter.java.  Make sure that the correct error is returned.*/
-    public void authenticateAgainstIP(HttpServletRequest http_request) throws IOException, Exception{
-        
-       // @see requestServerAuthenticationFiler
-//        String ip = http_request.getRemoteAddr();
-//        BasicDBObject serverQuery = new BasicDBObject();
-//        serverQuery.append("ip", ip);
-//        DBObject asdbo = mongoDBService.findOneByExample(Constant.COLLECTION_ACCEPTEDSERVER, serverQuery);
-//        if(null==asdbo || !asdbo.containsField("ip")){
-//            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-//            throw new Exception("Server not registered.");
-//        }
-
-    }
     
     /**
      * The action first comes to this function.  It says what type of request it is and checks the the method is appropriately RESTful.  Returns false if not and
@@ -205,7 +191,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     */
     
     public void batchSaveMetadataForm() throws UnsupportedEncodingException, IOException, ServletException, Exception{
-        //authenticateAgainstIP(request);
         Boolean approved = methodApproval(request, "create");
         if(approved){
             content = processRequestBody(request);
@@ -290,7 +275,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         
     */ 
     public void batchSaveFromCopy() throws UnsupportedEncodingException, IOException, ServletException, Exception{
-        //authenticateAgainstIP(request);
         Boolean approved = methodApproval(request, "create");
         if(approved){
             content = processRequestBody(request);
@@ -550,7 +534,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * @param all annotation properties.
      */
     public void saveNewAnnotation() throws IOException, ServletException, Exception{
-//        authenticateAgainstIP(request);
         Boolean approved = methodApproval(request, "create");
         if(approved){
             content = processRequestBody(request);
@@ -611,7 +594,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * @param all annotation properties include updated properties. 
      */
     public void updateAnnotation() throws IOException, ServletException, Exception{
- //       authenticateAgainstIP(request);
         Boolean approved = methodApproval(request, "update");
         if(approved){
             content = processRequestBody(request);
@@ -668,7 +650,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * @param any to be updated annotation properties. 
      */
     public void saveNewVersionOfAnnotation() throws IOException, ServletException, Exception{
- //       authenticateAgainstIP(request);
         Boolean approved = methodApproval(request, "create");
         if(approved){
             content = processRequestBody(request);
@@ -759,7 +740,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * @param annotation.objectID
      */
     public void deleteAnnotationByObjectID() throws IOException, ServletException, Exception{
-        //authenticateAgainstIP(request);
         Boolean approved = methodApproval(request, "delete");
         if(approved){
             content = processRequestBody(request);
@@ -792,7 +772,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * @param annotation.@id
      */
     public void deleteAnnotationByAtID() throws IOException, ServletException, Exception{
-//        authenticateAgainstIP(request);
         Boolean approved = methodApproval(request, "delete");
         if(approved){
             content = processRequestBody(request);
@@ -825,7 +804,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * @param annotation.permission (optional, if null, set to private by default)
      */
     public void forkAnnotation() throws IOException, ServletException, Exception{
-  //      authenticateAgainstIP(request);
         Boolean approved = methodApproval(request, "create");
         if(approved){
             content = processRequestBody(request);

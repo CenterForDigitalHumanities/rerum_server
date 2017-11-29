@@ -51,7 +51,7 @@
             </interceptor-stack>
         </interceptors>
         <default-interceptor-ref name="myDefault" />
-        <!-- this tells the app what to do when the result is a 430 string.  @see RequestServerAuthenticationFilter.java -->
+        <!-- this tells the app what to do when the result is a 403 string.  @see RequestServerAuthenticationFilter.java && AnnotationAction.java -->
         <global-results>
             <result name="403">/403.jsp</result>
         </global-results>

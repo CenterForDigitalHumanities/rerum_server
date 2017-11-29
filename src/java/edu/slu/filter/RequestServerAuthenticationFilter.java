@@ -24,7 +24,10 @@ import org.apache.struts2.ServletActionContext;
 
 /**
  *
- * @author hanyan
+ * @author hanyan && bhaberbe
+ * Check if the IP of the request is registered with RERUM.  
+ * Return 403 so struts knows to go to 403.jsp.  Take over the response so you can return a 403 status.
+ * 
  */
 public class RequestServerAuthenticationFilter extends MethodFilterInterceptor {
 

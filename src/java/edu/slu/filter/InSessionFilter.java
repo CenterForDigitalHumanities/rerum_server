@@ -15,10 +15,9 @@ import org.apache.struts2.ServletActionContext;
 
 /**
  *
- * @author hanyan
- * We would like this to return status code 403, but it returns 200 with 403 in the body.  
- * We added a patch for this in @see AnnotationAction.java through 
- * @Deprecated I cannot find a way to make this return the response with a 403 error code.  Moved session handling into @see AnnotationAction.java.
+ * @author hanyan && bhaberbe
+ * Check if there is a valid session.  Return 403 so struts knows to go to 403.jsp.  Take over the response so you can return a 403 status.
+ * 
  */
 public class InSessionFilter extends MethodFilterInterceptor {
 
