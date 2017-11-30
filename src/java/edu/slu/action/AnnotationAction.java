@@ -31,6 +31,7 @@ import org.apache.struts2.interceptor.ServletRequestAware;
 import org.apache.struts2.interceptor.ServletResponseAware;
 import org.bson.types.ObjectId;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import net.sf.json.JSONException;
 
 
 /**
@@ -76,7 +77,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     /**
      * The action first comes to this function.  It says what type of request it is and checks the the method is appropriately RESTful.  Returns false if not and
      * the method that calls this will handle approved=false;
-     * @param http_reuest the actual http request object
+     * @param http_request the actual http request object
      * @param request_type a string denoting what type of request this should be
      * @throws Exception 
     */
@@ -90,43 +91,45 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             //This happens when using a bookmarklet from a different domain.  I do not know how to handle it.
             send_error("Browser pre-flight requests are not supported.  Call this API from within an application on a server.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);           
         }
-        switch(request_type){
-            case "update":
-                if(requestMethod.equals("PUT") || requestMethod.equals("PATCH")){
-                    restful = true;
-                }
-                else{
-                    send_error("Improper request method for this type of request, please use PUT or PATCH.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-                }
-            break;
-            case "create":
-                if(requestMethod.equals("POST")){
-                    restful = true;
-                }
-                else{
-                    send_error("Improper request method for this type of request, please use POST.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-                }
-            break;
-            case "delete":
-                if(requestMethod.equals("DELETE")){
-                    restful = true;
-                }
-                else{
-                    send_error("Improper request method for this type of request, please use DELETE.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-                }
-            break;
-            case "get":
-                if(requestMethod.equals("GET")){
-                    restful = true;
-                }
-                else{
-                    send_error("Improper request method for this type of request, please use GET.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-                }
-            break;
-            default:
-                send_error("Improper request method for this type of request.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+        else{
+            switch(request_type){
+                case "update":
+                    if(requestMethod.equals("PUT") || requestMethod.equals("PATCH")){
+                        restful = true;
+                    }
+                    else{
+                        send_error("Improper request method for this type of request, please use PUT or PATCH.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    }
+                break;
+                case "create":
+                    if(requestMethod.equals("POST")){
+                        restful = true;
+                    }
+                    else{
+                        send_error("Improper request method for this type of request, please use POST.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    }
+                break;
+                case "delete":
+                    if(requestMethod.equals("DELETE")){
+                        restful = true;
+                    }
+                    else{
+                        send_error("Improper request method for this type of request, please use DELETE.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    }
+                break;
+                case "get":
+                    if(requestMethod.equals("GET")){
+                        restful = true;
+                    }
+                    else{
+                        send_error("Improper request method for this type of request, please use GET.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    }
+                break;
+                default:
+                    send_error("Improper request method for this type of request.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
 
-        }       
+            }  
+        }
         return restful;
     }
     
@@ -174,11 +177,10 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             send_error("You did not use the correct content type.  Please use application/json or application/ld+json", HttpServletResponse.SC_BAD_REQUEST);
             requestBody = null;
         }
-        System.out.println("So is this after writing out now!!?!?!?!");
         //If you set headers, later down the line you cannot call response.sendError();
-        response.setContentType("application/json");
+        response.setContentType("application/json"); //This is why we create JSON objects for the return body in most cases.  
         response.addHeader("Access-Control-Allow-Headers", "Content-Type");
-        response.addHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT");
+        response.addHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT"); //Not OPTIONS because that breaks things
         return requestBody;
     }
     
@@ -540,24 +542,60 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         if(null != content){
             try{
                 JSONObject received = JSONObject.fromObject(content);
-                JSONObject rerumOptions = new JSONObject();
-                
-                rerumOptions.accumulate("addedTime", System.currentTimeMillis());
-                rerumOptions.accumulate("originalAnnoID", "");//set versionID for a new fork
-                rerumOptions.accumulate("version", 1);
-                if(!received.containsKey("permission")){
-                    rerumOptions.accumulate("permission", Constant.PERMISSION_PRIVATE);
+                JSONArray revieved_options;
+                try{
+                    revieved_options  = received.getJSONArray("__rerum");
                 }
-                if(null == received.get("forkFromID") || "".equals(received.get("forkFromID"))){
-                    rerumOptions.accumulate("forkFromID", "");
+                catch(JSONException e){ //__rerum may or may not have been submitted with this item.  If not, don't throw just move on with an empty array.
+                    revieved_options = new JSONArray();
+                }
+                JSONObject option = new JSONObject();
+                JSONArray rerumOptions = new JSONArray();
+                boolean permissionFound = false;
+                boolean forkFromIDFound = false;
+                //These three liners will happen a lot to follow.  It is to create an JSONObject to add to the __rerum JSONArray.
+                option.element("addedTime", System.currentTimeMillis());
+                rerumOptions.add(option);
+                option.clear();
+                option.element("originalAnnoID","");
+                rerumOptions.add(option);
+                option.clear();
+                option.element("version", 1);
+                rerumOptions.add(option);
+                option.clear();
+                //We need to check if certain options were already set.  If they were, then we shouldn't set them here.
+                for(int k=0; k<revieved_options.size(); k++){
+                    JSONObject entry = revieved_options.getJSONObject(k);
+                    if(entry.containsKey("permission")){
+                        permissionFound = true;
+                    }
+                    if(null != entry.get("forkFromID") || !"".equals(entry.get("forkFromID"))){
+                        forkFromIDFound = true;
+                    }
+                }
+                //TODO: Is this correct? 
+                if(!permissionFound){
+                    option.element("permission", Constant.PERMISSION_PRIVATE);
+                    rerumOptions.add(option);
+                    option.clear();
+                }
+                if(!forkFromIDFound){
+                    option.element("forkFromID", "");
+                    rerumOptions.add(option);
+                    option.clear();
                 }
                 BasicDBObject serverQuery = new BasicDBObject();
                 serverQuery.append("ip", request.getRemoteAddr());
                 DBObject asdbo = mongoDBService.findOneByExample(Constant.COLLECTION_ACCEPTEDSERVER, serverQuery);
                 BasicDBObject asbdbo = (BasicDBObject) asdbo;
-                rerumOptions.accumulate("serverName", asbdbo.get("name"));
-                rerumOptions.accumulate("serverIP", asbdbo.get("ip"));
-                received.accumulate("__rerum", rerumOptions);
+                option.element("serverIP", asbdbo.get("ip"));
+                rerumOptions.add(option);
+                option.clear();
+                option.element("serverName", asbdbo.get("name"));
+                rerumOptions.add(option);
+                option.clear();
+                //we use element instead of accumulate so the clean array made here is either created or entirely replaces __rerum to the object.
+                received.element("__rerum", rerumOptions); 
                 //create BasicDBObject           
                 DBObject dbo = (DBObject) JSON.parse(received.toString());
                 String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
@@ -588,11 +626,25 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
 
     }
     
+    public void setVal(){
+        
+    }
+    
+    public void unsetVal(){
+        
+    }
+    
     /**
-     * Update a given annotation. PUT and PATCH, set or unset support?  I think this only works with keys that already exist.
+     * Update a given annotation. PUT that does not set or unset only.
      * @param annotation.objectID
      * @param all annotation properties include updated properties. 
      * @FIXME things are in __rerum now
+     * @ignore the following keys (they will never be updated)
+     *      @id
+     *      version
+     *      forkFromID
+     *      originalAnnoID
+     *      objectID
      */
     public void updateAnnotation() throws IOException, ServletException, Exception{
         Boolean approved = methodApproval(request, "update");
@@ -605,23 +657,45 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         if(null!= content){
             try{
                 BasicDBObject query = new BasicDBObject();
-                JSONObject received = JSONObject.fromObject(content);
+                JSONObject received = JSONObject.fromObject(content); //object that has an id and new key:val pairs.
                 query.append("@id", received.getString("@id").trim());
-                BasicDBObject result = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query);
+                BasicDBObject result = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The result DB object
+                JSONObject existing_object = JSONObject.fromObject(result); //object from the store to be updated
                 if(null != result){
-                    Set<String> set_keys = received.keySet();
-                    for(String key : set_keys){
-                        if(result.containsKey(key) 
-                                && (!key.equals("@id") 
-                                        || !key.equals("version") 
-                                        || !key.equals("forkFromID")
-                                        || !key.equals("originalAnnoID")
-                                        || !key.equals("objectID"))){
+                    Set<String> update_anno_keys = received.keySet();
+                    JSONArray update_rerum_options = received.getJSONArray("__rerum");
+                    boolean existingOptions = false; //Does the result DB object already contain __rerum
+                    if(result.containsKey("__rerum")){
+                        existingOptions = true;
+                    }
+                    //If the object already in the database contains the key found from the object recieved from the user, update it barring a few special keys
+                    for(String key : update_anno_keys){
+                        if(result.containsKey(key) && (!key.equals("@id") || !key.equals("__rerum")) || !key.equals("objectID")){
                             result.remove(key);
                             result.append(key, received.get(key));
                         }
                     }
-                    mongoDBService.update(Constant.COLLECTION_ANNOTATION, query, result);
+                    //If the object already in the database contains __rerum key, make sure the objects to be updated for the __rerum array already exist before updating.  ignore special keys.
+                    if(existingOptions){
+                        JSONArray existing_options = existing_object.getJSONArray("__rerum");
+                        for(int l=0; l<update_rerum_options.size(); l++){
+                            JSONObject update_option = update_rerum_options.getJSONObject(l);
+                            String updateKey = update_option.keys().next().toString(); //This object will only contain one key:val pair
+                            for(int m=0; m<existing_options.size(); m++){
+                                JSONObject existing_option = existing_options.getJSONObject(m);
+                                String existingKey = existing_option.keys().next().toString(); //This object will only contain one key:val pair
+                                if(existingKey.equals(updateKey) && !(updateKey.equals("version") || updateKey.equals("forkFromID") || updateKey.equals("originalAnnoID"))){
+                                    existing_options.element(m, update_option); //replace the element at this index with the submitted update to the object.
+                                }
+                            }
+                        }
+                        result.remove("__rerum");
+                        result.append("__rerum", existing_options);
+                    }
+                    else{
+                        //Don't update any __rerum stuff because this key did not exist in the object already
+                    }
+                    mongoDBService.update(Constant.COLLECTION_ANNOTATION, query, result); //update the result DBObject with any changes performed above
                     JSONObject jo = new JSONObject();
                     jo.element("code", HttpServletResponse.SC_OK);
                     try {
