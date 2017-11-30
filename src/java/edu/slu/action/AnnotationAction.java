@@ -200,7 +200,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             send_error("You did not use the correct content type.  Please use application/json or application/ld+json", HttpServletResponse.SC_BAD_REQUEST);
             requestBody = null;
         }
-        //If you set headers, later down the line you cannot call response.sendError();
         response.setContentType("application/json"); //This is why we create JSON objects for the return body in most cases.  
         response.addHeader("Access-Control-Allow-Headers", "Content-Type");
         response.addHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT"); //Not OPTIONS because that breaks things
