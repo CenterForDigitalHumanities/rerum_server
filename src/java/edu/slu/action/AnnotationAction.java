@@ -206,12 +206,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             DBObject asdbo = mongoDBService.findOneByExample(Constant.COLLECTION_ACCEPTEDSERVER, serverQuery);
             BasicDBObject asbdbo = (BasicDBObject) asdbo;
             for(int b=0; b<received_array.size(); b++){
-                JSONArray received_array = JSONArray.fromObject(content);
-            BasicDBObject serverQuery = new BasicDBObject();
-            serverQuery.append("ip", request.getRemoteAddr());
-            DBObject asdbo = mongoDBService.findOneByExample(Constant.COLLECTION_ACCEPTEDSERVER, serverQuery);
-            BasicDBObject asbdbo = (BasicDBObject) asdbo;
-            for(int b=0; b<received_array.size(); b++){
                 JSONArray received_options;
                 JSONObject received = received_array.getJSONObject(b);
                 try{
