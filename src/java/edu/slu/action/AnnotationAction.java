@@ -586,7 +586,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
                 //set @id to objectID and update the annotation
                 BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
-                String uid = "http://store.rerum.io/rerumstore/id/" + dboWithObjectID.getObjectId("_id").toString();
+                String uid = "http://store.rerum.io/rerumserver/id/" + dboWithObjectID.getObjectId("_id").toString();
                 dboWithObjectID.append("@id", uid);
                 mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
                 JSONObject jo = new JSONObject();
