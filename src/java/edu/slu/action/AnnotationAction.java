@@ -287,26 +287,51 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             DBObject asdbo = mongoDBService.findOneByExample(Constant.COLLECTION_ACCEPTEDSERVER, serverQuery);
             BasicDBObject asbdbo = (BasicDBObject) asdbo;
             for(int b=0; b<received_array.size(); b++){
+                JSONArray received_options;
                 JSONObject received = received_array.getJSONObject(b);
-                received.accumulate("addedTime", System.currentTimeMillis());
-                received.accumulate("originalAnnoID", "");//set versionID for a new fork
-                received.accumulate("version", 1);
-                if(!received.containsKey("permission")){
-                    received.accumulate("permission", Constant.PERMISSION_PRIVATE);
+                try{
+                    received_options  = received.getJSONArray("__rerum");
                 }
-                if(null == received.get("forkFromID") || "".equals(received.get("forkFromID"))){
-                    received.accumulate("forkFromID", "");
-                }  
-                received.accumulate("originalAnnoID", "");//set versionID for a new fork
-                received.accumulate("version", 1);
-                if(!received.containsKey("permission")){
-                    received.accumulate("permission", Constant.PERMISSION_PRIVATE);
+                catch(JSONException e){ //__rerum may or may not have been submitted with this item.  If not, don't throw just move on with an empty array.
+                    received_options = new JSONArray();
                 }
-                if(null == received.get("forkFromID") || "".equals(received.get("forkFromID"))){
-                    received.accumulate("forkFromID", "");
+                JSONObject option = new JSONObject();
+                JSONArray rerumOptions = new JSONArray();
+                boolean permissionFound = false;
+                boolean forkFromIDFound = false;
+                //These three liners will happen a lot to follow.  It is to create an JSONObject to add to the __rerum JSONArray.
+                option.element("addedTime", System.currentTimeMillis());
+                rerumOptions.add(option);
+                option.clear();
+                option.element("originalAnnoID","");
+                rerumOptions.add(option);
+                option.clear();
+                option.element("version", 1);
+                rerumOptions.add(option);
+                option.clear();
+                //We need to check if certain options were already set.  If they were, then we shouldn't set them here.
+                for(int k=0; k<received_options.size(); k++){
+                    JSONObject entry = received_options.getJSONObject(k);
+                    if(entry.containsKey("permission")){
+                        permissionFound = true;
+                    }
+                    if(null != entry.get("forkFromID") || !"".equals(entry.get("forkFromID"))){
+                        forkFromIDFound = true;
+                    }
                 }
-                received.accumulate("serverName", asbdbo.get("name"));
-                received.accumulate("serverIP", asbdbo.get("ip"));
+                //TODO: Is this correct? 
+                if(!permissionFound){
+                    option.element("permission", Constant.PERMISSION_PRIVATE);
+                    rerumOptions.add(option);
+                    option.clear();
+                }
+                if(!forkFromIDFound){
+                    option.element("forkFromID", "");
+                    rerumOptions.add(option);
+                    option.clear();
+                }
+                received.element("serverName", asbdbo.get("name"));
+                received.element("serverIP", asbdbo.get("ip"));
                 received_array.set(b,received);
             }
             
@@ -474,7 +499,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                     response.setStatus(HttpServletResponse.SC_OK);
                     out = response.getWriter();
                     out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
-                } catch (IOException ex) {
+                } 
+                catch (IOException ex) {
                     Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
@@ -542,12 +568,12 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         if(null != content){
             try{
                 JSONObject received = JSONObject.fromObject(content);
-                JSONArray revieved_options;
+                JSONArray received_options;
                 try{
-                    revieved_options  = received.getJSONArray("__rerum");
+                    received_options  = received.getJSONArray("__rerum");
                 }
                 catch(JSONException e){ //__rerum may or may not have been submitted with this item.  If not, don't throw just move on with an empty array.
-                    revieved_options = new JSONArray();
+                    received_options = new JSONArray();
                 }
                 JSONObject option = new JSONObject();
                 JSONArray rerumOptions = new JSONArray();
@@ -564,8 +590,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 rerumOptions.add(option);
                 option.clear();
                 //We need to check if certain options were already set.  If they were, then we shouldn't set them here.
-                for(int k=0; k<revieved_options.size(); k++){
-                    JSONObject entry = revieved_options.getJSONObject(k);
+                for(int k=0; k<received_options.size(); k++){
+                    JSONObject entry = received_options.getJSONObject(k);
                     if(entry.containsKey("permission")){
                         permissionFound = true;
                     }
