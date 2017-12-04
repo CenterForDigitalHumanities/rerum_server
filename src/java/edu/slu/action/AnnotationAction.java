@@ -117,6 +117,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * the method that calls this will handle a false response;
      * @param http_request the actual http request object
      * @param request_type a string denoting what type of request this should be
+     * @return Boolean indicating RESTfulness
      * @throws Exception 
     */
     public Boolean methodApproval(HttpServletRequest http_request, String request_type) throws Exception{
@@ -124,9 +125,10 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         boolean restful = false;
         if(requestMethod.equals("OPTIONS")){ 
             //This is a browser pre flight (CORS)
-            send_error("Browser pre-flight requests are not supported.  Call this API from within an application on a server.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);           
+            send_error("Browser pre-flight requests are not supported. Call this API from within an application on a server.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);           
+            return restful;
+            // DELETEME: cubap: The extended condition is messy if this is just an exit condition
         }
-		else{
         switch(request_type){
             case "update":
                 if(requestMethod.equals("PUT") || requestMethod.equals("PATCH")){
@@ -164,49 +166,58 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 send_error("Improper request method for this type of request (unknown).", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
 
             }  
-        }
         return restful;
     }
     
     /**
-    * All actions come here to process the request body.  We check if it is JSON and pretty format it.  Returns null if there is a problem.  The methods that call
-    * this will handle requestBody==null;
-    */
+     * All actions come here to process the request body. We check if it is JSON
+     * and pretty format it. Returns pretty stringified JSON or fail to null.
+     * Methods that call this should handle requestBody==null as unexpected.
+     * @param http_request Incoming request to check.
+     * @return String of anticipated JSON format.
+     * @throws java.io.IOException
+     * @throws javax.servlet.ServletException
+     * @throws java.lang.Exception
+     */
     public String processRequestBody(HttpServletRequest http_request) throws IOException, ServletException, Exception{
         
         String cType = http_request.getContentType();
-        String methodCheck = http_request.getMethod();
+        String methodCheck = http_request.getMethod(); // @theHabes: Never used? Delete?
         String requestBody;
-        JSONObject test;
-        JSONArray test2;
         
         if(cType.contains("application/json") || cType.contains("application/ld+json")) {
             bodyReader = http_request.getReader();
             bodyString = new StringBuilder();
-            String line="";
+            JSONObject test;
+            JSONArray test2;
+            String line;
             while ((line = bodyReader.readLine()) != null)
             {
-              bodyString.append(line + "\n");
+              bodyString.append(line).append("\n");
             }
             requestBody = bodyString.toString();
-            try{ //Try to parse as a JSONObject
+            try{ 
+              // JSON test
               test = JSONObject.fromObject(requestBody);
             }
-            catch(Exception ex){ //was not a JSONObject but might be a JSONArray
-                try{ //Try to parse as a JSONArray
+            catch(Exception ex){ 
+              // not a JSONObject; test for JSONArray
+                try{
                     test2 = JSONArray.fromObject(requestBody);
                 }
-                catch(Exception ex2){ //Was not a JSONObject or a JSONArray.  Not valid JSON.  Throw error. 
-                    send_error("The data passed was not valid JSON", HttpServletResponse.SC_BAD_REQUEST);
+                catch(Exception ex2){
+                    // not a JSONObject or a JSONArray. Throw error. 
+                    send_error("The data passed was not valid JSON:\n"+requestBody, HttpServletResponse.SC_BAD_REQUEST);
                     requestBody = null;
                 }
             }          
+            // no-catch: Is either JSONObject or JSON Array
         }
-        else { //I do not understand the content type being passed.     
+        else { 
             send_error("Invalid Content-Type. Please use 'application/json' or 'application/ld+json'", HttpServletResponse.SC_BAD_REQUEST);
             requestBody = null;
         }
-        response.setContentType("application/json"); //This is why we create JSON objects for the return body in most cases.  
+        response.setContentType("application/json"); // We create JSON objects for the return body in most cases.  
         response.addHeader("Access-Control-Allow-Headers", "Content-Type");
         response.addHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT"); // FIXME: Consider adding OPTIONS
         return requestBody;
@@ -216,11 +227,13 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     *The batch save to intended to work with Broken Books, but could be applied elsewhere.  This batch will use the save() mongo function instead of insert() to determine whether 
     to do an update() or insert() for each item in the batch.  
     *    The content is from an HTTP request posting in an array filled with annotations to copy.  
+     * @throws java.io.UnsupportedEncodingException
+     * @throws javax.servlet.ServletException
     *    @see MongoDBAbstractDAO.bulkSaveMetadataForm(String collectionName, BasicDBList entity_array);
     *    @see MongoDBAbstractDAO.bulkSetIDProperty(String collectionName, BasicDBObject[] entity_array);
     */   
     public void batchSaveMetadataForm() throws UnsupportedEncodingException, IOException, ServletException, Exception{
-        // TODO: refactor name here. Also, just try-catch JSONArray.fromObject(processRequestBody(request))
+        // TODO: @theHabes refactor name here. Also, just try-catch JSONArray.fromObject(processRequestBody(request))
         // since this is the content= free version.
         Boolean approved = methodApproval(request, "create");
         if(approved){
@@ -235,53 +248,51 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             serverQuery.append("ip", request.getRemoteAddr());
             DBObject asdbo = mongoDBService.findOneByExample(Constant.COLLECTION_ACCEPTEDSERVER, serverQuery);
             BasicDBObject asbdbo = (BasicDBObject) asdbo;
+            // @theHabes: probably it makes the most sense to put this "apply
+            // __rerum properties into a method that can be called for batch and
+            // for individual saving/updating
             for(int b=0; b<received_array.size(); b++){
-                JSONArray received_options;
-                JSONObject received = received_array.getJSONObject(b);
-                try{
-                    received_options  = received.getJSONArray("__rerum");
-                }
-                catch(JSONException e){ //__rerum may or may not have been submitted with this item.  If not, don't throw just move on with an empty array.
-                    received_options = new JSONArray();
-                }
-                JSONObject option = new JSONObject();
-                JSONArray rerumOptions = new JSONArray();
-                boolean permissionFound = false;
-                boolean forkFromIDFound = false;
-                //These three liners will happen a lot to follow.  It is to create an JSONObject to add to the __rerum JSONArray.
-                option.element("addedTime", System.currentTimeMillis());
-                rerumOptions.add(option);
-                option.clear();
-                option.element("originalAnnoID","");
-                rerumOptions.add(option);
-                option.clear();
-                option.element("version", 1);
-                rerumOptions.add(option);
-                option.clear();
-                //We need to check if certain options were already set.  If they were, then we shouldn't set them here.
-                for(int k=0; k<received_options.size(); k++){
-                    JSONObject entry = received_options.getJSONObject(k);
-                    if(entry.containsKey("permission")){
-                        permissionFound = true;
-                    }
-                    if(null != entry.get("forkFromID") || !"".equals(entry.get("forkFromID"))){
-                        forkFromIDFound = true;
-                    }
-                }
-                //TODO: Is this correct? 
-                if(!permissionFound){
-                    option.element("permission", Constant.PERMISSION_PRIVATE);
-                    rerumOptions.add(option);
-                    option.clear();
-                }
-                if(!forkFromIDFound){
-                    option.element("forkFromID", "");
-                    rerumOptions.add(option);
-                    option.clear();
-                }
-                received.element("serverName", asbdbo.get("name"));
-                received.element("serverIP", asbdbo.get("ip"));
-                received_array.set(b,received);
+                /*
+                Okay, these will change in v1, so let's say what to expect:
+                  * We do not need to know if this is a NEW object because versioning.
+                  * In APIversion 0, there is no `__rerum`, so no worries.
+                  * In V1+, we should have `APIversion`, in case we make changes.
+                  * `history` and `releases` is part set, part lookup
+                  * `generatedBy`, `createdAt`, `isOverwritten`, `isReleased` are
+                  * always set new on a save/update.
+                
+                Here's what we write:
+                APIversion      —1.0.0
+                history.prime   —if it has an @id, import from that, else "root"
+                history.next    —always [] (or null, perhaps)
+                history.previous—if it has an @id, @id
+                releases.previous—if it has an @id, import from that, else null
+                releases.next   —always [] (or null, perhaps)
+                generatedBy     —set to the @id of the public agent of the API Key.
+                createdAt       —"addedTime" timestamp in milliseconds
+                isOverwritten, isReleased   —always null
+                
+                Logically, probably set everything as if it is completely new and then
+                lookup for a RERUM @id and copy in the values required.
+                */
+                
+//                JSONArray received_options;
+//                JSONObject received = received_array.getJSONObject(b);
+//                JSONObject option = new JSONObject();
+//                JSONArray rerumOptions = new JSONArray();
+//                //These three liners will happen a lot to follow.  It is to create an JSONObject to add to the __rerum JSONArray.
+//                option.element("addedTime", System.currentTimeMillis());
+//                rerumOptions.add(option);
+//                option.clear();
+//                option.element("originalAnnoID","");
+//                rerumOptions.add(option);
+//                option.clear();
+//                option.element("version", 1);
+//                rerumOptions.add(option);
+//                option.clear();
+//                received.element("serverName", asbdbo.get("name"));
+//                received.element("serverIP", asbdbo.get("ip"));
+//                received_array.set(b,received);
             }
             
             BasicDBList dbo = (BasicDBList) JSON.parse(received_array.toString());
@@ -291,9 +302,11 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 reviewedResources = mongoDBService.bulkSaveMetadataForm(Constant.COLLECTION_ANNOTATION, dbo);
             }
             else{
-             //   System.out.println("Skipping bulk save on account of empty array.");
+             //   Skipping bulk save on account of empty array.
             }
-            //bulk save will automatically call bulk update so there is no real need to return these values.  We will for later use.
+            // Location headers
+            // @theHabes: This is probably another method to specifically call
+            // out since it will be reused a lot.
             JSONObject jo = new JSONObject();
             jo.element("code", HttpServletResponse.SC_CREATED);
             jo.element("reviewed_resources", reviewedResources);
@@ -323,6 +336,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         * Each canvas has an annotation list with 0 - infinity annotations.  A copy requires a new annotation list with the copied annotations and a new @id.
         * Mongo allows us to bulk save.  
         * The content is from an HTTP request posting in an array filled with annotations to copy.  
+     * @throws java.io.UnsupportedEncodingException
+     * @throws javax.servlet.ServletException
         * @see MongoDBAbstractDAO.bulkSaveFromCopy(String collectionName, BasicDBList entity_array);
         * @see MongoDBAbstractDAO.bulkSetIDProperty(String collectionName, BasicDBObject[] entity_array);
     */ 
@@ -344,52 +359,54 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             DBObject asdbo = mongoDBService.findOneByExample(Constant.COLLECTION_ACCEPTEDSERVER, serverQuery);
             BasicDBObject asbdbo = (BasicDBObject) asdbo;
             for(int b=0; b<received_array.size(); b++){
-                JSONArray received_options;
-                JSONObject received = received_array.getJSONObject(b);
-                try{
-                    received_options  = received.getJSONArray("__rerum");
-                }
-                catch(JSONException e){ //__rerum may or may not have been submitted with this item.  If not, don't throw just move on with an empty array.
-                    received_options = new JSONArray();
-                }
-                JSONObject option = new JSONObject();
-                JSONArray rerumOptions = new JSONArray();
-                boolean permissionFound = false;
-                boolean forkFromIDFound = false;
-                //These three liners will happen a lot to follow.  It is to create an JSONObject to add to the __rerum JSONArray.
-                option.element("addedTime", System.currentTimeMillis());
-                rerumOptions.add(option);
-                option.clear();
-                option.element("originalAnnoID","");
-                rerumOptions.add(option);
-                option.clear();
-                option.element("version", 1);
-                rerumOptions.add(option);
-                option.clear();
-                //We need to check if certain options were already set.  If they were, then we shouldn't set them here.
-                for(int k=0; k<received_options.size(); k++){
-                    JSONObject entry = received_options.getJSONObject(k);
-                    if(entry.containsKey("permission")){
-                        permissionFound = true;
-                    }
-                    if(null != entry.get("forkFromID") || !"".equals(entry.get("forkFromID"))){
-                        forkFromIDFound = true;
-                    }
-                }
-                //TODO: Is this correct? 
-                if(!permissionFound){
-                    option.element("permission", Constant.PERMISSION_PRIVATE);
-                    rerumOptions.add(option);
-                    option.clear();
-                }
-                if(!forkFromIDFound){
-                    option.element("forkFromID", "");
-                    rerumOptions.add(option);
-                    option.clear();
-                }
-                received.element("serverName", asbdbo.get("name"));
-                received.element("serverIP", asbdbo.get("ip"));
-                received_array.set(b,received);
+                // @theHabes: This is all old code that will be updated to match
+                // the method above.
+//                JSONArray received_options;
+//                JSONObject received = received_array.getJSONObject(b);
+//                try{
+//                    received_options  = received.getJSONArray("__rerum");
+//                }
+//                catch(JSONException e){ //__rerum may or may not have been submitted with this item.  If not, don't throw just move on with an empty array.
+//                    received_options = new JSONArray();
+//                }
+//                JSONObject option = new JSONObject();
+//                JSONArray rerumOptions = new JSONArray();
+//                boolean permissionFound = false;
+//                boolean forkFromIDFound = false;
+//                //These three liners will happen a lot to follow.  It is to create an JSONObject to add to the __rerum JSONArray.
+//                option.element("addedTime", System.currentTimeMillis());
+//                rerumOptions.add(option);
+//                option.clear();
+//                option.element("originalAnnoID","");
+//                rerumOptions.add(option);
+//                option.clear();
+//                option.element("version", 1);
+//                rerumOptions.add(option);
+//                option.clear();
+//                //We need to check if certain options were already set.  If they were, then we shouldn't set them here.
+//                for(int k=0; k<received_options.size(); k++){
+//                    JSONObject entry = received_options.getJSONObject(k);
+//                    if(entry.containsKey("permission")){
+//                        permissionFound = true;
+//                    }
+//                    if(null != entry.get("forkFromID") || !"".equals(entry.get("forkFromID"))){
+//                        forkFromIDFound = true;
+//                    }
+//                }
+//                //TODO: Is this correct? 
+//                if(!permissionFound){
+//                    option.element("permission", Constant.PERMISSION_PRIVATE);
+//                    rerumOptions.add(option);
+//                    option.clear();
+//                }
+//                if(!forkFromIDFound){
+//                    option.element("forkFromID", "");
+//                    rerumOptions.add(option);
+//                    option.clear();
+//                }
+//                received.element("serverName", asbdbo.get("name"));
+//                received.element("serverIP", asbdbo.get("ip"));
+//                received_array.set(b,received);
             }
             
             BasicDBList dbo = (BasicDBList) JSON.parse(received_array.toString());
