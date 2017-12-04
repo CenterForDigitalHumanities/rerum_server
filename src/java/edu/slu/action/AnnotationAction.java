@@ -8,21 +8,32 @@
  * REST notes
  * 
  * POST
-    * HTTP.POST can be used when the client is sending data to the server and the server will decide the URI for the newly created resource. 
-    * The POST method is used to request that the origin server accept the entity enclosed in the request as a new subordinate of the resource identified by the Request-URI 
+    * HTTP.POST can be used when the client is sending data to the server and the server
+    * will decide the URI for the newly created resource. The POST method is used 
+    * to request that the origin server accept the entity enclosed in the request
+    * as a new subordinate of the resource identified by the Request-URI 
     * in the Request-Line.
 
  * PUT
-    * HTTP.PUT can be used when the client is sending data to the the server and the client is determining the URI for the newly created resource. 
-    * The PUT method requests that the enclosed entity be stored under the supplied Request-URI. If the Request-URI refers to an already existing resource, 
-    * the enclosed entity SHOULD be considered as a modified version of the one residing on the origin server. If the Request-URI does not point to an existing resource, 
-    * and that URI is capable of being defined as a new resource by the requesting user agent, the origin server can create the resource with that URI.
-    * It is most-often utilized for update capabilities, PUT-ing to a known resource URI with the request body containing the newly-updated representation of the original resource.
+    * HTTP.PUT can be used when the client is sending data to the the server and
+    * the client is determining the URI for the newly created resource. The PUT method 
+    * requests that the enclosed entity be stored under the supplied Request-URI. If 
+    * the Request-URI refers to an already existing resource, the enclosed entity
+    * SHOULD be considered as a modified version of the one residing on the origin
+    * server. If the Request-URI does not point to an existing resource, 
+    * and that URI is capable of being defined as a new resource by the requesting 
+    * user agent, the origin server can create the resource with that URI.
+    * It is most-often utilized for update capabilities, PUT-ing to a known resource
+    * URI with the request body containing the newly-updated representation of the 
+    * original resource.
 
  * PATCH
-    * HTTP.PATCH can be used when the client is sending one or more changes to be applied by the the server. The PATCH method requests that a set of changes described 
-    * in the request entity be applied to the resource identified by the Request-URI. The set of changes is represented in a format called a patch document.
-    * Submits a partial modification to a resource. If you only need to update one field for the resource, you may want to use the PATCH method.
+    * HTTP.PATCH can be used when the client is sending one or more changes to be
+    * applied by the the server. The PATCH method requests that a set of changes described 
+    * in the request entity be applied to the resource identified by the Request-URI.
+    * The set of changes is represented in a format called a patch document.
+    * Submits a partial modification to a resource. If you only need to update one
+    * field for the resource, you may want to use the PATCH method.
  * 
  */
 
@@ -64,7 +75,6 @@ import net.sf.json.JSONException;
 
  */
 public class AnnotationAction extends ActionSupport implements ServletRequestAware, ServletResponseAware{
-//    private Annotation_old annotation;
     private String content;
     private String oid;
     private AcceptedServer acceptedServer;
@@ -82,6 +92,9 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * @param code The HTTP response code to return
      */
     public void send_error(String msg, int code){
+        // TODO: @theHabes the naming of this seems a little off. It does not
+        // send the error, just writes it to the response. Also the casing feels
+        // non-standard.
         JSONObject jo = new JSONObject();
         jo.element("code", code);
         jo.element("message", msg);
@@ -98,8 +111,10 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     }
     
     /**
-     * The action first comes to this function.  It says what type of request it is and checks the the method is appropriately RESTful.  Returns false if not and
-     * the method that calls this will handle approved=false;
+     * Checks for appropriate RESTful method being used.
+     * The action first comes to this function.  It says what type of request it 
+     * is and checks the the method is appropriately RESTful.  Returns false if not and
+     * the method that calls this will handle a false response;
      * @param http_request the actual http request object
      * @param request_type a string denoting what type of request this should be
      * @throws Exception 
@@ -107,49 +122,46 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     public Boolean methodApproval(HttpServletRequest http_request, String request_type) throws Exception{
         String requestMethod = http_request.getMethod();
         boolean restful = false;
-        System.out.println("Request type is "+request_type);
-        System.out.println("Request method is "+requestMethod);
-        if(requestMethod.equals("OPTIONS")){ //This is a browser pre flight...
-            //This breaks everything because the pre flight request doesn't pass any data.  
-            //This happens when using a bookmarklet from a different domain.  I do not know how to handle it.
+        if(requestMethod.equals("OPTIONS")){ 
+            //This is a browser pre flight (CORS)
             send_error("Browser pre-flight requests are not supported.  Call this API from within an application on a server.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);           
         }
-        else{
-            switch(request_type){
-                case "update":
-                    if(requestMethod.equals("PUT") || requestMethod.equals("PATCH")){
-                        restful = true;
-                    }
-                    else{
-                        send_error("Improper request method for this type of request, please use PUT or PATCH.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-                    }
-                break;
-                case "create":
-                    if(requestMethod.equals("POST")){
-                        restful = true;
-                    }
-                    else{
-                        send_error("Improper request method for this type of request, please use POST.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-                    }
-                break;
-                case "delete":
-                    if(requestMethod.equals("DELETE")){
-                        restful = true;
-                    }
-                    else{
-                        send_error("Improper request method for this type of request, please use DELETE.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-                    }
-                break;
-                case "get":
-                    if(requestMethod.equals("GET")){
-                        restful = true;
-                    }
-                    else{
-                        send_error("Improper request method for this type of request, please use GET.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-                    }
-                break;
-                default:
-                    send_error("Improper request method for this type of request.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+		else{
+        switch(request_type){
+            case "update":
+                if(requestMethod.equals("PUT") || requestMethod.equals("PATCH")){
+                    restful = true;
+                }
+                else{
+                    send_error("Improper request method for updating, please use PUT or PATCH.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                }
+            break;
+            case "create":
+                if(requestMethod.equals("POST")){
+                    restful = true;
+                }
+                else{
+                    send_error("Improper request method for creating, please use POST.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                }
+            break;
+            case "delete":
+                if(requestMethod.equals("DELETE")){
+                    restful = true;
+                }
+                else{
+                    send_error("Improper request method for deleting, please use DELETE.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                }
+            break;
+            case "get":
+                if(requestMethod.equals("GET")){
+                    restful = true;
+                }
+                else{
+                    send_error("Improper request method for reading, please use GET.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                }
+            break;
+            default:
+                send_error("Improper request method for this type of request (unknown).", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
 
             }  
         }
@@ -168,13 +180,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         JSONObject test;
         JSONArray test2;
         
-        if(methodCheck.equals("OPTIONS")){//This is a browser pre flight...
-            //This breaks everything because the pre flight request doesn't pass any data.  
-            //This happens when using a bookmarklet from a different domain.  I do not know how to handle it.
-            send_error("Browser pre-flight requests are not supported.  Call this API from within an application on a server.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-            requestBody = null;
-        }
-        else if(cType.contains("application/json") || cType.contains("application/ld+json")){
+        if(cType.contains("application/json") || cType.contains("application/ld+json")) {
             bodyReader = http_request.getReader();
             bodyString = new StringBuilder();
             String line="";
@@ -196,13 +202,13 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 }
             }          
         }
-        else{ //I do not understand the content type being passed.     
-            send_error("You did not use the correct content type.  Please use application/json or application/ld+json", HttpServletResponse.SC_BAD_REQUEST);
+        else { //I do not understand the content type being passed.     
+            send_error("Invalid Content-Type. Please use 'application/json' or 'application/ld+json'", HttpServletResponse.SC_BAD_REQUEST);
             requestBody = null;
         }
         response.setContentType("application/json"); //This is why we create JSON objects for the return body in most cases.  
         response.addHeader("Access-Control-Allow-Headers", "Content-Type");
-        response.addHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT"); //Not OPTIONS because that breaks things
+        response.addHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT"); // FIXME: Consider adding OPTIONS
         return requestBody;
     }
     
@@ -214,6 +220,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     *    @see MongoDBAbstractDAO.bulkSetIDProperty(String collectionName, BasicDBObject[] entity_array);
     */   
     public void batchSaveMetadataForm() throws UnsupportedEncodingException, IOException, ServletException, Exception{
+        // TODO: refactor name here. Also, just try-catch JSONArray.fromObject(processRequestBody(request))
+        // since this is the content= free version.
         Boolean approved = methodApproval(request, "create");
         if(approved){
             content = processRequestBody(request);
@@ -319,6 +327,9 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         * @see MongoDBAbstractDAO.bulkSetIDProperty(String collectionName, BasicDBObject[] entity_array);
     */ 
     public void batchSaveFromCopy() throws UnsupportedEncodingException, IOException, ServletException, Exception{
+        // TODO: refactor name here. This is the start of SmartObjects/subdocumenting
+        // Also, just try-catch JSONArray.fromObject(processRequestBody(request))
+        // since this is the content= free version.
         Boolean approved = methodApproval(request, "create");
         if(approved){
             content = processRequestBody(request);
@@ -387,8 +398,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             if(dbo.size() > 0){
                 newResources = mongoDBService.bulkSaveFromCopy(Constant.COLLECTION_ANNOTATION, dbo);
             }
-            else{
-             //   System.out.println("Skipping bulk save on account of empty array.");
+            else {
+                // empty array
             }
             //bulk save will automatically call bulk update 
             JSONObject jo = new JSONObject();
@@ -416,52 +427,13 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     }
     
     /**
-     * Get all my annotations. Include latest version of original annotations, all forks and revisions. 
-     * @param annotation.content("namespace","...")
-     */
-    public void getAllMyAnnotations() throws IOException, ServletException, Exception{
-        Boolean approved = methodApproval(request, "get");
-        if(approved){
-            content = processRequestBody(request);
-        }
-        else{
-            content = null;
-        }
-        if(null!=content){
-            JSONObject received = JSONObject.fromObject(content);
-            if(received.containsKey("namespace")){
-                BasicDBObject query = new BasicDBObject();
-                query.append("namespace", received.getString("namespace"));
-                List<DBObject> ls_myAnno = mongoDBService.findByExample(Constant.COLLECTION_ANNOTATION, query);
-                if(null != ls_myAnno && ls_myAnno.size() > 0){
-                    JSONArray ja = new JSONArray();
-                    for(DBObject dbo : ls_myAnno){
-                        BasicDBObject bdbo = (BasicDBObject) dbo;
-                        ja.add(bdbo.toMap());
-                    }
-                    try {
-                        response.addHeader("Access-Control-Allow-Origin", "*");
-                        out = response.getWriter();
-                        out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(ja));
-                    } catch (IOException ex) {
-                        Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
-                    }
-                }
-                else{
-                    send_error("Object(s) not found.", HttpServletResponse.SC_NOT_FOUND);            
-                }
-            }
-            else{
-                send_error("Could not find field 'namespace' in provided object.", HttpServletResponse.SC_BAD_REQUEST);
-            }
-        }
-    }
-    
-    /**
      * Get all version of annotations by ObjectID. 
      * @param annotation.objectID
      */
-    public void getAllVersionsOfAnnotationByObjectID() throws IOException, ServletException, Exception{
+    public void getAllVersionsOfAnnotationByObjectID() throws IOException, ServletException, Exception {
+        // TODO: This will go away because it can get crazy. We may build in some
+        // helper services like getAllAnscestors() for a path back to prime or
+        // getAllDescendents() for a real mess (this method called on prime would be this as written)
         Boolean approved = methodApproval(request, "get");
         if(approved){
             content = processRequestBody(request);
@@ -512,17 +484,18 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * @return annotation object
      */
     public void getAnnotationByObjectID() throws IOException, ServletException, Exception{
-        //content = processRequestBody(request);
         Boolean approved = methodApproval(request, "get");
         if(approved){
-            
+            // TODO: @theHabes Does `approved` really have to be declared first.
+            // It is only used for this check, so maybe just in one line reads easier.
+            // Also, the outcome of this check is only setting `oid`, which is then
+            // checked, which means these two conditions should be combined as well.
         }
         else{
             oid=null;
         }
         if(null != oid){
             //find one version by objectID
-            System.out.println("gloabl oid is "+oid);
             BasicDBObject query = new BasicDBObject();
             query.append("_id", new ObjectId(oid));
             DBObject myAnno = mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query);
@@ -539,8 +512,11 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 jo.remove("serverName");
                 jo.remove("serverIP");
                 jo.remove("__rerum");
+                // @theHabes: ? We would still return `__rerum`, wouldn't we? It has good info in it.
                 try {
                     response.addHeader("Content-Type", "application/ld+json");
+                    // @theHabes: ? Should we check that the object actually has @context?
+                    // I'm not certain how to handle malformed JSON-LD
                     response.addHeader("Access-Control-Allow-Origin", "*");
                     response.setStatus(HttpServletResponse.SC_OK);
                     out = response.getWriter();
@@ -551,7 +527,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 }
             }
             else{
-                send_error("No object(s) found with provided id '"+oid+"'.", HttpServletResponse.SC_NOT_FOUND);
+                send_error("No object found with provided id '"+oid+"'.", HttpServletResponse.SC_NOT_FOUND);
             }
         }
     }
@@ -561,6 +537,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * @param Object with key:value pairs with conditions to match against.
      * @reutrn list of annotations that match the given conditions.
      */
+    // @theHabes ? Why does getAnnotationByID() not just point into here with the ID?
+    // Is it just to fire the findOneByExample()? Would it be better to do that here?
     public void getAnnotationByProperties() throws IOException, ServletException, Exception{
         Boolean approved = methodApproval(request, "get");
         if(approved){
@@ -569,8 +547,13 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         else{
             content = null;
         }
+        // @theHabes: Just try-catch or false check JSONObject.fromObject(processRequestBody(request))
+        // since this is the content= free version.
         if(null != content){
             JSONObject received = JSONObject.fromObject(content);
+                // @theHabes ? Whaddya think about pulling out a method buildJSON() that
+                // does this whole try-catch with a error for malformed stuff (or an 
+                // actionable return) so we don't have to repeat and wrap all this each time.
             BasicDBObject query = new BasicDBObject();
             Set<String> set_received = received.keySet();
             for(String key : set_received){
@@ -611,6 +594,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         else{
             content = null;
         }
+        // @theHabes: Just try-catch or false check JSONObject.fromObject(processRequestBody(request))
+        // since this is the content= free version.
         if(null != content){
             try{
                 JSONObject received = JSONObject.fromObject(content);
@@ -668,10 +653,9 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 option.clear();
                 //we use element instead of accumulate so the clean array made here is either created or entirely replaces __rerum to the object.
                 received.element("__rerum", rerumOptions); 
-                //create BasicDBObject           
                 DBObject dbo = (DBObject) JSON.parse(received.toString());
                 String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
-                //set @id to objectID and update the annotation
+                //set @id from _id and update the annotation
                 BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
                 String uid = "http://store.rerum.io/rerumserver/id/" + dboWithObjectID.getObjectId("_id").toString();
                 dboWithObjectID.append("@id", uid);
@@ -691,7 +675,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                     Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
-            catch (Exception ex){ //could not parse JSON.
+            catch (Exception ex){ // try { parse JSON }
                 send_error("Trouble parsing JSON", HttpServletResponse.SC_BAD_REQUEST);
             }
         }
@@ -726,6 +710,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         else{
             content = null;
         }
+        // @theHabes: Just try-catch or false check JSONObject.fromObject(processRequestBody(request))
+        // since this is the content= free version.
         if(null!= content){
             try{
                 BasicDBObject query = new BasicDBObject();
@@ -798,6 +784,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * @FIXME things are in __rerum now
      */
     public void saveNewVersionOfAnnotation() throws IOException, ServletException, Exception{
+        // TODO: This is all going to be redone for new versioning.
+        // Simply, it will save a new object with .__rerum.history[next,previous,prime] set.
         Boolean approved = methodApproval(request, "create");
         if(approved){
             content = processRequestBody(request);
@@ -805,6 +793,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         else{
             content = null;
         }
+        // @theHabes: Just try-catch or false check JSONObject.fromObject(processRequestBody(request))
+        // since this is the content= free version.
         if(null!= content){
             try{
                 BasicDBObject query = new BasicDBObject();
@@ -883,44 +873,12 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             }
         }
     }
-    
-    /**
-     * Delete a given annotation. 
-     * @param annotation.objectID
-     */
-    public void deleteAnnotationByObjectID() throws IOException, ServletException, Exception{
-        Boolean approved = methodApproval(request, "delete");
-        if(approved){
-            content = processRequestBody(request);
-        }
-        else{
-            content = null;
-        }
-        if(null != content){ 
-            BasicDBObject query = new BasicDBObject();
-            try{
-                JSONObject received = JSONObject.fromObject(content);
-                if(received.containsKey("objectID")){
-                    query.append("_id", received.getString("objectID").trim());
-                    mongoDBService.delete(Constant.COLLECTION_ANNOTATION, query);
-                    response.setStatus(HttpServletResponse.SC_OK);
-                }
-                else{
-                    response.setStatus(HttpServletResponse.SC_NO_CONTENT); //FIXME or should this be BAD_REQUEST
-                }
-            }
-            catch (Exception ex){ //could not parse JSON
-                send_error("annotation provided for delete was not JSON, could not get id to delete", HttpServletResponse.SC_BAD_REQUEST);
-            }
-        }
-
-    }
-    
+       
     /**
      * Delete a given annotation. 
      * @param annotation.@id
      */
-    public void deleteAnnotationByAtID() throws IOException, ServletException, Exception{
+    public void deleteAnnotation() throws IOException, ServletException, Exception{
         Boolean approved = methodApproval(request, "delete");
         if(approved){
             content = processRequestBody(request);
@@ -928,11 +886,14 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         else{
             content = null;
         }
+        // @theHabes: Just try-catch or false check JSONObject.fromObject(processRequestBody(request))
+        // since this is the content= free version.
         if(null != content){ 
             BasicDBObject query = new BasicDBObject();
             try{
                 JSONObject received = JSONObject.fromObject(content);
                 if(received.containsKey("@id")){
+                    // TODO: also support jsut the URI in the body?
                     query.append("@id", received.getString("@id").trim());
                     mongoDBService.delete(Constant.COLLECTION_ANNOTATION, query);
                     response.setStatus(HttpServletResponse.SC_OK);
@@ -941,7 +902,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                      send_error("annotation provided for delete has no @id, could not delete", HttpServletResponse.SC_BAD_REQUEST);
                 }
             }
-            catch (Exception ex){ //could not parse JSON
+            catch (Exception ex){  // try {parse JSON}
                 send_error("annotation provided for delete was not JSON, could not get id to delete", HttpServletResponse.SC_BAD_REQUEST);
             }
         }
@@ -954,6 +915,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * @FIXME things are in __rerum now
      */
     public void forkAnnotation() throws IOException, ServletException, Exception{
+        // TODO: This is all going away (getting reworked).
         Boolean approved = methodApproval(request, "create");
         if(approved){
             content = processRequestBody(request);
