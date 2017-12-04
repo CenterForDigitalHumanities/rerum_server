@@ -84,24 +84,24 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     private StringBuilder bodyString;
     private BufferedReader bodyReader;
     private PrintWriter out;
-    private ObjectMapper mapper = new ObjectMapper();
+    final ObjectMapper mapper = new ObjectMapper();
     
     /**
      * Write error to response.out.  The methods that call this function handle quitting, this just writes the error because of the quit. 
      * @param msg The message to show the user
-     * @param code The HTTP response code to return
+     * @param status The HTTP response status to return
      */
-    public void send_error(String msg, int code){
+    public void send_error(String msg, int status){
         // TODO: @theHabes the naming of this seems a little off. It does not
         // send the error, just writes it to the response. Also the casing feels
         // non-standard.
         JSONObject jo = new JSONObject();
-        jo.element("code", code);
+        jo.element("code", status);
         jo.element("message", msg);
         try {
             response.addHeader("Access-Control-Allow-Origin", "*");
             response.setContentType("application/json");
-            response.setStatus(code);
+            response.setStatus(status);
             out = response.getWriter();
             out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
             out.write(System.getProperty("line.separator"));
