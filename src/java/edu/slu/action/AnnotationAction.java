@@ -226,9 +226,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         // My secondary thought for leaving it was in case an error occurred in JSON.accumulate or JSON.element, but this is unnecessary
         // This one will not be used as the standard bulk operation, it is meant to work specifically with brokenBooks
         
-        // @cubap @disagree.  The point of checking against null != content is so that if there was an error in methodApproval or processRequestBody(), 
-        // send_error() can use the response.  If the response could be hit in this, that is what causes error stacking.  send_error() would write to response
-        // AND this method would write to response since I cannot actually raise exception and control the response code at the same time. 
+        // @cubap @agree. We can let the falsey state of processRequestBody() be the switch instead of the null check.  Keep the issue of
+        // error stacking in the back of your mind as we develop this and remember we can't throw Exceptions
         
         Boolean approved = methodApproval(request, "create");
         if(approved){
@@ -318,10 +317,9 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         // My secondary thought for leaving it was in case an error occurred in JSON.accumulate or JSON.element, but this is unnecessary.
         // This will be what we use as our standard bulk operator.  Originally developed for T-PEN Newberry
         
-        // @cubap @disagree.  The point of checking against null != content is so that if there was an error in methodApproval or processRequestBody(), 
-        // send_error() can use the response.  If the response could be hit in this, that is what causes error stacking.  send_error() would write to response
-        // AND this method would write to response since I cannot actually raise exception and control the response code at the same time.
-        Boolean approved = methodApproval(request, "create");
+        // @cubap @agree. We can let the falsey state of processRequestBody() be the switch instead of the null check.  Keep the issue of
+        // error stacking in the back of your mind as we develop this and remember we can't throw Exceptions
+       Boolean approved = methodApproval(request, "create");
         if(approved){
             content = processRequestBody(request);
         }
@@ -458,7 +456,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             // Also, the outcome of this check is only setting `oid`, which is then
             // checked, which means these two conditions should be combined as well.
             
-            // @cubap @disagree. oid is set by the servlet context which is why I do not call processRequestBody(request) on this.  You do not
+            // @cubap @answer. oid is set by the servlet context which is why I do not call processRequestBody(request) on this.  You do not
             // pass the oid as a parameter or in the body, the struts.xml and web.xml set up tells this method to get the ID off the end of the
             // URL.  By the time you get to this method, either oid is null or it isn't.  Regardless of whether or not you have the ID, 
             // this still needs to be approved as a get.  If you POST to this method and approved is false, making oid null will let the response of send_error() come out. If
@@ -487,10 +485,12 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 jo.remove("serverIP");
                 jo.remove("__rerum");
                 // @theHabes: ? We would still return `__rerum`, wouldn't we? It has good info in it.
+               // @cubap @agree
                 try {
                     response.addHeader("Content-Type", "application/ld+json");
                     // @theHabes: ? Should we check that the object actually has @context?
                     // I'm not certain how to handle malformed JSON-LD
+                   //@cubap @agree when we get to web annotation standard and IIIF compliance
                     response.addHeader("Access-Control-Allow-Origin", "*");
                     response.setStatus(HttpServletResponse.SC_OK);
                     out = response.getWriter();
@@ -533,10 +533,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 // @theHabes ? Whaddya think about pulling out a method buildJSON() that
                 // does this whole try-catch with a error for malformed stuff (or an 
                 // actionable return) so we don't have to repeat and wrap all this each time.
-                // @cubap @disagree.  The point of checking against null != content is so that if there was an error in methodApproval or processRequestBody(), 
-                // send_error() can use the response.  If the response could be hit in this, that is what causes error stacking.  send_error() would write to response
-                // AND this method would write to response since I cannot actually raise exception and control the response code at the same time. 
-               
+                // @cubap @answer processRequestBody() is pretty much doing that for us.  Switching on it's response should handle that.
+           
             BasicDBObject query = new BasicDBObject();
             Set<String> set_received = received.keySet();
             for(String key : set_received){
@@ -582,10 +580,9 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         // @cubap @agree.  I did not unwrap the original try{JSONPARSE}{catch{JSONPARSE error}, processRequestBody does that for us.
         // My secondary thought for leaving it was in case an error occurred in JSON.accumulate or JSON.element, but this is unnecessary.
         
-        // @cubap @disagree.  The point of checking against null != content is so that if there was an error in methodApproval or processRequestBody(), 
-        // send_error() can use the response.  If the response could be hit in this, that is what causes error stacking.  send_error() would write to response
-        // AND this method would write to response since I cannot actually raise exception and control the response code at the same time.
-        
+        // @cubap @agree. We can let the falsey state of processRequestBody() be the switch instead of the null check.  Keep the issue of
+        // error stacking in the back of your mind as we develop this and remember we can't throw Exceptions
+       
         if(null != content){
             try{
                 JSONObject received = JSONObject.fromObject(content);
@@ -655,10 +652,9 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         // @cubap @agree.  I did not unwrap the original try{JSONPARSE}{catch{JSONPARSE error}, processRequestBody does that for us.
         // My secondary thought for leaving it was in case an error occurred in JSON.accumulate or JSON.element, but this is unnecessary.
         
-        // @cubap @disagree.  The point of checking against null != content is so that if there was an error in methodApproval or processRequestBody(), 
-        // send_error() can use the response.  If the response could be hit in this, that is what causes error stacking.  send_error() would write to response
-        // AND this method would write to response since I cannot actually raise exception and control the response code at the same time.
-        
+        // @cubap @agree. We can let the falsey state of processRequestBody() be the switch instead of the null check.  Keep the issue of
+        // error stacking in the back of your mind as we develop this and remember we can't throw Exceptions
+       
         if(null!= content){
             try{
                 BasicDBObject query = new BasicDBObject();
@@ -723,10 +719,9 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         // @cubap @agree.  I did not unwrap the original try{JSONPARSE}{catch{JSONPARSE error}, processRequestBody does that for us.
         // My secondary thought for leaving it was in case an error occurred in JSON.accumulate or JSON.element, but this is unnecessary.
         
-        // @cubap @disagree.  The point of checking against null != content is so that if there was an error in methodApproval or processRequestBody(), 
-        // send_error() can use the response.  If the response could be hit in this, that is what causes error stacking.  send_error() would write to response
-        // AND this method would write to response since I cannot actually raise exception and control the response code at the same time.
-        
+        // @cubap @agree. We can let the falsey state of processRequestBody() be the switch instead of the null check.  Keep the issue of
+        // error stacking in the back of your mind as we develop this and remember we can't throw Exceptions
+       
         if(null!= content){
             try{
                 BasicDBObject query = new BasicDBObject();
@@ -823,10 +818,9 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         // @cubap @agree.  I did not unwrap the original try{JSONPARSE}{catch{JSONPARSE error}, processRequestBody does that for us.
         // My secondary thought for leaving it was in case an error occurred in JSON.accumulate or JSON.element, but this is unnecessary.
         
-        // @cubap @disagree.  The point of checking against null != content is so that if there was an error in methodApproval or processRequestBody(), 
-        // send_error() can use the response.  If the response could be hit in this, that is what causes error stacking.  send_error() would write to response
-        // AND this method would write to response since I cannot actually raise exception and control the response code at the same time.
-        
+        // @cubap @agree. We can let the falsey state of processRequestBody() be the switch instead of the null check.  Keep the issue of
+        // error stacking in the back of your mind as we develop this and remember we can't throw Exceptions
+       
         if(null != content){ 
             BasicDBObject query = new BasicDBObject();
             try{
