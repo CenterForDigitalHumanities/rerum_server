@@ -65,6 +65,7 @@ import org.apache.struts2.interceptor.ServletRequestAware;
 import org.apache.struts2.interceptor.ServletResponseAware;
 import org.bson.types.ObjectId;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import javax.servlet.http.HttpSession;
 import net.sf.json.JSONException;
 
 
@@ -108,6 +109,67 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         } catch (IOException ex) {
             Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
         }
+    }
+    
+    /**
+     * Add the __rerum properties array to a given JSONObject. If array may already exist, in which case you need to update certain values.  See below.
+     * Properties for consideration are:
+     *   APIversion        —1.0.0
+     *   history.prime     —if it has an @id, import from that, else "root"
+     *   history.next      —always [] (or null, perhaps)
+     *   history.previous  —if it has an @id, @id
+     *   releases.previous —if it has an @id, import from that, else null
+     *   releases.next     —always [] (or null, perhaps)
+     *   generatedBy       —set to the @id of the public agent of the API Key.
+     *   createdAt         —"addedTime" timestamp in milliseconds
+     *   isOverwritten, isReleased   —always null
+     * 
+     * @param received A potentially optionless JSONObject.
+     * @return configuredObject The same object that was recieved but with the proper __rerum options
+     */
+    public JSONObject configureRerumOptions(JSONObject received){
+        JSONObject configuredObject = received;
+        JSONObject history = new JSONObject();
+        JSONObject releases = new JSONObject();
+        JSONObject rerumOptions = new JSONObject();
+        String history_prime = "";
+        String history_previous = "";
+        String releases_previous = "";
+        String[] history_and_releases_next = new String[0];
+        rerumOptions.element("APIversion", "1.0.0");
+        rerumOptions.element("createdAt", System.currentTimeMillis());
+        rerumOptions.element("isOverwritten", "");
+        rerumOptions.element("isReleased", "");
+        if(received.containsKey("history")){
+            history = received.getJSONObject("history");
+            history_prime = history.getString("prime");
+            history_previous = received.getString("@id");
+        }
+        else{
+            history_prime = "root";
+            history_previous = "";
+        }
+        if(received.containsKey("releases")){
+            releases = received.getJSONObject("releases");
+            releases_previous = releases.getString("previous");
+        }
+        else{
+            releases_previous = "";
+        }
+        history.element("next", history_and_releases_next);
+        history.element("previous", history_previous);
+        history.element("prime", history_prime);
+        releases.element("previous", releases_previous);
+        releases.element("next", history_and_releases_next);
+        rerumOptions.element("history", history);
+        rerumOptions.element("releases", releases);
+        BasicDBObject serverQuery = new BasicDBObject();
+        // @cubap @theHabes TODO
+        //The access token is in the header  "Authorization: Bearer {YOUR_ACCESS_TOKEN}"
+        //HttpResponse<String> response = Unirest.post("https://cubap.auth0.com/oauth/token") .header("content-type", "application/json") .body("{\"grant_type\":\"client_credentials\",\"client_id\": \"WSCfCWDNSZVRQrX09GUKnAX0QdItmCBI\",\"client_secret\": \"8Mk54OqMDqBzZgm7fJuR4rPA-4T8GGPsqLir2aP432NnmG6EAJBCDl_r_fxPJ4x5\",\"audience\": \"https://cubap.auth0.com/api/v2/\"}") .asString(); 
+        rerumOptions.element("generatedBy",""); //TODO get the @id of the public agent of the API key
+        configuredObject.element("__rerum", rerumOptions); //.element will replace the __rerum that is there OR create a new one
+        return configuredObject;
     }
     
     /**
@@ -182,7 +244,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     public String processRequestBody(HttpServletRequest http_request) throws IOException, ServletException, Exception{
         
         String cType = http_request.getContentType();
-        String methodCheck = http_request.getMethod(); // @theHabes: Never used? Delete? @cubap @agree, my bad.
         String requestBody;
         
         if(cType.contains("application/json") || cType.contains("application/ld+json")) {
@@ -224,6 +285,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     }
     
     /**
+     * @@@ The rerum options code is not applied here as this will be @deprecated
     *The batch save to intended to work with Broken Books, but could be applied elsewhere.  This batch will use the save() mongo function instead of insert() to determine whether 
     to do an update() or insert() for each item in the batch.  
     *    The content is from an HTTP request posting in an array filled with annotations to copy.  
@@ -244,59 +306,12 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         }
         if(null != content){
             JSONArray received_array = JSONArray.fromObject(content);
-            BasicDBObject serverQuery = new BasicDBObject();
-            serverQuery.append("ip", request.getRemoteAddr());
-            DBObject asdbo = mongoDBService.findOneByExample(Constant.COLLECTION_ACCEPTEDSERVER, serverQuery);
-            BasicDBObject asbdbo = (BasicDBObject) asdbo;
-            // @theHabes: probably it makes the most sense to put this "apply
-            // __rerum properties into a method that can be called for batch and
-            // for individual saving/updating
-            // @cubap @agree, pass in the object that needs the __rerum properties applied with various flags for different scenarios.  
-            
-            for(int b=0; b<received_array.size(); b++){
-                /*
-                Okay, these will change in v1, so let's say what to expect:
-                  * We do not need to know if this is a NEW object because versioning.
-                  * In APIversion 0, there is no `__rerum`, so no worries.
-                  * In V1+, we should have `APIversion`, in case we make changes.
-                  * `history` and `releases` is part set, part lookup
-                  * `generatedBy`, `createdAt`, `isOverwritten`, `isReleased` are
-                  * always set new on a save/update.
-                
-                Here's what we write:
-                APIversion      —1.0.0
-                history.prime   —if it has an @id, import from that, else "root"
-                history.next    —always [] (or null, perhaps)
-                history.previous—if it has an @id, @id
-                releases.previous—if it has an @id, import from that, else null
-                releases.next   —always [] (or null, perhaps)
-                generatedBy     —set to the @id of the public agent of the API Key.
-                createdAt       —"addedTime" timestamp in milliseconds
-                isOverwritten, isReleased   —always null
-                
-                Logically, probably set everything as if it is completely new and then
-                lookup for a RERUM @id and copy in the values required.
-                */
-                
-//                JSONArray received_options;
-//                JSONObject received = received_array.getJSONObject(b);
-//                JSONObject option = new JSONObject();
-//                JSONArray rerumOptions = new JSONArray();
-//                //These three liners will happen a lot to follow.  It is to create an JSONObject to add to the __rerum JSONArray.
-//                option.element("addedTime", System.currentTimeMillis());
-//                rerumOptions.add(option);
-//                option.clear();
-//                option.element("originalAnnoID","");
-//                rerumOptions.add(option);
-//                option.clear();
-//                option.element("version", 1);
-//                rerumOptions.add(option);
-//                option.clear();
-//                received.element("serverName", asbdbo.get("name"));
-//                received.element("serverIP", asbdbo.get("ip"));
-//                received_array.set(b,received);
-            }
-            
+             // I think this is already handled in requestServerAuthenticationFilter, just commenting out for now
+//            BasicDBObject serverQuery = new BasicDBObject();
+//            serverQuery.append("ip", request.getRemoteAddr());
+//            DBObject asdbo = mongoDBService.findOneByExample(Constant.COLLECTION_ACCEPTEDSERVER, serverQuery);
+//            BasicDBObject asbdbo = (BasicDBObject) asdbo;
+
             BasicDBList dbo = (BasicDBList) JSON.parse(received_array.toString());
             JSONArray reviewedResources = new JSONArray();
             //if the size is 0, no need to bulk save.  Nothing is there.
@@ -306,14 +321,13 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             else{
              //   Skipping bulk save on account of empty array.
             }
-            // Location headers
-            // @theHabes: This is probably another method to specifically call
-            // out since it will be reused a lot.
-            //@cubap @agree but there is only save and bulk save so it doesn't really have to be made into a helper method.
-            
             JSONObject jo = new JSONObject();
             jo.element("code", HttpServletResponse.SC_CREATED);
             jo.element("reviewed_resources", reviewedResources);
+            // Location headers
+            // @theHabes: This is probably another method to specifically call
+            // out since it will be reused a lot.
+            // @cubap @agree
             String locations = "";
             for(int j=0; j<reviewedResources.size(); j++){
                 JSONObject getMyID = reviewedResources.getJSONObject(j);
@@ -337,6 +351,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     
 
     /** 
+        * TODO @see batchSaveMetadataForm.  Do both methods need to exist?  Combine if possible. This is the method we use for generic bulk saving.
         * Each canvas has an annotation list with 0 - infinity annotations.  A copy requires a new annotation list with the copied annotations and a new @id.
         * Mongo allows us to bulk save.  
         * The content is from an HTTP request posting in an array filled with annotations to copy.  
@@ -358,65 +373,17 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         }
         if(null != content){
             JSONArray received_array = JSONArray.fromObject(content);
-            BasicDBObject serverQuery = new BasicDBObject();
-            serverQuery.append("ip", request.getRemoteAddr());
-            DBObject asdbo = mongoDBService.findOneByExample(Constant.COLLECTION_ACCEPTEDSERVER, serverQuery);
-            BasicDBObject asbdbo = (BasicDBObject) asdbo;
-            for(int b=0; b<received_array.size(); b++){
-                // @theHabes: This is all old code that will be updated to match
-                // the method above.
-                //@agree batchSaveFromCopy and batchSaveMetadataForm attempt the same thing, we should collapse them together and rename.
-                // This is the one I use for general batch saving.  The other one is specifically for broken books. As far as history is concerned
-                // I don't remember why they were developed separately...
-//                JSONArray received_options;
-//                JSONObject received = received_array.getJSONObject(b);
-//                try{
-//                    received_options  = received.getJSONArray("__rerum");
-//                }
-//                catch(JSONException e){ //__rerum may or may not have been submitted with this item.  If not, don't throw just move on with an empty array.
-//                    received_options = new JSONArray();
-//                }
-//                JSONObject option = new JSONObject();
-//                JSONArray rerumOptions = new JSONArray();
-//                boolean permissionFound = false;
-//                boolean forkFromIDFound = false;
-//                //These three liners will happen a lot to follow.  It is to create an JSONObject to add to the __rerum JSONArray.
-//                option.element("addedTime", System.currentTimeMillis());
-//                rerumOptions.add(option);
-//                option.clear();
-//                option.element("originalAnnoID","");
-//                rerumOptions.add(option);
-//                option.clear();
-//                option.element("version", 1);
-//                rerumOptions.add(option);
-//                option.clear();
-//                //We need to check if certain options were already set.  If they were, then we shouldn't set them here.
-//                for(int k=0; k<received_options.size(); k++){
-//                    JSONObject entry = received_options.getJSONObject(k);
-//                    if(entry.containsKey("permission")){
-//                        permissionFound = true;
-//                    }
-//                    if(null != entry.get("forkFromID") || !"".equals(entry.get("forkFromID"))){
-//                        forkFromIDFound = true;
-//                    }
-//                }
-//                //TODO: Is this correct? 
-//                if(!permissionFound){
-//                    option.element("permission", Constant.PERMISSION_PRIVATE);
-//                    rerumOptions.add(option);
-//                    option.clear();
-//                }
-//                if(!forkFromIDFound){
-//                    option.element("forkFromID", "");
-//                    rerumOptions.add(option);
-//                    option.clear();
-//                }
-//                received.element("serverName", asbdbo.get("name"));
-//                received.element("serverIP", asbdbo.get("ip"));
-//                received_array.set(b,received);
+            // I think this is already handled in requestServerAuthenticationFilter, just commenting out for now
+//            BasicDBObject serverQuery = new BasicDBObject();
+//            serverQuery.append("ip", request.getRemoteAddr());
+//            DBObject asdbo = mongoDBService.findOneByExample(Constant.COLLECTION_ACCEPTEDSERVER, serverQuery);
+//            BasicDBObject asbdbo = (BasicDBObject) asdbo;
+            for(int b=0; b<received_array.size(); b++){ //Configure __rerum on each object
+                JSONObject configureMe = received_array.getJSONObject(b);
+                configureMe = configureRerumOptions(configureMe); //configure this object
+                received_array.set(b, configureMe); //Replace the current iterated object in the array with the configured object
             }
-            
-            BasicDBList dbo = (BasicDBList) JSON.parse(received_array.toString());
+            BasicDBList dbo = (BasicDBList) JSON.parse(received_array.toString()); //tricky cause can't use JSONArray here
             JSONArray newResources = new JSONArray();
             //if the size is 0, no need to bulk save.  Nothing is there.
             if(dbo.size() > 0){
@@ -535,8 +502,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 jo.remove("forkFromID");
                 jo.remove("serverName");
                 jo.remove("serverIP");
-                jo.remove("__rerum");
-                // @theHabes: ? We would still return `__rerum`, wouldn't we? It has good info in it.
                 try {
                     response.addHeader("Content-Type", "application/ld+json");
                     // @theHabes: ? Should we check that the object actually has @context?
@@ -590,7 +555,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             }
             if(ls_result.size() > 0){
                 try {
-                    response.addHeader("Content-Type","application/json");
+                    response.addHeader("Content-Type","application/ld+json");
                     response.addHeader("Access-Control-Allow-Origin", "*");
                     response.setStatus(HttpServletResponse.SC_OK);
                     out = response.getWriter();
@@ -623,60 +588,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         if(null != content){
             try{
                 JSONObject received = JSONObject.fromObject(content);
-                JSONArray received_options;
-                try{
-                    received_options  = received.getJSONArray("__rerum");
-                }
-                catch(JSONException e){ //__rerum may or may not have been submitted with this item.  If not, don't throw just move on with an empty array.
-                    received_options = new JSONArray();
-                }
-                JSONObject option = new JSONObject();
-                JSONArray rerumOptions = new JSONArray();
-                boolean permissionFound = false;
-                boolean forkFromIDFound = false;
-                //These three liners will happen a lot to follow.  It is to create an JSONObject to add to the __rerum JSONArray.
-                option.element("addedTime", System.currentTimeMillis());
-                rerumOptions.add(option);
-                option.clear();
-                option.element("originalAnnoID","");
-                rerumOptions.add(option);
-                option.clear();
-                option.element("version", 1);
-                rerumOptions.add(option);
-                option.clear();
-                //We need to check if certain options were already set.  If they were, then we shouldn't set them here.
-                for(int k=0; k<received_options.size(); k++){
-                    JSONObject entry = received_options.getJSONObject(k);
-                    if(entry.containsKey("permission")){
-                        permissionFound = true;
-                    }
-                    if(null != entry.get("forkFromID") || !"".equals(entry.get("forkFromID"))){
-                        forkFromIDFound = true;
-                    }
-                }
-                //TODO: Is this correct? 
-                if(!permissionFound){
-                    option.element("permission", Constant.PERMISSION_PRIVATE);
-                    rerumOptions.add(option);
-                    option.clear();
-                }
-                if(!forkFromIDFound){
-                    option.element("forkFromID", "");
-                    rerumOptions.add(option);
-                    option.clear();
-                }
-                BasicDBObject serverQuery = new BasicDBObject();
-                serverQuery.append("ip", request.getRemoteAddr());
-                DBObject asdbo = mongoDBService.findOneByExample(Constant.COLLECTION_ACCEPTEDSERVER, serverQuery);
-                BasicDBObject asbdbo = (BasicDBObject) asdbo;
-                option.element("serverIP", asbdbo.get("ip"));
-                rerumOptions.add(option);
-                option.clear();
-                option.element("serverName", asbdbo.get("name"));
-                rerumOptions.add(option);
-                option.clear();
-                //we use element instead of accumulate so the clean array made here is either created or entirely replaces __rerum to the object.
-                received.element("__rerum", rerumOptions); 
+                 
                 DBObject dbo = (DBObject) JSON.parse(received.toString());
                 String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
                 //set @id from _id and update the annotation
@@ -744,7 +656,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 JSONObject received = JSONObject.fromObject(content); //object that has an id and new key:val pairs.
                 query.append("@id", received.getString("@id").trim());
                 BasicDBObject result = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The result DB object
-                JSONObject existing_object = JSONObject.fromObject(result); //object from the store to be updated
+                
                 if(null != result){
                     Set<String> update_anno_keys = received.keySet();
                     JSONArray update_rerum_options = received.getJSONArray("__rerum");
@@ -759,24 +671,16 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                             result.append(key, received.get(key));
                         }
                     }
-                    //If the object already in the database contains __rerum key, make sure the objects to be updated for the __rerum array already exist before updating.  ignore special keys.
+                    //If the object already in the database already contained __rerum, we can update that field
                     if(existingOptions){
-                        JSONArray existing_options = existing_object.getJSONArray("__rerum");
-                        for(int l=0; l<update_rerum_options.size(); l++){
-                            JSONObject update_option = update_rerum_options.getJSONObject(l);
-                            String updateKey = update_option.keys().next().toString(); //This object will only contain one key:val pair
-                            for(int m=0; m<existing_options.size(); m++){
-                                JSONObject existing_option = existing_options.getJSONObject(m);
-                                String existingKey = existing_option.keys().next().toString(); //This object will only contain one key:val pair
-                                if(existingKey.equals(updateKey) && !(updateKey.equals("version") || updateKey.equals("forkFromID") || updateKey.equals("originalAnnoID"))){
-                                    existing_options.element(m, update_option); //replace the element at this index with the submitted update to the object.
-                                }
-                            }
-                        }
-                        result.remove("__rerum");
-                        result.append("__rerum", existing_options);
+                        JSONObject existing_object = JSONObject.fromObject(result); //object from the store to be updated
+                        existing_object = configureRerumOptions(existing_object);
+                        //tricky because we can't use JSONObject here but needed one to configure __rerum on the result.
+                        //convert JSONObject of configured result back to a BasicDBObject so we can write it back to mongo
+                        //this could probably be optimized somehow, this seems too expensive for what it is trying to do.
+                        result = (BasicDBObject) JSON.parse(existing_object.toString()); 
                     }
-                    else{
+                    else{ //__rerum did not exist so we did not update this part of the result.
                         //Don't update any __rerum stuff because this key did not exist in the object already
                     }
                     mongoDBService.update(Constant.COLLECTION_ANNOTATION, query, result); //update the result DBObject with any changes performed above
