@@ -184,7 +184,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     public String processRequestBody(HttpServletRequest http_request) throws IOException, ServletException, Exception{
         
         String cType = http_request.getContentType();
-        String methodCheck = http_request.getMethod(); // @theHabes: Never used? Delete?
+        String methodCheck = http_request.getMethod(); // @theHabes: Never used? Delete? @cubap @agree, my bad.
         String requestBody;
         
         if(cType.contains("application/json") || cType.contains("application/ld+json")) {
@@ -260,6 +260,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             // @theHabes: probably it makes the most sense to put this "apply
             // __rerum properties into a method that can be called for batch and
             // for individual saving/updating
+            // @cubap @agree, pass in the object that needs the __rerum properties applied with various flags for different scenarios.  
+            
             for(int b=0; b<received_array.size(); b++){
                 /*
                 Okay, these will change in v1, so let's say what to expect:
@@ -316,6 +318,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             // Location headers
             // @theHabes: This is probably another method to specifically call
             // out since it will be reused a lot.
+            //@cubap @agree but there is only save and bulk save so it doesn't really have to be made into a helper method.
+            
             JSONObject jo = new JSONObject();
             jo.element("code", HttpServletResponse.SC_CREATED);
             jo.element("reviewed_resources", reviewedResources);
@@ -376,6 +380,9 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             for(int b=0; b<received_array.size(); b++){
                 // @theHabes: This is all old code that will be updated to match
                 // the method above.
+                //@agree batchSaveFromCopy and batchSaveMetadataForm attempt the same thing, we should collapse them together and rename.
+                // This is the one I use for general batch saving.  The other one is specifically for broken books. As far as history is concerned
+                // I don't remember why they were developed separately...
 //                JSONArray received_options;
 //                JSONObject received = received_array.getJSONObject(b);
 //                try{
@@ -713,7 +720,9 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
                 //set @id from _id and update the annotation
                 BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
-                String uid = "http://store.rerum.io/rerumserver/id/" + dboWithObjectID.getObjectId("_id").toString();
+
+                String uid = "http://devstore.io/rerumstore/id/" + dboWithObjectID.getObjectId("_id").toString();
+
                 dboWithObjectID.append("@id", uid);
                 mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
                 JSONObject jo = new JSONObject();
