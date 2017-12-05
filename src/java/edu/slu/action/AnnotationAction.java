@@ -65,6 +65,8 @@ import org.apache.struts2.interceptor.ServletRequestAware;
 import org.apache.struts2.interceptor.ServletResponseAware;
 import org.bson.types.ObjectId;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import javax.servlet.http.HttpSession;
+import net.sf.json.JSONException;
 
 
 /**
@@ -83,26 +85,26 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     private StringBuilder bodyString;
     private BufferedReader bodyReader;
     private PrintWriter out;
-    private ObjectMapper mapper = new ObjectMapper();
+    final ObjectMapper mapper = new ObjectMapper();
     
     /**
      * Write error to response.out.  The methods that call this function handle quitting, this just writes the error because of the quit. 
      * @param msg The message to show the user
-     * @param code The HTTP response code to return
+     * @param status The HTTP response status to return
      */
-    public void send_error(String msg, int code){
+    public void send_error(String msg, int status){
         // TODO: @theHabes the naming of this seems a little off. It does not
         // send the error, just writes it to the response. Also the casing feels
         // non-standard.
         // @cubap @agree it was a weird method to implement so I left it weird.  It should be renamed, all other methods are camelCased. 
         // maybe needs better documentation to clarify.
         JSONObject jo = new JSONObject();
-        jo.element("code", code);
+        jo.element("code", status);
         jo.element("message", msg);
         try {
             response.addHeader("Access-Control-Allow-Origin", "*");
             response.setContentType("application/json");
-            response.setStatus(code);
+            response.setStatus(status);
             out = response.getWriter();
             out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
             out.write(System.getProperty("line.separator"));
@@ -112,21 +114,120 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     }
     
     /**
+     * Add the __rerum properties object to a given JSONObject. If __rerum already exists you need to update certain values.  See below.
+     * Properties for consideration are:
+     *   APIversion        —1.0.0
+     *   history.prime     —if it has an @id, import from that, else "root"
+     *   history.next      —always [] (or null, perhaps)
+     *   history.previous  —if it has an @id, @id
+     *   releases.previous —if it has an @id, import from that, else null
+     *   releases.next     —always [] (or null, perhaps)
+     *   generatedBy       —set to the @id of the public agent of the API Key.
+     *   createdAt         —"addedTime" timestamp in milliseconds
+     *   isOverwritten, isReleased   —always null
+     * 
+     * @param received A potentially optionless JSONObject from the Mongo Database (not the user).  This prevents tainted __rerum's
+     * @return configuredObject The same object that was recieved but with the proper __rerum options
+     */
+    public JSONObject configureRerumOptions(JSONObject received){
+        JSONObject configuredObject = received;
+        JSONObject received_options;
+        try{
+            received_options = received.getJSONObject("__rerum"); //If this is an update, the object will have __rerum
+        }
+        catch(Exception e){ //otherwise, it is a new save or an update on an object without the __rerum property
+            received_options = new JSONObject();
+        }
+        JSONObject history = new JSONObject();
+        JSONObject releases = new JSONObject();
+        JSONObject rerumOptions = new JSONObject();
+        String history_prime = "";
+        String history_previous = "";
+        String releases_previous = "";
+        String[] history_and_releases_next = new String[0];
+        rerumOptions.element("APIversion", "1.0.0");
+        rerumOptions.element("createdAt", System.currentTimeMillis());
+        rerumOptions.element("isOverwritten", "");
+        rerumOptions.element("isReleased", "");
+        if(received_options.containsKey("history")){
+            history = received_options.getJSONObject("history");
+            history_prime = history.getString("prime");
+            history_previous = received.getString("@id");
+        }
+        else{
+            history_prime = "root";
+            history_previous = "";
+        }
+        if(received_options.containsKey("releases")){
+            releases = received.getJSONObject("releases");
+            releases_previous = releases.getString("previous");
+        }
+        else{
+            releases_previous = "";
+        }
+        history.element("next", history_and_releases_next);
+        history.element("previous", history_previous);
+        history.element("prime", history_prime);
+        releases.element("previous", releases_previous);
+        releases.element("next", history_and_releases_next);
+        rerumOptions.element("history", history);
+        rerumOptions.element("releases", releases);
+        // @cubap @theHabes TODO
+        //The access token is in the header  "Authorization: Bearer {YOUR_ACCESS_TOKEN}"
+        //HttpResponse<String> response = Unirest.post("https://cubap.auth0.com/oauth/token") .header("content-type", "application/json") .body("{\"grant_type\":\"client_credentials\",\"client_id\": \"WSCfCWDNSZVRQrX09GUKnAX0QdItmCBI\",\"client_secret\": \"8Mk54OqMDqBzZgm7fJuR4rPA-4T8GGPsqLir2aP432NnmG6EAJBCDl_r_fxPJ4x5\",\"audience\": \"https://cubap.auth0.com/api/v2/\"}") .asString(); 
+        rerumOptions.element("generatedBy",""); //TODO get the @id of the public agent of the API key
+        configuredObject.element("__rerum", rerumOptions); //.element will replace the __rerum that is there OR create a new one
+        return configuredObject; //The mongo save/update has not been called yet.  The object returned here will go into mongo.save or mongo.update
+    }
+    
+    /**
+     * Update the history.next property of an object.  This will occur because updateAnnotation will create a new object from a given object, and that
+     * given object will have a new next value of the new object.  Watch out for missing __rerum or malformed __rerum.history
+     * 
+     * @param idForUpdate the @id of the object whose history.next needs to be updated
+     * @param newNextID the @id of the newly created object to be placed in the history.next array.
+     * @return Boolean altered true on success, false on fail
+     */
+    public boolean alterHistoryNext (String idForUpdate, String newNextID){
+        Boolean altered = false;
+        BasicDBObject query = new BasicDBObject();
+        query.append("@id", idForUpdate);
+        DBObject myAnno = mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query);
+        JSONObject annoToUpdate = JSONObject.fromObject(myAnno);
+        if(null != myAnno){
+            try{
+                JSONArray history_next = annoToUpdate.getJSONObject("__rerum").getJSONObject("history").getJSONArray("next"); //JSONArray allows this to be a String[]
+                history_next.add(newNextID); //Add as the last value in the array
+                annoToUpdate.getJSONObject("__rerum").getJSONObject("history").element("next", history_next); //write back to the anno from mongo
+                myAnno = (BasicDBList) JSON.parse(annoToUpdate.toString()); //make the JSONObject a DB object
+                mongoDBService.update(Constant.COLLECTION_ANNOTATION, query, myAnno); //update in mongo
+                altered = true;
+            }
+            catch(Exception e){ //__rerum array does not exist or history object malformed.  What should I do?
+                //TODO check that this fails like we expect and does not stack.
+                send_error("This object does not contain the proper history property.", HttpServletResponse.SC_CONFLICT);
+            }
+        }
+        else{ //THIS IS A 404
+            //TODO check that this fails like we expect and does not stack
+            send_error("Object for history.next update not found...", HttpServletResponse.SC_NOT_FOUND);
+        }
+        return altered;
+    }
+    
+    /**
      * Checks for appropriate RESTful method being used.
      * The action first comes to this function.  It says what type of request it 
      * is and checks the the method is appropriately RESTful.  Returns false if not and
      * the method that calls this will handle a false response;
      * @param http_request the actual http request object
      * @param request_type a string denoting what type of request this should be
+     * @return Boolean indicating RESTfulness
      * @throws Exception 
     */
     public Boolean methodApproval(HttpServletRequest http_request, String request_type) throws Exception{
         String requestMethod = http_request.getMethod();
         boolean restful = false;
-        if(requestMethod.equals("OPTIONS")){ 
-            //This is a browser pre flight (CORS)
-            send_error("Browser pre-flight requests are not supported.  Call this API from within an application on a server.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);           
-        }
         switch(request_type){
             case "update":
                 if(requestMethod.equals("PUT") || requestMethod.equals("PATCH")){
@@ -163,64 +264,75 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             default:
                 send_error("Improper request method for this type of request (unknown).", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
 
-        }       
+            }  
         return restful;
     }
     
     /**
-    * All actions come here to process the request body.  We check if it is JSON and pretty format it.  Returns null if there is a problem.  The methods that call
-    * this will handle requestBody==null;
-    */
+     * All actions come here to process the request body. We check if it is JSON
+     * and pretty format it. Returns pretty stringified JSON or fail to null.
+     * Methods that call this should handle requestBody==null as unexpected.
+     * @param http_request Incoming request to check.
+     * @return String of anticipated JSON format.
+     * @throws java.io.IOException
+     * @throws javax.servlet.ServletException
+     * @throws java.lang.Exception
+     */
     public String processRequestBody(HttpServletRequest http_request) throws IOException, ServletException, Exception{
         
         String cType = http_request.getContentType();
-        String methodCheck = http_request.getMethod();
         String requestBody;
-        JSONObject test;
-        JSONArray test2;
         
         if(cType.contains("application/json") || cType.contains("application/ld+json")) {
             bodyReader = http_request.getReader();
             bodyString = new StringBuilder();
-            String line="";
+            JSONObject test;
+            JSONArray test2;
+            String line;
             while ((line = bodyReader.readLine()) != null)
             {
-              bodyString.append(line + "\n");
+              bodyString.append(line).append("\n");
             }
             requestBody = bodyString.toString();
-            try{ //Try to parse as a JSONObject
+            try{ 
+              // JSON test
               test = JSONObject.fromObject(requestBody);
             }
-            catch(Exception ex){ //was not a JSONObject but might be a JSONArray
-                try{ //Try to parse as a JSONArray
+            catch(Exception ex){ 
+              // not a JSONObject; test for JSONArray
+                try{
                     test2 = JSONArray.fromObject(requestBody);
                 }
-                catch(Exception ex2){ //Was not a JSONObject or a JSONArray.  Not valid JSON.  Throw error. 
-                    send_error("The data passed was not valid JSON", HttpServletResponse.SC_BAD_REQUEST);
+                catch(Exception ex2){
+                    // not a JSONObject or a JSONArray. Throw error. 
+                    send_error("The data passed was not valid JSON:\n"+requestBody, HttpServletResponse.SC_BAD_REQUEST);
                     requestBody = null;
                 }
             }          
+            // no-catch: Is either JSONObject or JSON Array
         }
-        else { //I do not understand the content type being passed.     
+        else { 
             send_error("Invalid Content-Type. Please use 'application/json' or 'application/ld+json'", HttpServletResponse.SC_BAD_REQUEST);
             requestBody = null;
         }
-        //If you set headers later down the line you cannot call response.sendError();
-        response.setContentType("application/json");
+        response.setContentType("application/json"); // We create JSON objects for the return body in most cases.  
         response.addHeader("Access-Control-Allow-Headers", "Content-Type");
         response.addHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT"); // FIXME: Consider adding OPTIONS
         return requestBody;
     }
     
     /**
+     * @@@ The rerum options code is not applied here as this will be @deprecated
     *The batch save to intended to work with Broken Books, but could be applied elsewhere.  This batch will use the save() mongo function instead of insert() to determine whether 
     to do an update() or insert() for each item in the batch.  
     *    The content is from an HTTP request posting in an array filled with annotations to copy.  
+     * @throws java.io.UnsupportedEncodingException
+     * @throws javax.servlet.ServletException
     *    @see MongoDBAbstractDAO.bulkSaveMetadataForm(String collectionName, BasicDBList entity_array);
     *    @see MongoDBAbstractDAO.bulkSetIDProperty(String collectionName, BasicDBObject[] entity_array);
     */   
     public void batchSaveMetadataForm() throws UnsupportedEncodingException, IOException, ServletException, Exception{
-        // TODO: refactor name here. Also, just try-catch JSONArray.fromObject(processRequestBody(request))
+        // TODO: @theHabes refactor name here. Also, just try-catch JSONArray.fromObject(processRequestBody(request))
         // since this is the content= free version.
         // @cubap @agree.  The naming is ancient and I did not unwrap the original try{JSONPARSE}{catch{JSONPARSE error}, processRequestBody does that for us.
         // My secondary thought for leaving it was in case an error occurred in JSON.accumulate or JSON.element, but this is unnecessary
@@ -238,35 +350,12 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         }
         if(null != content){
             JSONArray received_array = JSONArray.fromObject(content);
-            BasicDBObject serverQuery = new BasicDBObject();
-            serverQuery.append("ip", request.getRemoteAddr());
-            DBObject asdbo = mongoDBService.findOneByExample(Constant.COLLECTION_ACCEPTEDSERVER, serverQuery);
-            BasicDBObject asbdbo = (BasicDBObject) asdbo;
-            for(int b=0; b<received_array.size(); b++){
-                JSONObject received = received_array.getJSONObject(b);
-                received.accumulate("addedTime", System.currentTimeMillis());
-                received.accumulate("originalAnnoID", "");//set versionID for a new fork
-                received.accumulate("version", 1);
-                if(!received.containsKey("permission")){
-                    received.accumulate("permission", Constant.PERMISSION_PRIVATE);
-                }
-                if(null == received.get("forkFromID") || "".equals(received.get("forkFromID"))){
-                    received.accumulate("forkFromID", "");
-                }  
-                //received.accumulate("addedTime", System.currentTimeMillis());
-                received.accumulate("originalAnnoID", "");//set versionID for a new fork
-                received.accumulate("version", 1);
-                if(!received.containsKey("permission")){
-                    received.accumulate("permission", Constant.PERMISSION_PRIVATE);
-                }
-                if(null == received.get("forkFromID") || "".equals(received.get("forkFromID"))){
-                    received.accumulate("forkFromID", "");
-                }
-                received.accumulate("serverName", asbdbo.get("name"));
-                received.accumulate("serverIP", asbdbo.get("ip"));
-                received_array.set(b,received);
-            }
-            
+             // I think this is already handled in requestServerAuthenticationFilter, just commenting out for now
+//            BasicDBObject serverQuery = new BasicDBObject();
+//            serverQuery.append("ip", request.getRemoteAddr());
+//            DBObject asdbo = mongoDBService.findOneByExample(Constant.COLLECTION_ACCEPTEDSERVER, serverQuery);
+//            BasicDBObject asbdbo = (BasicDBObject) asdbo;
+
             BasicDBList dbo = (BasicDBList) JSON.parse(received_array.toString());
             JSONArray reviewedResources = new JSONArray();
             //if the size is 0, no need to bulk save.  Nothing is there.
@@ -274,12 +363,15 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 reviewedResources = mongoDBService.bulkSaveMetadataForm(Constant.COLLECTION_ANNOTATION, dbo);
             }
             else{
-             //   System.out.println("Skipping bulk save on account of empty array.");
+             //   Skipping bulk save on account of empty array.
             }
-            //bulk save will automatically call bulk update so there is no real need to return these values.  We will for later use.
             JSONObject jo = new JSONObject();
             jo.element("code", HttpServletResponse.SC_CREATED);
             jo.element("reviewed_resources", reviewedResources);
+            // Location headers
+            // @theHabes: This is probably another method to specifically call
+            // out since it will be reused a lot.
+            // @cubap @agree
             String locations = "";
             for(int j=0; j<reviewedResources.size(); j++){
                 JSONObject getMyID = reviewedResources.getJSONObject(j);
@@ -303,9 +395,12 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     
 
     /** 
+        * TODO @see batchSaveMetadataForm.  Do both methods need to exist?  Combine if possible. This is the method we use for generic bulk saving.
         * Each canvas has an annotation list with 0 - infinity annotations.  A copy requires a new annotation list with the copied annotations and a new @id.
         * Mongo allows us to bulk save.  
         * The content is from an HTTP request posting in an array filled with annotations to copy.  
+     * @throws java.io.UnsupportedEncodingException
+     * @throws javax.servlet.ServletException
         * @see MongoDBAbstractDAO.bulkSaveFromCopy(String collectionName, BasicDBList entity_array);
         * @see MongoDBAbstractDAO.bulkSetIDProperty(String collectionName, BasicDBObject[] entity_array);
     */ 
@@ -328,35 +423,17 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         }
         if(null != content){
             JSONArray received_array = JSONArray.fromObject(content);
-            BasicDBObject serverQuery = new BasicDBObject();
-            serverQuery.append("ip", request.getRemoteAddr());
-            DBObject asdbo = mongoDBService.findOneByExample(Constant.COLLECTION_ACCEPTEDSERVER, serverQuery);
-            BasicDBObject asbdbo = (BasicDBObject) asdbo;
-            for(int b=0; b<received_array.size(); b++){
-                JSONObject received = received_array.getJSONObject(b);
-                received.accumulate("addedTime", System.currentTimeMillis());
-                received.accumulate("originalAnnoID", "");//set versionID for a new fork
-                received.accumulate("version", 1);
-                if(!received.containsKey("permission")){
-                    received.accumulate("permission", Constant.PERMISSION_PRIVATE);
-                }
-                if(null == received.get("forkFromID") || "".equals(received.get("forkFromID"))){
-                    received.accumulate("forkFromID", "");
-                }  
-                received.accumulate("originalAnnoID", "");//set versionID for a new fork
-                received.accumulate("version", 1);
-                if(!received.containsKey("permission")){
-                    received.accumulate("permission", Constant.PERMISSION_PRIVATE);
-                }
-                if(null == received.get("forkFromID") || "".equals(received.get("forkFromID"))){
-                    received.accumulate("forkFromID", "");
-                }
-                received.accumulate("serverName", asbdbo.get("name"));
-                received.accumulate("serverIP", asbdbo.get("ip"));
-                received_array.set(b,received);
+            // I think this is already handled in requestServerAuthenticationFilter, just commenting out for now
+//            BasicDBObject serverQuery = new BasicDBObject();
+//            serverQuery.append("ip", request.getRemoteAddr());
+//            DBObject asdbo = mongoDBService.findOneByExample(Constant.COLLECTION_ACCEPTEDSERVER, serverQuery);
+//            BasicDBObject asbdbo = (BasicDBObject) asdbo;
+            for(int b=0; b<received_array.size(); b++){ //Configure __rerum on each object
+                JSONObject configureMe = received_array.getJSONObject(b);
+                configureMe = configureRerumOptions(configureMe); //configure this object
+                received_array.set(b, configureMe); //Replace the current iterated object in the array with the configured object
             }
-            
-            BasicDBList dbo = (BasicDBList) JSON.parse(received_array.toString());
+            BasicDBList dbo = (BasicDBList) JSON.parse(received_array.toString()); //tricky cause can't use JSONArray here
             JSONArray newResources = new JSONArray();
             //if the size is 0, no need to bulk save.  Nothing is there.
             if(dbo.size() > 0){
@@ -365,7 +442,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             else {
                 // empty array
             }
-            //bulk save will automatically call bulk update so there is no real need to return these values.  We will for later use.
+            //bulk save will automatically call bulk update 
             JSONObject jo = new JSONObject();
             jo.element("code", HttpServletResponse.SC_CREATED);
             jo.element("new_resources", newResources);
@@ -461,7 +538,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             // URL.  By the time you get to this method, either oid is null or it isn't.  Regardless of whether or not you have the ID, 
             // this still needs to be approved as a get.  If you POST to this method and approved is false, making oid null will let the response of send_error() come out. If
             // it is approved as a GET, the fact the oid is invalid or null will return the 404.  They are separate fails with separate response codes, so they
-            // must be handled separately.
+            // must be handled separately to avoid error stacking.
         }
         else{
             oid=null;
@@ -483,9 +560,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 jo.remove("forkFromID");
                 jo.remove("serverName");
                 jo.remove("serverIP");
-                jo.remove("__rerum");
-                // @theHabes: ? We would still return `__rerum`, wouldn't we? It has good info in it.
-               // @cubap @agree
                 try {
                     response.addHeader("Content-Type", "application/ld+json");
                     // @theHabes: ? Should we check that the object actually has @context?
@@ -495,7 +569,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                     response.setStatus(HttpServletResponse.SC_OK);
                     out = response.getWriter();
                     out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
-                } catch (IOException ex) {
+                } 
+                catch (IOException ex) {
                     Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
@@ -527,7 +602,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         }
         // @theHabes: Just try-catch or false check JSONObject.fromObject(processRequestBody(request))
         // since this is the content= free version.
-        // @cubap @disagree @see comment below
         if(null != content){
             JSONObject received = JSONObject.fromObject(content);
                 // @theHabes ? Whaddya think about pulling out a method buildJSON() that
@@ -547,7 +621,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             }
             if(ls_result.size() > 0){
                 try {
-                    response.addHeader("Content-Type","application/json");
+                    response.addHeader("Content-Type","application/ld+json");
                     response.addHeader("Access-Control-Allow-Origin", "*");
                     response.setStatus(HttpServletResponse.SC_OK);
                     out = response.getWriter();
@@ -586,29 +660,14 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         if(null != content){
             try{
                 JSONObject received = JSONObject.fromObject(content);
-                JSONObject rerumOptions = new JSONObject();
-                // @cubap check for removal in __rerum branch
-                rerumOptions.accumulate("addedTime", System.currentTimeMillis());
-                rerumOptions.accumulate("originalAnnoID", "");//set versionID for a new fork
-                rerumOptions.accumulate("version", 1);
-                if(!received.containsKey("permission")){
-                    rerumOptions.accumulate("permission", Constant.PERMISSION_PRIVATE);
-                }
-                if(null == received.get("forkFromID") || "".equals(received.get("forkFromID"))){
-                    rerumOptions.accumulate("forkFromID", "");
-                }
-                BasicDBObject serverQuery = new BasicDBObject();
-                serverQuery.append("ip", request.getRemoteAddr());
-                DBObject asdbo = mongoDBService.findOneByExample(Constant.COLLECTION_ACCEPTEDSERVER, serverQuery);
-                BasicDBObject asbdbo = (BasicDBObject) asdbo;
-                rerumOptions.accumulate("serverName", asbdbo.get("name"));
-                rerumOptions.accumulate("serverIP", asbdbo.get("ip"));
-                received.accumulate("__rerum", rerumOptions);
+                 
                 DBObject dbo = (DBObject) JSON.parse(received.toString());
                 String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
                 //set @id from _id and update the annotation
                 BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
-                String uid = "http://store.rerum.io/rerumserver/id/" + dboWithObjectID.getObjectId("_id").toString();
+
+                String uid = "http://devstore.io/rerumstore/id/" + dboWithObjectID.getObjectId("_id").toString();
+
                 dboWithObjectID.append("@id", uid);
                 mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
                 JSONObject jo = new JSONObject();
@@ -633,11 +692,25 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
 
     }
     
+    public void setVal(){
+        
+    }
+    
+    public void unsetVal(){
+        
+    }
+    
     /**
-     * Update a given annotation. PUT and PATCH, set or unset support?  I think this only works with keys that already exist.
+     * Update a given annotation. PUT that does not set or unset only.
      * @param annotation.objectID
      * @param all annotation properties include updated properties. 
      * @FIXME things are in __rerum now
+     * @ignore the following keys (they will never be updated)
+     *      @id
+     *      version
+     *      forkFromID
+     *      originalAnnoID
+     *      objectID
      */
     public void updateAnnotation() throws IOException, ServletException, Exception{
         Boolean approved = methodApproval(request, "update");
@@ -658,23 +731,41 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         if(null!= content){
             try{
                 BasicDBObject query = new BasicDBObject();
-                JSONObject received = JSONObject.fromObject(content);
+                JSONObject received = JSONObject.fromObject(content); //object that has an id and new key:val pairs.
                 query.append("@id", received.getString("@id").trim());
-                BasicDBObject result = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query);
+                BasicDBObject result = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The result DB object
+                
                 if(null != result){
-                    Set<String> set_keys = received.keySet();
-                    for(String key : set_keys){
-                        if(result.containsKey(key) 
-                                && (!key.equals("@id") 
-                                        || !key.equals("version") 
-                                        || !key.equals("forkFromID")
-                                        || !key.equals("originalAnnoID")
-                                        || !key.equals("objectID"))){
+                    Set<String> update_anno_keys = received.keySet();
+                    JSONArray update_rerum_options = received.getJSONArray("__rerum");
+                    boolean existingOptions = false; //Does the result DB object already contain __rerum
+                    if(result.containsKey("__rerum")){
+                        existingOptions = true;
+                    }
+                    //If the object already in the database contains the key found from the object recieved from the user, update it barring a few special keys
+                    for(String key : update_anno_keys){
+                        if(result.containsKey(key) && (!key.equals("@id") || !key.equals("__rerum")) || !key.equals("objectID")){
                             result.remove(key);
                             result.append(key, received.get(key));
                         }
                     }
-                    mongoDBService.update(Constant.COLLECTION_ANNOTATION, query, result);
+                    //If the object already in the database already contained __rerum, we can update that field
+                    if(existingOptions){
+                        JSONObject existing_object = JSONObject.fromObject(result); //object from the store to be updated
+                        existing_object = configureRerumOptions(existing_object);
+                        //tricky because we can't use JSONObject here but needed one to configure __rerum on the result.
+                        //convert JSONObject of configured result back to a BasicDBObject so we can write it back to mongo
+                        //this could probably be optimized somehow, this seems too expensive for what it is trying to do.
+                        result = (BasicDBObject) JSON.parse(existing_object.toString()); 
+                    }
+                    else{ //__rerum did not exist so we did not update this part of the result.
+                        //Don't update any __rerum stuff because this key did not exist in the object already
+                    }
+                    mongoDBService.update(Constant.COLLECTION_ANNOTATION, query, result); //update the result DBObject with any changes performed above
+                    // @cubap @theHabes FIXME TODO in the future, we need an update that actually creates a new object and returns its @id
+                    //String newNextID = @id_from_new_object;
+                    //Then we need to pass that off to a function that will update the history.next property of the original
+                    //alterHistoryNext(received.getString("@id"),  newNextID);
                     JSONObject jo = new JSONObject();
                     jo.element("code", HttpServletResponse.SC_OK);
                     try {
