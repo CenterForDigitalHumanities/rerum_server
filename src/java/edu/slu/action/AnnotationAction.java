@@ -114,7 +114,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     }
     
     /**
-     * Add the __rerum properties array to a given JSONObject. If array may already exist, in which case you need to update certain values.  See below.
+     * Add the __rerum properties object to a given JSONObject. If __rerum already exists you need to update certain values.  See below.
      * Properties for consideration are:
      *   APIversion        —1.0.0
      *   history.prime     —if it has an @id, import from that, else "root"
@@ -126,11 +126,18 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      *   createdAt         —"addedTime" timestamp in milliseconds
      *   isOverwritten, isReleased   —always null
      * 
-     * @param received A potentially optionless JSONObject.
+     * @param received A potentially optionless JSONObject from the Mongo Database (not the user).  This prevents tainted __rerum's
      * @return configuredObject The same object that was recieved but with the proper __rerum options
      */
     public JSONObject configureRerumOptions(JSONObject received){
         JSONObject configuredObject = received;
+        JSONObject received_options;
+        try{
+            received_options = received.getJSONObject("__rerum"); //If this is an update, the object will have __rerum
+        }
+        catch(Exception e){ //otherwise, it is a new save or an update on an object without the __rerum property
+            received_options = new JSONObject();
+        }
         JSONObject history = new JSONObject();
         JSONObject releases = new JSONObject();
         JSONObject rerumOptions = new JSONObject();
@@ -142,8 +149,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         rerumOptions.element("createdAt", System.currentTimeMillis());
         rerumOptions.element("isOverwritten", "");
         rerumOptions.element("isReleased", "");
-        if(received.containsKey("history")){
-            history = received.getJSONObject("history");
+        if(received_options.containsKey("history")){
+            history = received_options.getJSONObject("history");
             history_prime = history.getString("prime");
             history_previous = received.getString("@id");
         }
@@ -151,7 +158,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             history_prime = "root";
             history_previous = "";
         }
-        if(received.containsKey("releases")){
+        if(received_options.containsKey("releases")){
             releases = received.getJSONObject("releases");
             releases_previous = releases.getString("previous");
         }
@@ -165,13 +172,47 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         releases.element("next", history_and_releases_next);
         rerumOptions.element("history", history);
         rerumOptions.element("releases", releases);
-        BasicDBObject serverQuery = new BasicDBObject();
         // @cubap @theHabes TODO
         //The access token is in the header  "Authorization: Bearer {YOUR_ACCESS_TOKEN}"
         //HttpResponse<String> response = Unirest.post("https://cubap.auth0.com/oauth/token") .header("content-type", "application/json") .body("{\"grant_type\":\"client_credentials\",\"client_id\": \"WSCfCWDNSZVRQrX09GUKnAX0QdItmCBI\",\"client_secret\": \"8Mk54OqMDqBzZgm7fJuR4rPA-4T8GGPsqLir2aP432NnmG6EAJBCDl_r_fxPJ4x5\",\"audience\": \"https://cubap.auth0.com/api/v2/\"}") .asString(); 
         rerumOptions.element("generatedBy",""); //TODO get the @id of the public agent of the API key
         configuredObject.element("__rerum", rerumOptions); //.element will replace the __rerum that is there OR create a new one
-        return configuredObject;
+        return configuredObject; //The mongo save/update has not been called yet.  The object returned here will go into mongo.save or mongo.update
+    }
+    
+    /**
+     * Update the history.next property of an object.  This will occur because updateAnnotation will create a new object from a given object, and that
+     * given object will have a new next value of the new object.  Watch out for missing __rerum or malformed __rerum.history
+     * 
+     * @param idForUpdate the @id of the object whose history.next needs to be updated
+     * @param newNextID the @id of the newly created object to be placed in the history.next array.
+     * @return Boolean altered true on success, false on fail
+     */
+    public boolean alterHistoryNext (String idForUpdate, String newNextID){
+        Boolean altered = false;
+        BasicDBObject query = new BasicDBObject();
+        query.append("@id", idForUpdate);
+        DBObject myAnno = mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query);
+        JSONObject annoToUpdate = JSONObject.fromObject(myAnno);
+        if(null != myAnno){
+            try{
+                JSONArray history_next = annoToUpdate.getJSONObject("__rerum").getJSONObject("history").getJSONArray("next"); //JSONArray allows this to be a String[]
+                history_next.add(newNextID); //Add as the last value in the array
+                annoToUpdate.getJSONObject("__rerum").getJSONObject("history").element("next", history_next); //write back to the anno from mongo
+                myAnno = (BasicDBList) JSON.parse(annoToUpdate.toString()); //make the JSONObject a DB object
+                mongoDBService.update(Constant.COLLECTION_ANNOTATION, query, myAnno); //update in mongo
+                altered = true;
+            }
+            catch(Exception e){ //__rerum array does not exist or history object malformed.  What should I do?
+                //TODO check that this fails like we expect and does not stack.
+                send_error("This object does not contain the proper history property.", HttpServletResponse.SC_CONFLICT);
+            }
+        }
+        else{ //THIS IS A 404
+            //TODO check that this fails like we expect and does not stack
+            send_error("Object for history.next update not found...", HttpServletResponse.SC_NOT_FOUND);
+        }
+        return altered;
     }
     
     /**
@@ -187,12 +228,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     public Boolean methodApproval(HttpServletRequest http_request, String request_type) throws Exception{
         String requestMethod = http_request.getMethod();
         boolean restful = false;
-        if(requestMethod.equals("OPTIONS")){ 
-            //This is a browser pre flight (CORS)
-            send_error("Browser pre-flight requests are not supported. Call this API from within an application on a server.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);           
-            return restful;
-            // DELETEME: cubap: The extended condition is messy if this is just an exit condition
-        }
         switch(request_type){
             case "update":
                 if(requestMethod.equals("PUT") || requestMethod.equals("PATCH")){
@@ -503,7 +538,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             // URL.  By the time you get to this method, either oid is null or it isn't.  Regardless of whether or not you have the ID, 
             // this still needs to be approved as a get.  If you POST to this method and approved is false, making oid null will let the response of send_error() come out. If
             // it is approved as a GET, the fact the oid is invalid or null will return the 404.  They are separate fails with separate response codes, so they
-            // must be handled separately.
+            // must be handled separately to avoid error stacking.
         }
         else{
             oid=null;
@@ -727,6 +762,10 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                         //Don't update any __rerum stuff because this key did not exist in the object already
                     }
                     mongoDBService.update(Constant.COLLECTION_ANNOTATION, query, result); //update the result DBObject with any changes performed above
+                    // @cubap @theHabes FIXME TODO in the future, we need an update that actually creates a new object and returns its @id
+                    //String newNextID = @id_from_new_object;
+                    //Then we need to pass that off to a function that will update the history.next property of the original
+                    //alterHistoryNext(received.getString("@id"),  newNextID);
                     JSONObject jo = new JSONObject();
                     jo.element("code", HttpServletResponse.SC_OK);
                     try {
