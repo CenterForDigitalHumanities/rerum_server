@@ -567,7 +567,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         }
         // @theHabes: Just try-catch or false check JSONObject.fromObject(processRequestBody(request))
         // since this is the content= free version.
-        // @cubap @disagree @see comment below
         if(null != content){
             JSONObject received = JSONObject.fromObject(content);
                 // @theHabes ? Whaddya think about pulling out a method buildJSON() that
