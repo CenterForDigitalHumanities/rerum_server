@@ -146,7 +146,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         String history_prime = "";
         String history_previous = "";
         String releases_previous = "";
-        String[] history_and_releases_next = new String[0];
+        String[] emptyArray = new String[0];
         rerumOptions.element("APIversion", "1.0.0");
         rerumOptions.element("createdAt", System.currentTimeMillis());
         rerumOptions.element("isOverwritten", "");
@@ -155,23 +155,25 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             history = received_options.getJSONObject("history");
             history_prime = history.getString("prime");
             history_previous = received.getString("@id");
+            history.element("next", history.getJSONArray("next"));
         }
         else{
             history_prime = "root";
             history_previous = "";
+            history.element("next", emptyArray);
         }
         if(received_options.containsKey("releases")){
             releases = received.getJSONObject("releases");
             releases_previous = releases.getString("previous");
+            releases.element("next", releases.getJSONArray("next"));
         }
         else{
             releases_previous = "";
+            releases.element("next", emptyArray);
         }
-        history.element("next", history_and_releases_next);
         history.element("previous", history_previous);
         history.element("prime", history_prime);
         releases.element("previous", releases_previous);
-        releases.element("next", history_and_releases_next);
         rerumOptions.element("history", history);
         rerumOptions.element("releases", releases);
         // @cubap @theHabes TODO
