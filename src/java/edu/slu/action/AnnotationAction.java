@@ -557,7 +557,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 jo.remove("originalAnnoID");
                 jo.remove("version");
                 jo.remove("permission");
-                jo.remove("forkFromID");
+                jo.remove("forkFromID"); // retained for legacy v0 objects
                 jo.remove("serverName");
                 jo.remove("serverIP");
                 try {
@@ -707,9 +707,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * @FIXME things are in __rerum now
      * @ignore the following keys (they will never be updated)
      *      @id
-     *      version
-     *      forkFromID
-     *      originalAnnoID
      *      objectID
      */
     public void updateAnnotation() throws IOException, ServletException, Exception{
