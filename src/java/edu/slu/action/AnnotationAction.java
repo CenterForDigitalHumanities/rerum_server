@@ -133,9 +133,11 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         JSONObject configuredObject = received;
         JSONObject received_options;
         try{
-            received_options = received.getJSONObject("__rerum"); //If this is an update, the object will have __rerum
+            //If this is an update, the object will have __rerum
+            received_options = received.getJSONObject("__rerum"); 
         }
-        catch(Exception e){ //otherwise, it is a new save or an update on an object without the __rerum property
+        catch(Exception e){ 
+            //otherwise, it is a new save or an update on an object without the __rerum property
             received_options = new JSONObject();
         }
         JSONObject history = new JSONObject();
