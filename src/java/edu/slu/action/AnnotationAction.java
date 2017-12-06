@@ -559,7 +559,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 jo.remove("originalAnnoID");
                 jo.remove("version");
                 jo.remove("permission");
-                jo.remove("forkFromID");
+                jo.remove("forkFromID"); // retained for legacy v0 objects
                 jo.remove("serverName");
                 jo.remove("serverIP");
                 try {
@@ -704,14 +704,14 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     
     /**
      * Update a given annotation. PUT that does not set or unset only.
+     * This is one place new branches of an annotation may be created
+     * when the `annotation.objectID` resolves to an object that has
+     * an entry in .__rerum.history.next already.
      * @param annotation.objectID
      * @param all annotation properties include updated properties. 
      * @FIXME things are in __rerum now
      * @ignore the following keys (they will never be updated)
      *      @id
-     *      version
-     *      forkFromID
-     *      originalAnnoID
      *      objectID
      */
     public void updateAnnotation() throws IOException, ServletException, Exception{
@@ -933,53 +933,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 send_error("annotation provided for delete was not JSON, could not get id to delete", HttpServletResponse.SC_BAD_REQUEST);
             }
         }
-    }
-    
-    /**
-     * Fork a given annotation
-     * @param annotation.objectID
-     * @param annotation.permission (optional, if null, set to private by default)
-     * @FIXME things are in __rerum now
-     */
-    public void forkAnnotation() throws IOException, ServletException, Exception{
-        // TODO: This is all going away (getting reworked).
-        Boolean approved = methodApproval(request, "create");
-        if(approved){
-            content = processRequestBody(request);
-        }
-        else{
-            content = null;
-        }
-        if(null!= content){
-            BasicDBObject query = new BasicDBObject();
-            JSONObject received = JSONObject.fromObject(content);
-            query.append("_id", received.getString("objectID").trim());
-            BasicDBObject result = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query);
-            if(null != result){
-                BasicDBObject fork = new BasicDBObject(result);
-                fork.append("forkFromID", result.get("_id"));
-                JSONObject jo = JSONObject.fromObject(fork);
-                try {
-                    response.setStatus(HttpServletResponse.SC_CREATED);
-                    out = response.getWriter();
-                    out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
-                } catch (IOException ex) {
-                    Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            }else{
-                send_error("The annotation you are trying to fork does not exist.", HttpServletResponse.SC_NOT_FOUND);
-            }
-        }
-    }
-    
-    
-    /**
-     * Save forked annotation. 
-     * @param annotation
-     * @return what saveNewAnnotation() returns
-     */
-    public void saveForkAnnotation() throws IOException, ServletException, Exception{
-        saveNewAnnotation();
     }
     
     @Override
