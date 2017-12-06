@@ -702,6 +702,9 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     
     /**
      * Update a given annotation. PUT that does not set or unset only.
+     * This is one place new branches of an annotation may be created
+     * when the `annotation.objectID` resolves to an object that has
+     * an entry in .__rerum.history.next already.
      * @param annotation.objectID
      * @param all annotation properties include updated properties. 
      * @FIXME things are in __rerum now
