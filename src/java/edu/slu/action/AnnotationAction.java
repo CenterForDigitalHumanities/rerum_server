@@ -370,23 +370,9 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             JSONObject jo = new JSONObject();
             jo.element("code", HttpServletResponse.SC_CREATED);
             jo.element("reviewed_resources", reviewedResources);
-            // Location headers
-            // @theHabes: This is probably another method to specifically call
-            // out since it will be reused a lot.
-            // @cubap @agree
-            String locations = "";
-            for(int j=0; j<reviewedResources.size(); j++){
-                JSONObject getMyID = reviewedResources.getJSONObject(j);
-                if(j == reviewedResources.size()-1){
-                    locations += getMyID.getString("@id");
-                }
-                else{
-                    locations += getMyID.getString("@id")+",";
-                }
-            }
+            addLocationHeader(reviewedResources);
             try {
                 out = response.getWriter();
-                response.addHeader("Location", locations);
                 response.setStatus(HttpServletResponse.SC_CREATED);
                 out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
             } catch (IOException ex) {
@@ -481,20 +467,10 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             JSONObject jo = new JSONObject();
             jo.element("code", HttpServletResponse.SC_CREATED);
             jo.element("new_resources", newResources);
-            String locations = "";
-            for(int j=0; j<newResources.size(); j++){
-                JSONObject getMyID = newResources.getJSONObject(j);
-                if(j == newResources.size()-1){
-                    locations += getMyID.getString("@id");
-                }
-                else{
-                    locations += getMyID.getString("@id")+",";
-                }
-            }
+            addLocationHeader(newResources);
             try {
                 out = response.getWriter();
                 response.setStatus(HttpServletResponse.SC_CREATED);
-                response.addHeader("Location", locations);
                 out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
             } catch (IOException ex) {
                 Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
