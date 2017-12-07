@@ -395,6 +395,12 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         }
     }
     
+    /**
+     * Creates or appends Location header from @id.
+     * Headers are attached and read from {@link #response}. 
+     * @param obj  the JSON being returned to client
+     * @see #addLocationHeader(net.sf.json.JSONArray) addLocationHeader(JSONArray)
+     */
     private void addLocationHeader(JSONObject obj){
         String addLocation;
         String thisLocation = response.getHeader("Location");
@@ -410,7 +416,13 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         }
         response.setHeader("Location", addLocation);
     }
-    
+
+    /**
+     * Creates or appends list of @ids to Location header.
+     * Headers are attached and read from {@link #response}. 
+     * @param arr  the JSON Array being returned to the client
+     * @see #addLocationHeader(net.sf.json.JSONObject) addLocationHeader(JSONObject)
+     */    
     private void addLocationHeader(JSONArray arr){
         for(int j=0; j<arr.size(); j++){
             addLocationHeader(arr.getJSONObject(j));
