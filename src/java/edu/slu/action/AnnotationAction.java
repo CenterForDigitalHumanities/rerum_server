@@ -972,6 +972,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     
      /**
      * A JSONObject that already has an @id can be validated against this IIIF validation URL.  It will return a JSONObject.
+     * A save or update action could hit this to see if the resulting object is IIIF valid.  If not, a 'rollback' or 'delete' could be performed
+     * and the warnings and errors sent back to the user.
      * 
      * @param objURL The @id or id of a IIIF JSON object.
      * @param version The Intended Presentation API version to validate against.  (1, 2 or 2.1)
