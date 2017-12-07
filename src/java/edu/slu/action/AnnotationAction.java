@@ -65,6 +65,12 @@ import org.apache.struts2.interceptor.ServletRequestAware;
 import org.apache.struts2.interceptor.ServletResponseAware;
 import org.bson.types.ObjectId;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.DataOutputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLEncoder;
 import javax.servlet.http.HttpSession;
 import net.sf.json.JSONException;
 
@@ -936,7 +942,67 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     }
     
      /**
-     * Validate data is IIIF compliant.  Save and Update actions will look here to make sure the data and action are valid against various IIIF presentation API's.
+     * Validate data is IIIF compliant against IIIF's validator.  This object is intended for creation and not yet saved into RERUM so it does not yet have an @id.
+     * The only way to hit the IIIF Validation API is to use the object's @id. The idea would be to save the objects to get an id, hit the 
+     * IIIF API and if the object was intended to be IIIF, delete it from the store and return an error to the user.
+     * 
+     * In the case the object was not intended to be IIIF, do not return an error.
+     * @param objectToCheck A JSON object to parse through and validate.  This object has not yet been saved into mongo, so it does not have an @id yet
+     * @return iiif_return The return JSONObject from hitting the IIIF Validation API.
+     */
+    public JSONObject checkIIIFCompliance(JSONObject objectToCheck, boolean intendedIIIF) throws MalformedURLException, IOException{
+        JSONObject iiif_return = new JSONObject();
+        DBObject dbo = (DBObject) JSON.parse(objectToCheck.toString());
+        String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
+        iiif_return = checkIIIFCompliance(newObjectID, "2.1"); //If it is an object we are creating, this line means @context must point to Presentation API 2 or 2.1
+        if(iiif_return.getInt("okay") == 0){
+            if(intendedIIIF){
+                //If it was intended to be a IIIF object, then remove this object from the store because it was not valid and return an error to the user;
+                BasicDBObject query = new BasicDBObject();
+                query.append("_id", newObjectID);
+                mongoDBService.delete(Constant.COLLECTION_ANNOTATION, query);
+            }
+            else{
+                //Otherwise say it is ok so the action looking do validate does not send_error()
+                iiif_return.element("okay", 1);
+            }
+        }
+        return iiif_return;
+    }
+    
+     /**
+     * A JSONObject that already has an @id can be validated against this IIIF validation URL.  It will return a JSONObject.
+     * 
+     * @param objURL The @id or id of a IIIF JSON object.
+     * @param version The Intended Presentation API version to validate against.  (1, 2 or 2.1)
+     * @return iiif_return The return JSONObject from hitting the IIIF Validation API.
+     */
+    public JSONObject checkIIIFCompliance(String objURL, String version) throws MalformedURLException, IOException{
+        JSONObject iiif_return = new JSONObject();
+        String iiif_validation_url = "http://iiif.io/api/presentation/validator/service/validate?format=json&version="+version+"&url="+objURL;
+        URL id = new URL(iiif_validation_url);
+        BufferedReader reader = null;
+        StringBuilder stringBuilder;
+        HttpURLConnection connection = (HttpURLConnection) id.openConnection();
+        connection.setRequestMethod("GET");
+        connection.setReadTimeout(15*1000);
+        connection.connect();
+        reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+        stringBuilder = new StringBuilder();
+        String line = null;
+        while ((line = reader.readLine()) != null)
+        {
+          stringBuilder.append(line + "\n");
+        }
+        connection.disconnect();
+        iiif_return = JSONObject.fromObject(stringBuilder.toString());
+        return iiif_return;
+    }
+    
+     /**
+     * Validate data is IIIF compliant with an internal validation schema.  Save and Update actions will look here to make sure the data and action are valid against various
+     * IIIF presentation rules
+     * 
      * Check @context to figure out what version the object is and check @type to make sure it is a supported IIIF type.  Then check the key:value pairs of the object
      * are supported for the save or update action.
      * 
@@ -952,7 +1018,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         String context = "";
         String type = "";
         String version = "0";
-        Boolean valid = false;
+        int valid = 0;
         int errorCounter = 1;
         int warningCounter = 1;
         try{
@@ -1031,7 +1097,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
 
                     break;
                     case "sc:Manifest":
-                        //OVERHAUL we can validate against http://iiif.io/api/presentation/validator/service/validate?format=json&version=2.1&url=manifest-url-here OR follow semantics below.
                         //Must have at least one label
                         //Should have one or more Metadata pairs
                         //Should have one or more description
@@ -1254,7 +1319,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             
         }
         
-        compliant.element("valid", valid);
+        compliant.element("okay", valid);
         compliant.element("warnings", warnings);
         compliant.element("errors", errors);
         return compliant;
@@ -1328,3 +1393,4 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     }
 
 }
+
