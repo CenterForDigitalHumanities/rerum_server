@@ -395,6 +395,27 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         }
     }
     
+    private void addLocationHeader(JSONObject obj){
+        String addLocation;
+        String thisLocation = response.getHeader("Location");
+        // Warning: if there are multiple "Location" headers only one will be returned
+        // our practice of making a list protects from this.
+        if (response.containsHeader("Location")) {
+            // add to existing header
+            addLocation = response.getHeader("Location").concat(",").concat(obj.getString("@id"));
+        }
+        else {
+            // no header attached yet
+            addLocation = obj.getString("@id");
+        }
+        response.setHeader("Location", addLocation);
+    }
+    
+    private void addLocationHeader(JSONArray arr){
+        for(int j=0; j<arr.size(); j++){
+            addLocationHeader(arr.getJSONObject(j));
+        }
+    }
 
     /** 
         * TODO @see batchSaveMetadataForm.  Do both methods need to exist?  Combine if possible. This is the method we use for generic bulk saving.
