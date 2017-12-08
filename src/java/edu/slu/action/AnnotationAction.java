@@ -160,7 +160,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         else{
             history_prime = "root";
             history_previous = "";
-            history.element("next", emptyArray);
         }
         if(received_options.containsKey("releases")){
             releases = received.getJSONObject("releases");
@@ -169,14 +168,18 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         }
         else{
             releases_previous = "";
-            releases.element("next", emptyArray);
+            
         }
+        // @cubap #8  It is not in the scope of this function to update next for the parent object.  It is up updateAnnotation.action to know to do that.
+        // See alterHistoryNext() and line 772.  The functionality you want is not possible yet without making updateAnnotation.action know it needs to make a new obj.
+        releases.element("next", emptyArray);
+        history.element("next", emptyArray);
         history.element("previous", history_previous);
         history.element("prime", history_prime);
         releases.element("previous", releases_previous);
         rerumOptions.element("history", history);
         rerumOptions.element("releases", releases);
-        // @cubap @theHabes TODO
+        
         //The access token is in the header  "Authorization: Bearer {YOUR_ACCESS_TOKEN}"
         //HttpResponse<String> response = Unirest.post("https://cubap.auth0.com/oauth/token") .header("content-type", "application/json") .body("{\"grant_type\":\"client_credentials\",\"client_id\": \"WSCfCWDNSZVRQrX09GUKnAX0QdItmCBI\",\"client_secret\": \"8Mk54OqMDqBzZgm7fJuR4rPA-4T8GGPsqLir2aP432NnmG6EAJBCDl_r_fxPJ4x5\",\"audience\": \"https://cubap.auth0.com/api/v2/\"}") .asString(); 
         rerumOptions.element("generatedBy",""); //TODO get the @id of the public agent of the API key
