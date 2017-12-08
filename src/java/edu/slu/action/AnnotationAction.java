@@ -370,23 +370,9 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             JSONObject jo = new JSONObject();
             jo.element("code", HttpServletResponse.SC_CREATED);
             jo.element("reviewed_resources", reviewedResources);
-            // Location headers
-            // @theHabes: This is probably another method to specifically call
-            // out since it will be reused a lot.
-            // @cubap @agree
-            String locations = "";
-            for(int j=0; j<reviewedResources.size(); j++){
-                JSONObject getMyID = reviewedResources.getJSONObject(j);
-                if(j == reviewedResources.size()-1){
-                    locations += getMyID.getString("@id");
-                }
-                else{
-                    locations += getMyID.getString("@id")+",";
-                }
-            }
+            addLocationHeader(reviewedResources);
             try {
                 out = response.getWriter();
-                response.addHeader("Location", locations);
                 response.setStatus(HttpServletResponse.SC_CREATED);
                 out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
             } catch (IOException ex) {
@@ -395,6 +381,39 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         }
     }
     
+    /**
+     * Creates or appends Location header from @id.
+     * Headers are attached and read from {@link #response}. 
+     * @param obj  the JSON being returned to client
+     * @see #addLocationHeader(net.sf.json.JSONArray) addLocationHeader(JSONArray)
+     */
+    private void addLocationHeader(JSONObject obj){
+        String addLocation;
+        String thisLocation = response.getHeader("Location");
+        // Warning: if there are multiple "Location" headers only one will be returned
+        // our practice of making a list protects from this.
+        if (response.containsHeader("Location")) {
+            // add to existing header
+            addLocation = response.getHeader("Location").concat(",").concat(obj.getString("@id"));
+        }
+        else {
+            // no header attached yet
+            addLocation = obj.getString("@id");
+        }
+        response.setHeader("Location", addLocation);
+    }
+
+    /**
+     * Creates or appends list of @ids to Location header.
+     * Headers are attached and read from {@link #response}. 
+     * @param arr  the JSON Array being returned to the client
+     * @see #addLocationHeader(net.sf.json.JSONObject) addLocationHeader(JSONObject)
+     */    
+    private void addLocationHeader(JSONArray arr){
+        for(int j=0; j<arr.size(); j++){
+            addLocationHeader(arr.getJSONObject(j));
+        }
+    }
 
     /** 
         * TODO @see batchSaveMetadataForm.  Do both methods need to exist?  Combine if possible. This is the method we use for generic bulk saving.
@@ -448,20 +467,10 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             JSONObject jo = new JSONObject();
             jo.element("code", HttpServletResponse.SC_CREATED);
             jo.element("new_resources", newResources);
-            String locations = "";
-            for(int j=0; j<newResources.size(); j++){
-                JSONObject getMyID = newResources.getJSONObject(j);
-                if(j == newResources.size()-1){
-                    locations += getMyID.getString("@id");
-                }
-                else{
-                    locations += getMyID.getString("@id")+",";
-                }
-            }
+            addLocationHeader(newResources);
             try {
                 out = response.getWriter();
                 response.setStatus(HttpServletResponse.SC_CREATED);
-                response.addHeader("Location", locations);
                 out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
             } catch (IOException ex) {
                 Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
