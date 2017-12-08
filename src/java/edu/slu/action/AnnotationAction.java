@@ -127,7 +127,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      *   isOverwritten, isReleased   —always null
      * 
      * @param received A potentially optionless JSONObject from the Mongo Database (not the user).  This prevents tainted __rerum's
-     * @return configuredObject The same object that was recieved but with the proper __rerum options
+     * @return configuredObject The same object that was recieved but with the proper __rerum options.  This object is intended to be saved as a new object (@see versioning)
      */
     public JSONObject configureRerumOptions(JSONObject received){
         JSONObject configuredObject = received;
@@ -155,7 +155,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             history = received_options.getJSONObject("history");
             history_prime = history.getString("prime");
             history_previous = received.getString("@id");
-            history.element("next", history.getJSONArray("next"));
         }
         else{
             history_prime = "root";
@@ -164,22 +163,18 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         if(received_options.containsKey("releases")){
             releases = received.getJSONObject("releases");
             releases_previous = releases.getString("previous");
-            releases.element("next", releases.getJSONArray("next"));
         }
         else{
             releases_previous = "";
             
         }
-        // @cubap #8  It is not in the scope of this function to update next for the parent object.  It is up updateAnnotation.action to know to do that.
-        // See alterHistoryNext() and line 772.  The functionality you want is not possible yet without making updateAnnotation.action know it needs to make a new obj.
         releases.element("next", emptyArray);
         history.element("next", emptyArray);
         history.element("previous", history_previous);
         history.element("prime", history_prime);
         releases.element("previous", releases_previous);
         rerumOptions.element("history", history);
-        rerumOptions.element("releases", releases);
-        
+        rerumOptions.element("releases", releases);      
         //The access token is in the header  "Authorization: Bearer {YOUR_ACCESS_TOKEN}"
         //HttpResponse<String> response = Unirest.post("https://cubap.auth0.com/oauth/token") .header("content-type", "application/json") .body("{\"grant_type\":\"client_credentials\",\"client_id\": \"WSCfCWDNSZVRQrX09GUKnAX0QdItmCBI\",\"client_secret\": \"8Mk54OqMDqBzZgm7fJuR4rPA-4T8GGPsqLir2aP432NnmG6EAJBCDl_r_fxPJ4x5\",\"audience\": \"https://cubap.auth0.com/api/v2/\"}") .asString(); 
         rerumOptions.element("generatedBy",""); //TODO get the @id of the public agent of the API key
@@ -756,22 +751,23 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                             result.append(key, received.get(key));
                         }
                     }
+                    JSONObject existing_object = JSONObject.fromObject(result); 
                     //If the object already in the database already contained __rerum, we can update that field
                     if(existingOptions){
-                        JSONObject existing_object = JSONObject.fromObject(result); //object from the store to be updated
-                        existing_object = configureRerumOptions(existing_object);
+                        existing_object = configureRerumOptions(existing_object);//The existing_object actually comes back as the new object to save here
                         //tricky because we can't use JSONObject here but needed one to configure __rerum on the result.
                         //convert JSONObject of configured result back to a BasicDBObject so we can write it back to mongo
                         //this could probably be optimized somehow, this seems too expensive for what it is trying to do.
                         result = (BasicDBObject) JSON.parse(existing_object.toString()); 
                     }
-                    else{ //__rerum did not exist so we did not update this part of the result.
+                    else{ //__rerum did not exist so we could not configure it (v0 
                         //Don't update any __rerum stuff because this key did not exist in the object already
+                        //FIXME in the future we may still want to configureRerumOptions(existing_object) anyway.
                     }
-                    mongoDBService.update(Constant.COLLECTION_ANNOTATION, query, result); //update the result DBObject with any changes performed above
-                    // @cubap @theHabes FIXME TODO in the future, we need an update that actually creates a new object and returns its @id
-                    //String newNextID = @id_from_new_object;
-                    //Then we need to pass that off to a function that will update the history.next property of the original
+                    mongoDBService.update(Constant.COLLECTION_ANNOTATION, query, result); //TODO @deprecate
+                    // @cubap @theHabes #8 #22 FIXME TODO in the future, save the object with the configured __rerum as a new object
+                    //Then we need to pass that new @id to a function that will update the history.next property of the originally received object as deomonstrated below.
+                    //String newNextID = mongoDBService.save(existing_object, query, result);
                     //alterHistoryNext(received.getString("@id"),  newNextID);
                     JSONObject jo = new JSONObject();
                     jo.element("code", HttpServletResponse.SC_OK);
