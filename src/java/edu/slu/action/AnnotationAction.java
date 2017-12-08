@@ -469,6 +469,37 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         }
     }
     
+    public void getAllAnscestors(HttpServletRequest http_request) throws Exception{
+        Boolean approved = methodApproval(request, "get");
+        if(!methodApproval(request, "get")){
+            // TODO: include link to API documentation in error response
+            send_error("Unable to retrieve objects; wrong method type.", HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
+        if(processRequestBody(request)==null){
+            // TODO: include link to API documentation in error response
+            send_error("Unable to retrieve objects; missing key object.", HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
+        //content is set to body now
+        JSONObject received = JSONObject.fromObject(content);
+        // get reliable copy of key object
+        BasicDBObject query = new BasicDBObject();
+        query.append("@id", new ObjectId(received.getString("@id")));
+        DBObject keyObjDB = mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query);
+// note: cubap: the two options here are to get all and filter or keep getting one and stepping back.
+// I'm not sure which is best, but we're trying the first here.
+
+    }
+    
+    public void getAllAnscestors(String id){
+        
+    }
+
+    public void getAllAnscestors(JSONObject obj){
+        
+    }
+    
     /**
      * Get all version of annotations by ObjectID. 
      * @param annotation.objectID
