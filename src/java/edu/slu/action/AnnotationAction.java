@@ -468,53 +468,67 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         }
     }
     
-    public void getAllAnscestors(HttpServletRequest http_request) throws Exception{
-        Boolean approved = methodApproval(request, "get");
-        if(!methodApproval(request, "get")){
-            // TODO: include link to API documentation in error response
-            send_error("Unable to retrieve objects; wrong method type.", HttpServletResponse.SC_BAD_REQUEST);
-            return;
-        }
-        if(processRequestBody(request)==null){
-            // TODO: include link to API documentation in error response
-            send_error("Unable to retrieve objects; missing key object.", HttpServletResponse.SC_BAD_REQUEST);
-            return;
-        }
-        //content is set to body now
-        JSONObject received = JSONObject.fromObject(content);
-        // get reliable copy of key object
-        BasicDBObject query = new BasicDBObject();
-        
+    /**
+     * Servlet method to find all upstream versions of an object.
+     * If this object is `prime`, it will be the only object in the array.
+     * @param  http_request Servlet request for relatives
+     * @throws Exception 
+     */
+    public void getAllAncestors(HttpServletRequest http_request) throws Exception{
         // TODO: @theHabes, this is waiting for something clever to happen.
         // This code is not correct at all, but pseudo-correct.
-        query.append("@id", new ObjectId(received.getString("__rerum.history.prime")));
-        List<DBObject> ls_versions = mongoDBService.findByExample(Constant.COLLECTION_ANNOTATION, query);
+        List<DBObject> ls_versions = getAllVersions(http_request);
         // cubap: At this point, we have all the versions of the object (except maybe the
         // original?) and need to filter to the ones we want.
         // Getting the whole document is a mess, but if we get subdocuments of __rerum, 
         // we don't need to worry as much.
         
-        JSONArray anscestors = getAllAnscestors(ls_versions);
+        JSONArray ancestors = getAllAncestors(ls_versions);
         try {
             response.addHeader("Access-Control-Allow-Origin", "*");
             response.setStatus(HttpServletResponse.SC_OK);
             out = response.getWriter();
-            out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(anscestors));
+            out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(ancestors));
         } 
         catch (IOException ex) {
             Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
     
-    private JSONArray getAllAnscestors(List<DBObject> ls_versions) {
+    /**
+     * Filters ancestors upstream from `key object` until `prime`.
+     * @param  ls_versions all the versions of the key object on all branches
+     * @return array of objects
+     */
+    private JSONArray getAllAncestors(List<DBObject> ls_versions) {
         List<DBObject> ls_objects = null;
         // TODO: Iterate the List and find the original object. Then move from
         // _rerum.history.previous to _rerum.history.previous, building a new List
-        // to return to the servlet.
+        // to return to the servlet. Stop at "root".
         JSONArray objects = JSONArray.fromObject(ls_objects);
         return objects;
     }
     
+    /**
+     * Filters for all versions downstream from `key object`.
+     * @param  ls_versions all the versions of the key object on all branches
+     * @return array of objects
+     */
+    private JSONArray getAllDescendants(List<DBObject> ls_versions) {
+        List<DBObject> ls_objects = null;
+        // TODO: Iterate the List and find the original object. Then move from
+        // _rerum.history.next to _rerum.history.next, building a new List
+        // to return to the servlet. Consider organizing tree in arrays.
+        JSONArray objects = JSONArray.fromObject(ls_objects);
+        return objects;
+    }
+    
+    /**
+     * Servlet method to find all downstream versions of an object.
+     * If this object is the last, the return will be null.
+     * @param  http_request Servlet request for relatives
+     * @throws Exception 
+     */
     public void getAllDescendants(HttpServletRequest http_request) throws Exception{
         // TODO: @theHabes, this is waiting for something clever to happen.
         // This code is not correct at all, but pseudo-correct.
@@ -524,18 +538,25 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         // Getting the whole document is a mess, but if we get subdocuments of __rerum, 
         // we don't need to worry as much.
         
-        JSONArray anscestors = getAllAnscestors(ls_versions);
+        JSONArray descendants = getAllDescendants(ls_versions);
         try {
             response.addHeader("Access-Control-Allow-Origin", "*");
             response.setStatus(HttpServletResponse.SC_OK);
             out = response.getWriter();
-            out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(anscestors));
+            out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(descendants));
         } 
         catch (IOException ex) {
             Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
     
+    /**
+     * Loads all derivative versions from the `prime` object. Used for filtering
+     * in other methods. May be replaced later with more optimized logic.
+     * @param  http_request Servlet request for relatives
+     * @return All versions from the store of the object in the request
+     * @throws Exception 
+     */
     private List<DBObject> getAllVersions(HttpServletRequest http_request) throws Exception {
         List<DBObject> ls_versions = null;
         Boolean approved = methodApproval(request, "get");
@@ -567,7 +588,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      */
     public void getAllVersionsOfAnnotationByObjectID() throws IOException, ServletException, Exception {
         // TODO: This will go away because it can get crazy. We may build in some
-        // helper services like getAllAnscestors() for a path back to prime or
+        // helper services like getAllAncestors() for a path back to prime or
         // getAllDescendents() for a real mess (this method called on prime would be this as written)
         // @cubap @agree.  This was an original hanyan method, I only changed it to fit with how the rest of the methods work.
         Boolean approved = methodApproval(request, "get");
