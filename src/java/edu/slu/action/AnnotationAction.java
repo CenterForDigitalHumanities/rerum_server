@@ -290,7 +290,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         
         String cType = http_request.getContentType();
         String requestBody;
-        
+        JSONObject complianceInfo = new JSONObject();
         if(cType.contains("application/json") || cType.contains("application/ld+json")) {
             bodyReader = http_request.getReader();
             bodyString = new StringBuilder();
@@ -323,6 +323,16 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             send_error("Invalid Content-Type. Please use 'application/json' or 'application/ld+json'", HttpServletResponse.SC_BAD_REQUEST);
             requestBody = null;
         }
+        //@cubap @theHabes TODO IIIF compliance handling on action objects
+        
+        if(null != requestBody){
+            complianceInfo = checkIIIFCompliance(requestBody, "2.1");
+            if(complianceInfo.getInt("okay") < 1){
+                send_error(complianceInfo.toString(), HttpServletResponse.SC_CONFLICT);
+                requestBody = null;
+            }
+        }
+        
         response.setContentType("application/json"); // We create JSON objects for the return body in most cases.  
         response.addHeader("Access-Control-Allow-Headers", "Content-Type");
         response.addHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT"); // FIXME: Consider adding OPTIONS
@@ -1006,7 +1016,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     
      /**
      * Validate data is IIIF compliant with an internal validation schema.  Save and Update actions will look here to make sure the data and action are valid against various
-     * IIIF presentation rules
+     * IIIF presentation rules.  This is a home built internal validator based off the IIIF Presentation API rules.  
      * 
      * Check @context to figure out what version the object is and check @type to make sure it is a supported IIIF type.  Then check the key:value pairs of the object
      * are supported for the save or update action.
