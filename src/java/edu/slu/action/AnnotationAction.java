@@ -65,6 +65,12 @@ import org.apache.struts2.interceptor.ServletRequestAware;
 import org.apache.struts2.interceptor.ServletResponseAware;
 import org.bson.types.ObjectId;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.DataOutputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLEncoder;
 import javax.servlet.http.HttpSession;
 import net.sf.json.JSONException;
 
@@ -284,7 +290,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         
         String cType = http_request.getContentType();
         String requestBody;
-        
+        JSONObject complianceInfo = new JSONObject();
         if(cType.contains("application/json") || cType.contains("application/ld+json")) {
             bodyReader = http_request.getReader();
             bodyString = new StringBuilder();
@@ -317,6 +323,16 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             send_error("Invalid Content-Type. Please use 'application/json' or 'application/ld+json'", HttpServletResponse.SC_BAD_REQUEST);
             requestBody = null;
         }
+        //@cubap @theHabes TODO IIIF compliance handling on action objects
+        /*
+        if(null != requestBody){
+            complianceInfo = checkIIIFCompliance(requestBody, "2.1");
+            if(complianceInfo.getInt("okay") < 1){
+                send_error(complianceInfo.toString(), HttpServletResponse.SC_CONFLICT);
+                requestBody = null;
+            }
+        }
+        */
         response.setContentType("application/json"); // We create JSON objects for the return body in most cases.  
         response.addHeader("Access-Control-Allow-Headers", "Content-Type");
         response.addHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT"); // FIXME: Consider adding OPTIONS
@@ -945,7 +961,68 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         }
     }
     
-     
+     /**
+     * Validate data is IIIF compliant against IIIF's validator.  This object is intended for creation and not yet saved into RERUM so it does not yet have an @id.
+     * The only way to hit the IIIF Validation API is to use the object's @id. The idea would be to save the objects to get an id, hit the 
+     * IIIF API and if the object was intended to be IIIF, delete it from the store and return an error to the user.
+     * 
+     * In the case the object was not intended to be IIIF, do not return an error. Since the methods calling this will handle what happens based of iiif_return.okay,
+     * just set okay to 1 and the methods calling this will treat it as if it isn't a problem. 
+     * 
+     * @param objectToCheck A JSON object to parse through and validate.  This object has not yet been saved into mongo, so it does not have an @id yet
+     * @param intendedIIIF A flag letting me know whether or not this object is intended to be IIIF.  If it isn't, don't treat validation failure as an error.
+     * @return iiif_return The return JSONObject from hitting the IIIF Validation API.
+     */
+    public JSONObject checkIIIFCompliance(JSONObject objectToCheck, boolean intendedIIIF) throws MalformedURLException, IOException{
+        JSONObject iiif_return = new JSONObject();
+        DBObject dbo = (DBObject) JSON.parse(objectToCheck.toString());
+        String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
+        iiif_return = checkIIIFCompliance(newObjectID, "2.1"); //If it is an object we are creating, this line means @context must point to Presentation API 2 or 2.1
+        if(iiif_return.getInt("okay") == 0){
+            if(intendedIIIF){
+                //If it was intended to be a IIIF object, then remove this object from the store because it was not valid and return an error to the user
+                BasicDBObject query = new BasicDBObject();
+                query.append("_id", newObjectID);
+                mongoDBService.delete(Constant.COLLECTION_ANNOTATION, query);
+            }
+            else{
+                //Otherwise say it is ok so the action looking do validate does not send_error()
+                iiif_return.element("okay", 1);
+            }
+        }
+        return iiif_return;
+    }
+    
+     /**
+     * A JSONObject that already has an @id can be validated against this IIIF validation URL.  It will return a JSONObject.
+     * A save or update action could hit this to see if the resulting object is IIIF valid.  If not, a 'rollback' or 'delete' could be performed
+     * and the warnings and errors sent back to the user.  If using this function, it is assumed objURL is intended to be a IIIF URL.
+     * 
+     * @param objURL The @id or id URL of a IIIF JSON object represented as a String.
+     * @param version The Intended Presentation API version to validate against represented as a String.  (1, 2 or 2.1)
+     * @return iiif_return The return JSONObject from hitting the IIIF Validation API.
+     */
+    public JSONObject checkIIIFCompliance(String objURL, String version) throws MalformedURLException, IOException{
+        JSONObject iiif_return = new JSONObject();
+        String iiif_validation_url = "http://iiif.io/api/presentation/validator/service/validate?format=json&version="+version+"&url="+objURL;
+        URL validator = new URL(iiif_validation_url);
+        BufferedReader reader = null;
+        StringBuilder stringBuilder;
+        HttpURLConnection connection = (HttpURLConnection) validator.openConnection();
+        connection.setRequestMethod("GET"); //hmm... I think this is right
+        connection.setReadTimeout(15*1000);
+        connection.connect();
+        reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+        stringBuilder = new StringBuilder();
+        String line = null;
+        while ((line = reader.readLine()) != null)
+        {
+          stringBuilder.append(line + "\n");
+        }
+        connection.disconnect();
+        iiif_return = JSONObject.fromObject(stringBuilder.toString());
+        return iiif_return;
+    }
 
     @Override
     public void setServletRequest(HttpServletRequest hsr) {
@@ -1014,3 +1091,4 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     }
 
 }
+
