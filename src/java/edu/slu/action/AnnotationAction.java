@@ -394,7 +394,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             }
         }
     }
-    
 
     /** 
         * TODO @see batchSaveMetadataForm.  Do both methods need to exist?  Combine if possible. This is the method we use for generic bulk saving.
@@ -485,19 +484,81 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         JSONObject received = JSONObject.fromObject(content);
         // get reliable copy of key object
         BasicDBObject query = new BasicDBObject();
-        query.append("@id", new ObjectId(received.getString("@id")));
-        DBObject keyObjDB = mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query);
-// note: cubap: the two options here are to get all and filter or keep getting one and stepping back.
-// I'm not sure which is best, but we're trying the first here.
-
+        
+        // TODO: @theHabes, this is waiting for something clever to happen.
+        // This code is not correct at all, but pseudo-correct.
+        query.append("@id", new ObjectId(received.getString("__rerum.history.prime")));
+        List<DBObject> ls_versions = mongoDBService.findByExample(Constant.COLLECTION_ANNOTATION, query);
+        // cubap: At this point, we have all the versions of the object (except maybe the
+        // original?) and need to filter to the ones we want.
+        // Getting the whole document is a mess, but if we get subdocuments of __rerum, 
+        // we don't need to worry as much.
+        
+        JSONArray anscestors = getAllAnscestors(ls_versions);
+        try {
+            response.addHeader("Access-Control-Allow-Origin", "*");
+            response.setStatus(HttpServletResponse.SC_OK);
+            out = response.getWriter();
+            out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(anscestors));
+        } 
+        catch (IOException ex) {
+            Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
     
-    public void getAllAnscestors(String id){
-        
+    private JSONArray getAllAnscestors(List<DBObject> ls_versions) {
+        List<DBObject> ls_objects = null;
+        // TODO: Iterate the List and find the original object. Then move from
+        // _rerum.history.previous to _rerum.history.previous, building a new List
+        // to return to the servlet.
+        JSONArray objects = JSONArray.fromObject(ls_objects);
+        return objects;
     }
-
-    public void getAllAnscestors(JSONObject obj){
+    
+    public void getAllDescendants(HttpServletRequest http_request) throws Exception{
+        // TODO: @theHabes, this is waiting for something clever to happen.
+        // This code is not correct at all, but pseudo-correct.
+        List<DBObject> ls_versions = getAllVersions(http_request);
+        // cubap: At this point, we have all the versions of the object (except maybe the
+        // original?) and need to filter to the ones we want.
+        // Getting the whole document is a mess, but if we get subdocuments of __rerum, 
+        // we don't need to worry as much.
         
+        JSONArray anscestors = getAllAnscestors(ls_versions);
+        try {
+            response.addHeader("Access-Control-Allow-Origin", "*");
+            response.setStatus(HttpServletResponse.SC_OK);
+            out = response.getWriter();
+            out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(anscestors));
+        } 
+        catch (IOException ex) {
+            Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
+    private List<DBObject> getAllVersions(HttpServletRequest http_request) throws Exception {
+        List<DBObject> ls_versions = null;
+        Boolean approved = methodApproval(request, "get");
+        if(!methodApproval(request, "get")){
+            // TODO: include link to API documentation in error response
+            send_error("Unable to retrieve objects; wrong method type.", HttpServletResponse.SC_BAD_REQUEST);
+            return ls_versions;
+        }
+        if(processRequestBody(request)==null){
+            // TODO: include link to API documentation in error response
+            send_error("Unable to retrieve objects; missing key object.", HttpServletResponse.SC_BAD_REQUEST);
+            return ls_versions;
+        }
+        //content is set to body now
+        JSONObject received = JSONObject.fromObject(content);
+        // get reliable copy of key object
+        BasicDBObject query = new BasicDBObject();
+        
+        // TODO: @theHabes, this is waiting for something clever to happen.
+        // This code is not correct at all, but pseudo-correct.
+        query.append("@id", new ObjectId(received.getString("__rerum.history.prime")));
+        ls_versions = mongoDBService.findByExample(Constant.COLLECTION_ANNOTATION, query);
+        return ls_versions;
     }
     
     /**
