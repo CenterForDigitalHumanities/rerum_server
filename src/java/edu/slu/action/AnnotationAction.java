@@ -617,7 +617,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 jo.remove("serverName");
                 jo.remove("serverIP");
                 if(!jo.containsKey("@context")){ //This must be present on JSON-LD type responses.
-                    jo.element("@context", "http://www.w3.org/ns/anno.jsonld"); //@cubap @theHabes FIXME?  What do we do for objects without @context?  Can those possible be saved? @webanno
+                    jo.element("@context", "http://www.w3.org/ns/anno.jsonld"); //@cubap @theHabes FIXME?  What do we do for objects without @context?  @webanno
                 }
                 try {
                     // the Accept header is absent from a GET request, then Annotation Servers must respond with a JSON-LD representation of the Annotation Container @webanno
@@ -714,8 +714,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * @param all annotation properties.
      */
     public void saveNewAnnotation() throws IOException, ServletException, Exception{
-        //WebAnno support Slug header in request?
-        //WebAnno must return new state of annotation in response.
         Boolean approved = methodApproval(request, "create");
         if(approved){
             content = processRequestBody(request);
@@ -734,8 +732,10 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         if(null != content){
             try{
                 JSONObject received = JSONObject.fromObject(content);
-                 
                 DBObject dbo = (DBObject) JSON.parse(received.toString());
+                if(null!=request.getHeader("Slug")){
+                    //@webanno support Slug header in request?  Slug is the user suggested ID for the annotation
+                }
                 String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
                 //set @id from _id and update the annotation
                 BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
