@@ -360,7 +360,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         */
         response.setContentType("application/json"); // We create JSON objects for the return body in most cases.  
         response.addHeader("Access-Control-Allow-Headers", "Content-Type");
-        response.addHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT, HEAD, DELETE"); // FIXME: Consider adding OPTIONS @@https://www.w3.org/TR/annotation-protocol/#h-annotation-retrieval
+        response.addHeader("Access-Control-Allow-Methods", "GET,OPTIONS,HEAD,PUT,PATCH,DELETE,POST"); // FIXME: Consider adding OPTIONS @@https://www.w3.org/TR/annotation-protocol/#h-annotation-retrieval
         return requestBody;
     }
     
@@ -630,7 +630,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                         response.addHeader("Link", "<http://www.w3.org/ns/ldp#Resource>; rel=\"type\""); //@webAnno
                     }
                     //No matter what
-                    response.addHeader("Allow", "GET, OPTIONS, HEAD "); //@webAnno
+                    response.addHeader("Allow", "GET,OPTIONS,HEAD,PUT,PATCH,DELETE,POST"); //@webAnno
                     response.addHeader("Etag", etag);  //@webAnno
                             
                     // @theHabes: ? Should we check that the object actually has @context?
@@ -870,7 +870,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                         response.addHeader("Link", "<http://www.w3.org/ns/ldp#Resource>; rel=\"type\""); //@webAnno
                     }
                     //No matter what
-                    response.addHeader("Allow", "GET,OPTIONS,HEAD,PUT,PATCH,DELETE "); //@webAnno
+                    response.addHeader("Allow", "GET,OPTIONS,HEAD,PUT,PATCH,DELETE,POST"); //@webAnno
                     response.addHeader("Etag", received.getString("_id"));  //@webAnno
                     try {
                         response.addHeader("Access-Control-Allow-Origin", "*");
