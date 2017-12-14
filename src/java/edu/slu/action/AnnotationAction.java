@@ -360,7 +360,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         */
         response.setContentType("application/json"); // We create JSON objects for the return body in most cases.  
         response.addHeader("Access-Control-Allow-Headers", "Content-Type");
-        response.addHeader("Access-Control-Allow-Methods", "GET,OPTIONS,HEAD,PUT,PATCH,DELETE,POST"); // FIXME: Consider adding OPTIONS @@https://www.w3.org/TR/annotation-protocol/#h-annotation-retrieval
+        response.addHeader("Access-Control-Allow-Methods", "GET,OPTIONS,HEAD,PUT,PATCH,DELETE,POST"); // Must have OPTIONS for @webanno 
         return requestBody;
     }
     
@@ -411,7 +411,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             JSONObject jo = new JSONObject();
             jo.element("code", HttpServletResponse.SC_CREATED);
             jo.element("reviewed_resources", reviewedResources);
-            addLocationHeader(reviewedResources);
+            addLocationHeader(reviewedResources); //@webanno
             try {
                 out = response.getWriter();
                 response.setStatus(HttpServletResponse.SC_CREATED);
@@ -435,7 +435,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         // our practice of making a list protects from this.
         if (response.containsHeader("Location")) {
             // add to existing header
-            addLocation = response.getHeader("Location").concat(",").concat(obj.getString("@id"));
+            addLocation = thisLocation.concat(",").concat(obj.getString("@id"));
         }
         else {
             // no header attached yet
@@ -452,7 +452,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      */    
     private void addLocationHeader(JSONArray arr){
         for(int j=0; j<arr.size(); j++){
-            addLocationHeader(arr.getJSONObject(j));
+            addLocationHeader(arr.getJSONObject(j)); 
         }
     }
 
@@ -508,7 +508,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             JSONObject jo = new JSONObject();
             jo.element("code", HttpServletResponse.SC_CREATED);
             jo.element("new_resources", newResources);
-            addLocationHeader(newResources);
+            addLocationHeader(newResources); //@webanno
             try {
                 out = response.getWriter();
                 response.setStatus(HttpServletResponse.SC_CREATED);
@@ -579,22 +579,9 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      */
     public void getAnnotationByObjectID() throws IOException, ServletException, Exception{
 
-        Boolean approved = methodApproval(request, "get");
-        if(approved){
-            // TODO: @theHabes Does `approved` really have to be declared first.
-            // It is only used for this check, so maybe just in one line reads easier.
-            // Also, the outcome of this check is only setting `oid`, which is then
-            // checked, which means these two conditions should be combined as well.
-            
-            // @cubap @answer. oid is set by the servlet context which is why I do not call processRequestBody(request) on this.  You do not
-            // pass the oid as a parameter or in the body, the struts.xml and web.xml set up tells this method to get the ID off the end of the
-            // URL.  By the time you get to this method, either oid is null or it isn't.  Regardless of whether or not you have the ID, 
-            // this still needs to be approved as a get.  If you POST to this method and approved is false, making oid null will let the response of send_error() come out. If
-            // it is approved as a GET, the fact the oid is invalid or null will return the 404.  They are separate fails with separate response codes, so they
-            // must be handled separately to avoid error stacking.
-        }
-        else{
-            oid=null;
+        //@cubap unwrapped approved variable.
+        if(!methodApproval(request, "get")){
+            oid=null; //Allow methodApproval error to go to resonse.out
         }
         if(null != oid){
             //find one version by objectID
@@ -618,9 +605,10 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 jo.remove("serverIP");
                 if(!jo.containsKey("@context")){ //This must be present on JSON-LD type responses.
                     jo.element("@context", "http://www.w3.org/ns/anno.jsonld"); //@cubap @theHabes FIXME?  What do we do for objects without @context?  @webanno
+                    //When we save objects, are we forcing that they all have an @context?
                 }
                 try {
-                    // the Accept header is absent from a GET request, then Annotation Servers must respond with a JSON-LD representation of the Annotation Container @webanno
+                    //If the Accept header is absent from a GET request, then Annotation Servers must respond with a JSON-LD representation of the Annotation Container @webanno
                     response.addHeader("Content-Type", "application/ld+json;profile=\"http://www.w3.org/ns/anno.jsonld\""); //@webAnno
                     if(containerType){
                         response.addHeader("Link", "<http://www.w3.org/ns/ldp#BasicContainer>; rel=\"type\""); //@webAnno 
@@ -629,13 +617,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                     else{
                         response.addHeader("Link", "<http://www.w3.org/ns/ldp#Resource>; rel=\"type\""); //@webAnno
                     }
-                    //No matter what
-                    response.addHeader("Allow", "GET,OPTIONS,HEAD,PUT,PATCH,DELETE,POST"); //@webAnno
+                    response.addHeader("Allow", "GET,OPTIONS,HEAD,PUT,PATCH,DELETE,POST"); //@webAnno Do I need all of these every time?
                     response.addHeader("Etag", etag);  //@webAnno
-                            
-                    // @theHabes: ? Should we check that the object actually has @context?
-                    // I'm not certain how to handle malformed JSON-LD
-                    // @cubap @agree @webanno
                     response.addHeader("Access-Control-Allow-Origin", "*");
                     response.setStatus(HttpServletResponse.SC_OK);
                     out = response.getWriter();
@@ -663,7 +646,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     // one object is returned.  This method must process a request body and returns an array, even an array of one.  
     // We never want getAnnoByID to return an array or feel the need to read a request body/parameters.
     
-    //This is not Web Annotation standard as the specifications states you respond with a single object, not a list.  Not sure what to do with these.  
+    //This is not Web Annotation standard as the specifications states you respond with a single object, not a list.  Not sure what to do with these.  @webanno
     public void getAnnotationByProperties() throws IOException, ServletException, Exception{
         Boolean approved = methodApproval(request, "get");
         if(approved){
@@ -734,7 +717,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 JSONObject received = JSONObject.fromObject(content);
                 DBObject dbo = (DBObject) JSON.parse(received.toString());
                 if(null!=request.getHeader("Slug")){
-                    //@webanno support Slug header in request?  Slug is the user suggested ID for the annotation
+                    //@webanno support Slug header in request?  Slug is the user suggested ID for the annotation.  This could be a cool RERUM thing.
                 }
                 String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
                 //set @id from _id and update the annotation
@@ -758,12 +741,11 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 else{
                     response.addHeader("Link", "<http://www.w3.org/ns/ldp#Resource>; rel=\"type\""); //@webAnno
                 }
-                //No matter what
-                response.addHeader("Allow", "GET,OPTIONS,HEAD,PUT,PATCH,DELETE,POST"); //@webAnno
+                response.addHeader("Allow", "GET,OPTIONS,HEAD,PUT,PATCH,DELETE,POST"); //@webAnno Do I need all of these every time?
                 response.addHeader("Etag", received.getString("_id"));  //@webAnno
                 try {
                     response.addHeader("Access-Control-Allow-Origin", "*");
-                    response.addHeader("Location", uid); //@webanno
+                    addLocationHeader(jo); //@webanno
                     response.setStatus(HttpServletResponse.SC_CREATED);
                     out = response.getWriter();
                     out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
@@ -772,7 +754,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                     Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
-            catch (Exception ex){ // try { parse JSON }
+            catch (Exception ex){ 
                 send_error("Trouble parsing JSON", HttpServletResponse.SC_BAD_REQUEST);
             }
         }
@@ -870,7 +852,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                         response.addHeader("Link", "<http://www.w3.org/ns/ldp#Resource>; rel=\"type\""); //@webAnno
                     }
                     //No matter what
-                    response.addHeader("Allow", "GET,OPTIONS,HEAD,PUT,PATCH,DELETE,POST"); //@webAnno
+                    response.addHeader("Allow", "GET,OPTIONS,HEAD,PUT,PATCH,DELETE,POST"); //@webAnno Do I need all of these every time?
                     response.addHeader("Etag", received.getString("_id"));  //@webAnno
                     try {
                         response.addHeader("Access-Control-Allow-Origin", "*");
