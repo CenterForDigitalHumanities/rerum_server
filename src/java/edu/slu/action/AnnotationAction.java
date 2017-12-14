@@ -72,14 +72,10 @@ import org.apache.struts2.interceptor.ServletRequestAware;
 import org.apache.struts2.interceptor.ServletResponseAware;
 import org.bson.types.ObjectId;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.DataOutputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLEncoder;
-import javax.servlet.http.HttpSession;
-import net.sf.json.JSONException;
 
 
 /**
@@ -101,9 +97,11 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     final ObjectMapper mapper = new ObjectMapper();
     
     /**
-     * Adhere to Web Annotation standards and put the proper response headers on our HTTP response.
-     * @param msg The message to show the user
-     * @param status The HTTP response status to return
+     * Check if the proposed object type is a container type.
+     * Not entirely sure if this is necessary.  It is a part of the @webanno work.  
+     * @see getAnnotationByObjectID(), saveNewAnnotation(), updateAnnotation() 
+     * @param typestring The @type provided by some JSON or JSON-LD object.  Detect if this object type is a Container as special web annotation rules apply.
+     * @return containerType Boolean representing if RERUM knows whether it is a container type or not.  
      */
     public Boolean isContainerType(String typestring){
         Boolean containerType = false;
@@ -115,8 +113,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         }
         return containerType; 
     }
-    
-   
     
     /**
      * Write error to response.out.  The methods that call this function handle quitting, this just writes the error because of the quit. 
@@ -139,7 +135,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             out = response.getWriter();
             out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
             out.write(System.getProperty("line.separator"));
-        } catch (IOException ex) {
+        } 
+        catch (IOException ex) {
             Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
@@ -196,8 +193,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             releases_previous = releases.getString("previous");
         }
         else{
-            releases_previous = "";
-            
+            releases_previous = "";         
         }
         releases.element("next", emptyArray);
         history.element("next", emptyArray);
@@ -423,6 +419,28 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     }
     
     /**
+     * Creates and appends headers to the HTTP response required by Web Annotation standards.
+     * Headers are attached and read from {@link #response}. 
+     * 
+     * @param etag A unique fingerprint for the object for the Etag header.
+     * @param containerType A boolean noting whether or not the object is a container type.
+     */
+    private void addWebAnnotationHeaders(String etag, Boolean containerType){
+        response.addHeader("Content-Type", "application/ld+json;profile=\"http://www.w3.org/ns/anno.jsonld\""); //@webAnno
+        if(containerType){
+            response.addHeader("Link", "<http://www.w3.org/ns/ldp#BasicContainer>; rel=\"type\""); //@webAnno 
+            response.addHeader("Link", "<http://www.w3.org/TR/annotation-protocol/>; rel=\"http://www.w3.org/ns/ldp#constrainedBy\"");  //@webAnno
+        }
+        else{
+            response.addHeader("Link", "<http://www.w3.org/ns/ldp#Resource>; rel=\"type\""); //@webAnno
+        }
+        response.addHeader("Allow", "GET,OPTIONS,HEAD,PUT,PATCH,DELETE,POST"); //@webAnno
+        if(!"".equals(etag)){
+            response.addHeader("Etag", etag);//@webAnno
+        }
+    }
+    
+    /**
      * Creates or appends Location header from @id.
      * Headers are attached and read from {@link #response}. 
      * @param obj  the JSON being returned to client
@@ -593,7 +611,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 JSONObject jo = JSONObject.fromObject(myAnno.toMap());
                 String myAnnoType = jo.getString("@type");
                 Boolean containerType = isContainerType(myAnnoType);
-                String etag = jo.getString("_id");
                 //The following are rerum properties that should be stripped.  They should be in __rerum.
                 jo.remove("_id");
                 jo.remove("addedTime");
@@ -609,16 +626,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 }
                 try {
                     //If the Accept header is absent from a GET request, then Annotation Servers must respond with a JSON-LD representation of the Annotation Container @webanno
-                    response.addHeader("Content-Type", "application/ld+json;profile=\"http://www.w3.org/ns/anno.jsonld\""); //@webAnno
-                    if(containerType){
-                        response.addHeader("Link", "<http://www.w3.org/ns/ldp#BasicContainer>; rel=\"type\""); //@webAnno 
-                        response.addHeader("Link", "<http://www.w3.org/TR/annotation-protocol/>; rel=\"http://www.w3.org/ns/ldp#constrainedBy\"");  //@webAnno
-                    }
-                    else{
-                        response.addHeader("Link", "<http://www.w3.org/ns/ldp#Resource>; rel=\"type\""); //@webAnno
-                    }
-                    response.addHeader("Allow", "GET,OPTIONS,HEAD,PUT,PATCH,DELETE,POST"); //@webAnno Do I need all of these every time?
-                    response.addHeader("Etag", etag);  //@webAnno
+                    addWebAnnotationHeaders(jo.getString("_id"), containerType);
                     response.addHeader("Access-Control-Allow-Origin", "*");
                     response.setStatus(HttpServletResponse.SC_OK);
                     out = response.getWriter();
@@ -722,27 +730,15 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
                 //set @id from _id and update the annotation
                 BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
-
-                String uid = "http://devstore.rerum.io/rerumserver/id/" + dboWithObjectID.getObjectId("_id").toString();
-
+                String uid = "http://devstore.rerum.io/rerumserver/id/"+newObjectID;
                 dboWithObjectID.append("@id", uid);
                 mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
                 JSONObject jo = new JSONObject();
-                
                 jo.element("code", HttpServletResponse.SC_CREATED);
                 jo.element("@id", uid);
                 String myAnnoType = received.getString("@type");
                 Boolean containerType = isContainerType(myAnnoType);
-                response.addHeader("Content-Type", "application/ld+json;profile=\"http://www.w3.org/ns/anno.jsonld\""); //@webAnno
-                if(containerType){
-                    response.addHeader("Link", "<http://www.w3.org/ns/ldp#BasicContainer>; rel=\"type\""); //@webAnno 
-                    response.addHeader("Link", "<http://www.w3.org/TR/annotation-protocol/>; rel=\"http://www.w3.org/ns/ldp#constrainedBy\"");  //@webAnno
-                }
-                else{
-                    response.addHeader("Link", "<http://www.w3.org/ns/ldp#Resource>; rel=\"type\""); //@webAnno
-                }
-                response.addHeader("Allow", "GET,OPTIONS,HEAD,PUT,PATCH,DELETE,POST"); //@webAnno Do I need all of these every time?
-                response.addHeader("Etag", received.getString("_id"));  //@webAnno
+                addWebAnnotationHeaders(newObjectID, containerType);
                 try {
                     response.addHeader("Access-Control-Allow-Origin", "*");
                     addLocationHeader(jo); //@webanno
@@ -843,17 +839,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                     jo.element("code", HttpServletResponse.SC_OK);
                     String myAnnoType = jo.getString("@type");
                     Boolean containerType = isContainerType(myAnnoType);
-                    response.addHeader("Content-Type", "application/ld+json;profile=\"http://www.w3.org/ns/anno.jsonld\""); //@webAnno
-                    if(containerType){
-                        response.addHeader("Link", "<http://www.w3.org/ns/ldp#BasicContainer>; rel=\"type\""); //@webAnno 
-                        response.addHeader("Link", "<http://www.w3.org/TR/annotation-protocol/>; rel=\"http://www.w3.org/ns/ldp#constrainedBy\"");  //@webAnno
-                    }
-                    else{
-                        response.addHeader("Link", "<http://www.w3.org/ns/ldp#Resource>; rel=\"type\""); //@webAnno
-                    }
-                    //No matter what
-                    response.addHeader("Allow", "GET,OPTIONS,HEAD,PUT,PATCH,DELETE,POST"); //@webAnno Do I need all of these every time?
-                    response.addHeader("Etag", received.getString("_id"));  //@webAnno
+                    addWebAnnotationHeaders(received.getString("_id"), containerType);
                     try {
                         response.addHeader("Access-Control-Allow-Origin", "*");
                         response.setStatus(HttpServletResponse.SC_OK);
