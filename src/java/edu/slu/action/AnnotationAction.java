@@ -738,9 +738,9 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 jo.element("@id", uid);
                 String myAnnoType = received.getString("@type");
                 Boolean containerType = isContainerType(myAnnoType);
-                addWebAnnotationHeaders(newObjectID, containerType);
                 try {
                     response.addHeader("Access-Control-Allow-Origin", "*");
+                    addWebAnnotationHeaders(newObjectID, containerType);
                     addLocationHeader(jo); //@webanno
                     response.setStatus(HttpServletResponse.SC_CREATED);
                     out = response.getWriter();
@@ -839,8 +839,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                     jo.element("code", HttpServletResponse.SC_OK);
                     String myAnnoType = jo.getString("@type");
                     Boolean containerType = isContainerType(myAnnoType);
-                    addWebAnnotationHeaders(received.getString("_id"), containerType);
                     try {
+                        addWebAnnotationHeaders(received.getString("_id"), containerType);
                         response.addHeader("Access-Control-Allow-Origin", "*");
                         response.setStatus(HttpServletResponse.SC_OK);
                         out = response.getWriter();
