@@ -361,64 +361,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     }
     
     /**
-     * @@@ The rerum options code is not applied here as this will be @deprecated
-    *The batch save to intended to work with Broken Books, but could be applied elsewhere.  This batch will use the save() mongo function instead of insert() to determine whether 
-    to do an update() or insert() for each item in the batch.  
-    *    The content is from an HTTP request posting in an array filled with annotations to copy.  
-     * @throws java.io.UnsupportedEncodingException
-     * @throws javax.servlet.ServletException
-    *    @see MongoDBAbstractDAO.bulkSaveMetadataForm(String collectionName, BasicDBList entity_array);
-    *    @see MongoDBAbstractDAO.bulkSetIDProperty(String collectionName, BasicDBObject[] entity_array);
-    */   
-    public void batchSaveMetadataForm() throws UnsupportedEncodingException, IOException, ServletException, Exception{
-        // TODO: @theHabes refactor name here. Also, just try-catch JSONArray.fromObject(processRequestBody(request))
-        // since this is the content= free version.
-        // @cubap @agree.  The naming is ancient and I did not unwrap the original try{JSONPARSE}{catch{JSONPARSE error}, processRequestBody does that for us.
-        // My secondary thought for leaving it was in case an error occurred in JSON.accumulate or JSON.element, but this is unnecessary
-        // This one will not be used as the standard bulk operation, it is meant to work specifically with brokenBooks
-        
-        // @cubap @agree. We can let the falsey state of processRequestBody() be the switch instead of the null check.  Keep the issue of
-        // error stacking in the back of your mind as we develop this and remember we can't throw Exceptions
-        
-        Boolean approved = methodApproval(request, "create");
-        if(approved){
-            content = processRequestBody(request);
-        }
-        else{
-            content = null;
-        }
-        if(null != content){
-            JSONArray received_array = JSONArray.fromObject(content);
-             // I think this is already handled in requestServerAuthenticationFilter, just commenting out for now
-//            BasicDBObject serverQuery = new BasicDBObject();
-//            serverQuery.append("ip", request.getRemoteAddr());
-//            DBObject asdbo = mongoDBService.findOneByExample(Constant.COLLECTION_ACCEPTEDSERVER, serverQuery);
-//            BasicDBObject asbdbo = (BasicDBObject) asdbo;
-
-            BasicDBList dbo = (BasicDBList) JSON.parse(received_array.toString());
-            JSONArray reviewedResources = new JSONArray();
-            //if the size is 0, no need to bulk save.  Nothing is there.
-            if(dbo.size() > 0){
-                reviewedResources = mongoDBService.bulkSaveMetadataForm(Constant.COLLECTION_ANNOTATION, dbo);
-            }
-            else{
-             //   Skipping bulk save on account of empty array.
-            }
-            JSONObject jo = new JSONObject();
-            jo.element("code", HttpServletResponse.SC_CREATED);
-            jo.element("reviewed_resources", reviewedResources);
-            addLocationHeader(reviewedResources); //@webanno
-            try {
-                out = response.getWriter();
-                response.setStatus(HttpServletResponse.SC_CREATED);
-                out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
-            } catch (IOException ex) {
-                Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }
-    }
-    
-    /**
      * Creates and appends headers to the HTTP response required by Web Annotation standards.
      * Headers are attached and read from {@link #response}. 
      * 
@@ -538,58 +480,119 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     }
     
     /**
-     * Get all version of annotations by ObjectID. 
-     * @param annotation.objectID
+     * Servlet method to find all upstream versions of an object.
+     * If this object is `prime`, it will be the only object in the array.
+     * @param  http_request Servlet request for relatives
+     * @throws Exception 
      */
-    public void getAllVersionsOfAnnotationByObjectID() throws IOException, ServletException, Exception {
-        // TODO: This will go away because it can get crazy. We may build in some
-        // helper services like getAllAnscestors() for a path back to prime or
-        // getAllDescendents() for a real mess (this method called on prime would be this as written)
-        // @cubap @agree.  This was an original hanyan method, I only changed it to fit with how the rest of the methods work.
-        Boolean approved = methodApproval(request, "get");
-        if(approved){
-            content = processRequestBody(request);
-        }
-        else{
-            content = null;
-        }
-        if(null!=content){
-            JSONObject received = JSONObject.fromObject(content);
-            if(received.containsKey("objectID")){
-                //find one version by objectID
-                BasicDBObject query = new BasicDBObject();
-                query.append("_id", new ObjectId(received.getString("objectID")));
-                DBObject myAnno = mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query);
-                if(null != myAnno){
-                    //find the versionID
-                    BasicDBObject bMyAnno = (BasicDBObject) myAnno;
-                    //find by versionID to get all versions
-                    BasicDBObject queryOfAllVersion = new BasicDBObject();
-                    queryOfAllVersion.append("originalAnnoID", bMyAnno.getString("originalAnnoID"));
-                    List<DBObject> ls_versions = mongoDBService.findByExample(Constant.COLLECTION_ANNOTATION, queryOfAllVersion);
-                    ls_versions.add(myAnno);//add the original annotation (because its orginalAnnoID is empty String)
-                    JSONArray ja = JSONArray.fromObject(ls_versions);
-                    try {
-                        response.addHeader("Access-Control-Allow-Origin", "*");
-                        response.setStatus(HttpServletResponse.SC_OK);
-                        out = response.getWriter();
-                        out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(ja));
-                    } 
-                    catch (IOException ex) {
-                        Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
-                    }
-                }
-                else{
-                    response.addHeader("Access-Control-Allow-Origin", "*");
-                    send_error("Object(s) not found.", HttpServletResponse.SC_NOT_FOUND);
-                }
-            }
-            else{
-                send_error("Provided object did not contain key 'objectID'.", HttpServletResponse.SC_BAD_REQUEST);
-            }
+    public void getAllAncestors(HttpServletRequest http_request) throws Exception{
+        // TODO: @theHabes, this is waiting for something clever to happen.
+        // This code is not correct at all, but pseudo-correct.
+        List<DBObject> ls_versions = getAllVersions(http_request);
+        // cubap: At this point, we have all the versions of the object (except maybe the
+        // original?) and need to filter to the ones we want.
+        // Getting the whole document is a mess, but if we get subdocuments of __rerum, 
+        // we don't need to worry as much.
+        
+        JSONArray ancestors = getAllAncestors(ls_versions);
+        try {
+            response.addHeader("Access-Control-Allow-Origin", "*");
+            response.setStatus(HttpServletResponse.SC_OK);
+            out = response.getWriter();
+            out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(ancestors));
+        } 
+        catch (IOException ex) {
+            Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
     
+    /**
+     * Filters ancestors upstream from `key object` until `prime`.
+     * @param  ls_versions all the versions of the key object on all branches
+     * @return array of objects
+     */
+    private JSONArray getAllAncestors(List<DBObject> ls_versions) {
+        List<DBObject> ls_objects = null;
+        // TODO: Iterate the List and find the original object. Then move from
+        // _rerum.history.previous to _rerum.history.previous, building a new List
+        // to return to the servlet. Stop at "root".
+        JSONArray objects = JSONArray.fromObject(ls_objects);
+        return objects;
+    }
+    
+    /**
+     * Filters for all versions downstream from `key object`.
+     * @param  ls_versions all the versions of the key object on all branches
+     * @return array of objects
+     */
+    private JSONArray getAllDescendants(List<DBObject> ls_versions) {
+        List<DBObject> ls_objects = null;
+        // TODO: Iterate the List and find the original object. Then move from
+        // _rerum.history.next to _rerum.history.next, building a new List
+        // to return to the servlet. Consider organizing tree in arrays.
+        JSONArray objects = JSONArray.fromObject(ls_objects);
+        return objects;
+    }
+    
+    /**
+     * Servlet method to find all downstream versions of an object.
+     * If this object is the last, the return will be null.
+     * @param  http_request Servlet request for relatives
+     * @throws Exception 
+     */
+    public void getAllDescendants(HttpServletRequest http_request) throws Exception{
+        // TODO: @theHabes, this is waiting for something clever to happen.
+        // This code is not correct at all, but pseudo-correct.
+        List<DBObject> ls_versions = getAllVersions(http_request);
+        // cubap: At this point, we have all the versions of the object (except maybe the
+        // original?) and need to filter to the ones we want.
+        // Getting the whole document is a mess, but if we get subdocuments of __rerum, 
+        // we don't need to worry as much.
+        
+        JSONArray descendants = getAllDescendants(ls_versions);
+        try {
+            response.addHeader("Access-Control-Allow-Origin", "*");
+            response.setStatus(HttpServletResponse.SC_OK);
+            out = response.getWriter();
+            out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(descendants));
+        } 
+        catch (IOException ex) {
+            Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
+    /**
+     * Loads all derivative versions from the `prime` object. Used for filtering
+     * in other methods. May be replaced later with more optimized logic.
+     * @param  http_request Servlet request for relatives
+     * @return All versions from the store of the object in the request
+     * @throws Exception 
+     */
+    private List<DBObject> getAllVersions(HttpServletRequest http_request) throws Exception {
+        List<DBObject> ls_versions = null;
+        Boolean approved = methodApproval(request, "get");
+        if(!methodApproval(request, "get")){
+            // TODO: include link to API documentation in error response
+            send_error("Unable to retrieve objects; wrong method type.", HttpServletResponse.SC_BAD_REQUEST);
+            return ls_versions;
+        }
+        if(processRequestBody(request)==null){
+            // TODO: include link to API documentation in error response
+            send_error("Unable to retrieve objects; missing key object.", HttpServletResponse.SC_BAD_REQUEST);
+            return ls_versions;
+        }
+        //content is set to body now
+        JSONObject received = JSONObject.fromObject(content);
+        // get reliable copy of key object
+        BasicDBObject query = new BasicDBObject();
+        
+        // TODO: @theHabes, this is waiting for something clever to happen.
+        // This code is not correct at all, but pseudo-correct.
+        query.append("@id", new ObjectId(received.getString("__rerum.history.prime")));
+        ls_versions = mongoDBService.findByExample(Constant.COLLECTION_ANNOTATION, query);
+        return ls_versions;
+    }
+        
     /**
      * Get annotation by objectiD.  Strip all unnecessary key:value pairs before returning.
      * @param objectID (oid)
