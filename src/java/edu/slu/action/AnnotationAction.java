@@ -37,6 +37,13 @@
  * 
  */
 
+/**
+ * Web Annotation Protocol Notes
+ * Annotations can be updated by using a PUT request to replace the entire state of the Annotation. 
+ * Annotation Servers should support this method. Servers may also support using a PATCH request to update only the aspects of the Annotation that have changed, 
+ * but that functionality is not specified in this document.
+ */
+
 package edu.slu.action;
 
 import com.mongodb.BasicDBList;
@@ -65,14 +72,10 @@ import org.apache.struts2.interceptor.ServletRequestAware;
 import org.apache.struts2.interceptor.ServletResponseAware;
 import org.bson.types.ObjectId;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.DataOutputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLEncoder;
-import javax.servlet.http.HttpSession;
-import net.sf.json.JSONException;
 
 
 /**
@@ -92,6 +95,37 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     private BufferedReader bodyReader;
     private PrintWriter out;
     final ObjectMapper mapper = new ObjectMapper();
+    
+    /**
+     * Check if the proposed object is a container type.
+     * Related to Web Annotation compliance.  
+     * @param jo  the JSON or JSON-LD object
+     * @see getAnnotationByObjectID(), saveNewAnnotation(), updateAnnotation() 
+     * @return containerType Boolean representing if RERUM knows whether it is a container type or not.  
+     */
+    public Boolean isContainerType(JSONObject jo){
+        Boolean containerType = false;
+        String typestring = jo.getString("@type");
+        //These are the types RERUM knows and IIIF says these types are containers.  How can we check against custom @context and types?
+        if(typestring.equals("sc:Sequence") || typestring.equals("sc:AnnotationList") 
+            || typestring.equals("sc:Range") || typestring.equals("sc:Layer")
+            || typestring.equals("sc:Collection")){
+            containerType = true;
+        }
+        return containerType; 
+    }
+    
+    /**
+     * Check if the proposed object is valid JSON-LD.
+     * @param jo  the JSON object to check
+     * @see getAnnotationByObjectID(), saveNewAnnotation(), updateAnnotation() 
+     * @return isLd Boolean
+     */
+    public Boolean isLD(JSONObject jo){
+        Boolean isLD=jo.contains("@context");
+        return isLD;
+        // TODO: There's probably some great code to do real checking.
+    }
     
     /**
      * Write error to response.out.  The methods that call this function handle quitting, this just writes the error because of the quit. 
@@ -114,7 +148,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             out = response.getWriter();
             out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
             out.write(System.getProperty("line.separator"));
-        } catch (IOException ex) {
+        } 
+        catch (IOException ex) {
             Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
@@ -171,8 +206,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             releases_previous = releases.getString("previous");
         }
         else{
-            releases_previous = "";
-            
+            releases_previous = "";         
         }
         releases.element("next", emptyArray);
         history.element("next", emptyArray);
@@ -236,6 +270,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     public Boolean methodApproval(HttpServletRequest http_request, String request_type) throws Exception{
         String requestMethod = http_request.getMethod();
         boolean restful = false;
+        // FIXME @webanno if you notice, OPTIONS is not supported here and MUST be 
+        // for Web Annotation standards compliance.  
         switch(request_type){
             case "update":
                 if(requestMethod.equals("PUT") || requestMethod.equals("PATCH")){
@@ -262,11 +298,11 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 }
             break;
             case "get":
-                if(requestMethod.equals("GET")){
+                if(requestMethod.equals("GET") || requestMethod.equals("HEAD")){
                     restful = true;
                 }
                 else{
-                    send_error("Improper request method for reading, please use GET.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    send_error("Improper request method for reading, please use GET or receive headers with HEAD.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
                 }
             break;
             default:
@@ -287,7 +323,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * @throws java.lang.Exception
      */
     public String processRequestBody(HttpServletRequest http_request) throws IOException, ServletException, Exception{
-        
         String cType = http_request.getContentType();
         String requestBody;
         JSONObject complianceInfo = new JSONObject();
@@ -335,8 +370,38 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         */
         response.setContentType("application/json"); // We create JSON objects for the return body in most cases.  
         response.addHeader("Access-Control-Allow-Headers", "Content-Type");
-        response.addHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT"); // FIXME: Consider adding OPTIONS
+        response.addHeader("Access-Control-Allow-Methods", "GET,OPTIONS,HEAD,PUT,PATCH,DELETE,POST"); // Must have OPTIONS for @webanno 
         return requestBody;
+    }
+    
+    /**
+     * Creates and appends headers to the HTTP response required by Web Annotation standards.
+     * Headers are attached and read from {@link #response}. 
+     * 
+     * @param etag A unique fingerprint for the object for the Etag header.
+     * @param isContainerType A boolean noting whether or not the object is a container type.
+     * @param isLD  the object is either plain JSON or is JSON-LD ("ld+json")
+     */
+    private void addWebAnnotationHeaders(String etag, Boolean isContainerType, Boolean isLD){
+        if(isLD){
+            response.addHeader("Content-Type", "application/ld+json;profile=\"http://www.w3.org/ns/anno.jsonld\""); 
+        } 
+        else {
+            response.addHeader("Content-Type", "application/json;"); 
+            // This breaks Web Annotation compliance, but allows us to return requested
+            // objects without misrepresenting the content.
+        }
+        if(isContainerType){
+            response.addHeader("Link", "<http://www.w3.org/ns/ldp#BasicContainer>; rel=\"type\""); 
+            response.addHeader("Link", "<http://www.w3.org/TR/annotation-protocol/>; rel=\"http://www.w3.org/ns/ldp#constrainedBy\"");  
+        }
+        else{
+            response.addHeader("Link", "<http://www.w3.org/ns/ldp#Resource>; rel=\"type\""); 
+        }
+        response.addHeader("Allow", "GET,OPTIONS,HEAD,PUT,PATCH,DELETE,POST"); 
+        if(!"".equals(etag)){
+            response.addHeader("Etag", etag);
+        }
     }
     
     /**
@@ -347,7 +412,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      */
     private void addLocationHeader(JSONObject obj){
         String addLocation;
-        String thisLocation = response.getHeader("Location");
         // Warning: if there are multiple "Location" headers only one will be returned
         // our practice of making a list protects from this.
         if (response.containsHeader("Location")) {
@@ -369,7 +433,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      */    
     private void addLocationHeader(JSONArray arr){
         for(int j=0; j<arr.size(); j++){
-            addLocationHeader(arr.getJSONObject(j));
+            addLocationHeader(arr.getJSONObject(j)); 
         }
     }
 
@@ -556,22 +620,10 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * @return annotation object
      */
     public void getAnnotationByObjectID() throws IOException, ServletException, Exception{
-        Boolean approved = methodApproval(request, "get");
-        if(approved){
-            // TODO: @theHabes Does `approved` really have to be declared first.
-            // It is only used for this check, so maybe just in one line reads easier.
-            // Also, the outcome of this check is only setting `oid`, which is then
-            // checked, which means these two conditions should be combined as well.
-            
-            // @cubap @answer. oid is set by the servlet context which is why I do not call processRequestBody(request) on this.  You do not
-            // pass the oid as a parameter or in the body, the struts.xml and web.xml set up tells this method to get the ID off the end of the
-            // URL.  By the time you get to this method, either oid is null or it isn't.  Regardless of whether or not you have the ID, 
-            // this still needs to be approved as a get.  If you POST to this method and approved is false, making oid null will let the response of send_error() come out. If
-            // it is approved as a GET, the fact the oid is invalid or null will return the 404.  They are separate fails with separate response codes, so they
-            // must be handled separately to avoid error stacking.
-        }
-        else{
-            oid=null;
+
+        //@cubap unwrapped approved variable.
+        if(!methodApproval(request, "get")){
+            oid=null; //Allow methodApproval error to go to resonse.out
         }
         if(null != oid){
             //find one version by objectID
@@ -590,11 +642,10 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 jo.remove("forkFromID"); // retained for legacy v0 objects
                 jo.remove("serverName");
                 jo.remove("serverIP");
+                // @context may not be here and shall not be added, but the response
+                // will not be ld+json without it.
                 try {
-                    response.addHeader("Content-Type", "application/ld+json");
-                    // @theHabes: ? Should we check that the object actually has @context?
-                    // I'm not certain how to handle malformed JSON-LD
-                   //@cubap @agree when we get to web annotation standard and IIIF compliance
+                    addWebAnnotationHeaders(jo.getString("_id"), isContainerType(jo), isLD(jo));
                     response.addHeader("Access-Control-Allow-Origin", "*");
                     response.setStatus(HttpServletResponse.SC_OK);
                     out = response.getWriter();
@@ -615,13 +666,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * @param Object with key:value pairs with conditions to match against.
      * @reutrn list of annotations that match the given conditions.
      */
-    // @theHabes ? Why does getAnnotationByID() not just point into here with the ID?
-    // Is it just to fire the findOneByExample()? Would it be better to do that here?
-    
-    // @cubap @answer. oid is set by the servlet context for getAnnoByID and does not process any request body.  It is handled as a special case where only
-    // one object is returned.  This method must process a request body and returns an array, even an array of one.  
-    // We never want getAnnoByID to return an array or feel the need to read a request body/parameters.
-            
+    // This is not Web Annotation standard as the specifications states you respond with a single object, not a list.  Not sure what to do with these.
+    // @cubap answer: I asked on oac-discuss and was told Web Annotation hasn't handled lists yet, so just be nice.
     public void getAnnotationByProperties() throws IOException, ServletException, Exception{
         Boolean approved = methodApproval(request, "get");
         if(approved){
@@ -634,11 +680,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         // since this is the content= free version.
         if(null != content){
             JSONObject received = JSONObject.fromObject(content);
-                // @theHabes ? Whaddya think about pulling out a method buildJSON() that
-                // does this whole try-catch with a error for malformed stuff (or an 
-                // actionable return) so we don't have to repeat and wrap all this each time.
-                // @cubap @answer processRequestBody() is pretty much doing that for us.  Switching on it's response should handle that.
-           
             BasicDBObject query = new BasicDBObject();
             Set<String> set_received = received.keySet();
             for(String key : set_received){
@@ -651,7 +692,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             }
             if(ls_result.size() > 0){
                 try {
-                    response.addHeader("Content-Type","application/ld+json");
+                    response.addHeader("Content-Type","application/json"); // not ld+json because it is an array
                     response.addHeader("Access-Control-Allow-Origin", "*");
                     response.setStatus(HttpServletResponse.SC_OK);
                     out = response.getWriter();
@@ -690,23 +731,25 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         if(null != content){
             try{
                 JSONObject received = JSONObject.fromObject(content);
-                 
                 DBObject dbo = (DBObject) JSON.parse(received.toString());
+                if(null!=request.getHeader("Slug")){
+                    // Slug is the user suggested ID for the annotation. This could be a cool RERUM thing.
+                    // cubap: if we want, we can just copy the Slug to @id, warning
+                    // if there was some mismatch, since versions are fine with that.
+                }
                 String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
                 //set @id from _id and update the annotation
                 BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
-
-                String uid = "http://devstore.rerum.io/rerumserver/id/" + dboWithObjectID.getObjectId("_id").toString();
-
+                String uid = "http://devstore.rerum.io/rerumserver/id/"+newObjectID;
                 dboWithObjectID.append("@id", uid);
                 mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
                 JSONObject jo = new JSONObject();
-                
                 jo.element("code", HttpServletResponse.SC_CREATED);
                 jo.element("@id", uid);
                 try {
                     response.addHeader("Access-Control-Allow-Origin", "*");
-                    response.addHeader("Location", uid);
+                    addWebAnnotationHeaders(newObjectID, isContainerType(jo), isLD(jo));
+                    addLocationHeader(jo);
                     response.setStatus(HttpServletResponse.SC_CREATED);
                     out = response.getWriter();
                     out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
@@ -715,7 +758,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                     Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
-            catch (Exception ex){ // try { parse JSON }
+            catch (Exception ex){ 
                 send_error("Trouble parsing JSON", HttpServletResponse.SC_BAD_REQUEST);
             }
         }
@@ -737,12 +780,16 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * an entry in .__rerum.history.next already.
      * @param annotation.objectID
      * @param all annotation properties include updated properties. 
-     * @FIXME things are in __rerum now
      * @ignore the following keys (they will never be updated)
      *      @id
      *      objectID
      */
     public void updateAnnotation() throws IOException, ServletException, Exception{
+        //@webanno must return new state of annotation in response.
+        //The client should use the If-Match header with a value of the ETag it received from the server before the editing process began, 
+        //to avoid collisions of multiple users modifying the same Annotation at the same time
+        //cubap: I'm not sold we have to do this. Our versioning would allow multiple changes. 
+        //The application might want to throttle internally, but it can.
         Boolean approved = methodApproval(request, "update");
         if(approved){
             content = processRequestBody(request);
@@ -767,7 +814,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 
                 if(null != result){
                     Set<String> update_anno_keys = received.keySet();
-                    JSONArray update_rerum_options = received.getJSONArray("__rerum");
                     boolean existingOptions = false; //Does the result DB object already contain __rerum
                     if(result.containsKey("__rerum")){
                         existingOptions = true;
@@ -800,6 +846,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                     JSONObject jo = new JSONObject();
                     jo.element("code", HttpServletResponse.SC_OK);
                     try {
+                        addWebAnnotationHeaders(received.getString("_id"), isContainerType(jo), isLD(jo));
                         response.addHeader("Access-Control-Allow-Origin", "*");
                         response.setStatus(HttpServletResponse.SC_OK);
                         out = response.getWriter();
@@ -824,7 +871,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * Save current annotation to a new version. 
      * @param objectID
      * @param any to be updated annotation properties. 
-     * @FIXME things are in __rerum now
      */
     public void saveNewVersionOfAnnotation() throws IOException, ServletException, Exception{
         // TODO: This is all going to be redone for new versioning.
@@ -952,7 +998,10 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                     //@cubap @agree.  hanyan thought these methods would always be taking objects.
                     query.append("@id", received.getString("@id").trim());
                     mongoDBService.delete(Constant.COLLECTION_ANNOTATION, query);
-                    response.setStatus(HttpServletResponse.SC_OK);
+                    //@webanno If the DELETE request is successfully processed, then the server must return a 204 status response.
+                    // cubap: ahhhh... I don't know. If we flag it as inactive, that's not the same as deleting.
+                    // TODO: more design needed here.
+                    response.setStatus(HttpServletResponse.SC_NO_CONTENT);
                 }
                 else{
                      send_error("annotation provided for delete has no @id, could not delete", HttpServletResponse.SC_BAD_REQUEST);
