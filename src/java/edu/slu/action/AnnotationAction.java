@@ -257,6 +257,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     public Boolean methodApproval(HttpServletRequest http_request, String request_type) throws Exception{
         String requestMethod = http_request.getMethod();
         boolean restful = false;
+        //FIXME @webanno if you notice, OPTIONS is not supported here and MUST be for Web Annotation standards compliance.  
         switch(request_type){
             case "update":
                 if(requestMethod.equals("PUT") || requestMethod.equals("PATCH")){
@@ -283,7 +284,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 }
             break;
             case "get":
-                if(requestMethod.equals("GET") || requestMethod.equals("HEAD")){ //WebAnno standard MUST support HEAD requests.
+                if(requestMethod.equals("GET") || requestMethod.equals("HEAD")){ //@webanno standard MUST support HEAD requests.
                     restful = true;
                 }
                 else{
@@ -308,7 +309,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * @throws java.lang.Exception
      */
     public String processRequestBody(HttpServletRequest http_request) throws IOException, ServletException, Exception{
-        
         String cType = http_request.getContentType();
         String requestBody;
         JSONObject complianceInfo = new JSONObject();
@@ -426,17 +426,17 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * @param containerType A boolean noting whether or not the object is a container type.
      */
     private void addWebAnnotationHeaders(String etag, Boolean containerType){
-        response.addHeader("Content-Type", "application/ld+json;profile=\"http://www.w3.org/ns/anno.jsonld\""); //@webAnno
+        response.addHeader("Content-Type", "application/ld+json;profile=\"http://www.w3.org/ns/anno.jsonld\""); 
         if(containerType){
-            response.addHeader("Link", "<http://www.w3.org/ns/ldp#BasicContainer>; rel=\"type\""); //@webAnno 
-            response.addHeader("Link", "<http://www.w3.org/TR/annotation-protocol/>; rel=\"http://www.w3.org/ns/ldp#constrainedBy\"");  //@webAnno
+            response.addHeader("Link", "<http://www.w3.org/ns/ldp#BasicContainer>; rel=\"type\""); 
+            response.addHeader("Link", "<http://www.w3.org/TR/annotation-protocol/>; rel=\"http://www.w3.org/ns/ldp#constrainedBy\"");  
         }
         else{
-            response.addHeader("Link", "<http://www.w3.org/ns/ldp#Resource>; rel=\"type\""); //@webAnno
+            response.addHeader("Link", "<http://www.w3.org/ns/ldp#Resource>; rel=\"type\""); 
         }
-        response.addHeader("Allow", "GET,OPTIONS,HEAD,PUT,PATCH,DELETE,POST"); //@webAnno
+        response.addHeader("Allow", "GET,OPTIONS,HEAD,PUT,PATCH,DELETE,POST"); 
         if(!"".equals(etag)){
-            response.addHeader("Etag", etag);//@webAnno
+            response.addHeader("Etag", etag);
         }
     }
     
@@ -625,7 +625,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                     //When we save objects, are we forcing that they all have an @context?
                 }
                 try {
-                    //If the Accept header is absent from a GET request, then Annotation Servers must respond with a JSON-LD representation of the Annotation Container @webanno
                     addWebAnnotationHeaders(jo.getString("_id"), containerType);
                     response.addHeader("Access-Control-Allow-Origin", "*");
                     response.setStatus(HttpServletResponse.SC_OK);
@@ -772,13 +771,12 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * an entry in .__rerum.history.next already.
      * @param annotation.objectID
      * @param all annotation properties include updated properties. 
-     * @FIXME things are in __rerum now
      * @ignore the following keys (they will never be updated)
      *      @id
      *      objectID
      */
     public void updateAnnotation() throws IOException, ServletException, Exception{
-        //WebAnno must return new state of annotation in response.
+        //@webanno must return new state of annotation in response.
         //The client should use the If-Match header with a value of the ETag it received from the server before the editing process began, 
         //to avoid collisions of multiple users modifying the same Annotation at the same time
         Boolean approved = methodApproval(request, "update");
@@ -805,7 +803,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 
                 if(null != result){
                     Set<String> update_anno_keys = received.keySet();
-                    JSONArray update_rerum_options = received.getJSONArray("__rerum");
                     boolean existingOptions = false; //Does the result DB object already contain __rerum
                     if(result.containsKey("__rerum")){
                         existingOptions = true;
@@ -865,7 +862,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * Save current annotation to a new version. 
      * @param objectID
      * @param any to be updated annotation properties. 
-     * @FIXME things are in __rerum now
      */
     public void saveNewVersionOfAnnotation() throws IOException, ServletException, Exception{
         // TODO: This is all going to be redone for new versioning.
@@ -993,7 +989,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                     //@cubap @agree.  hanyan thought these methods would always be taking objects.
                     query.append("@id", received.getString("@id").trim());
                     mongoDBService.delete(Constant.COLLECTION_ANNOTATION, query);
-                    //WebAnno If the DELETE request is successfully processed, then the server must return a 204 status response.
+                    //@webanno If the DELETE request is successfully processed, then the server must return a 204 status response.
                     response.setStatus(HttpServletResponse.SC_NO_CONTENT); //@webanno
                 }
                 else{
