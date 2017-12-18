@@ -122,7 +122,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * @return isLd Boolean
      */
     public Boolean isLD(JSONObject jo){
-        Boolean isLD=jo.contains("@context");
+        Boolean isLD=jo.containsKey("@context");
         return isLD;
         // TODO: There's probably some great code to do real checking.
     }
