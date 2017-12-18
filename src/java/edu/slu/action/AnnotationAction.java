@@ -448,29 +448,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         * @see MongoDBAbstractDAO.bulkSetIDProperty(String collectionName, BasicDBObject[] entity_array);
     */ 
     public void batchSaveFromCopy() throws UnsupportedEncodingException, IOException, ServletException, Exception{
-        // TODO: refactor name here. This is the start of SmartObjects/subdocumenting
-        // Also, just try-catch JSONArray.fromObject(processRequestBody(request))
-        // since this is the content= free version.
-        // @cubap @agree.  The naming is ancient and I did not unwrap the original try{JSONPARSE}{catch{JSONPARSE error}, processRequestBody does that for us.
-        // My secondary thought for leaving it was in case an error occurred in JSON.accumulate or JSON.element, but this is unnecessary.
-        // This will be what we use as our standard bulk operator.  Originally developed for T-PEN Newberry
-        
-        // @cubap @agree. We can let the falsey state of processRequestBody() be the switch instead of the null check.  Keep the issue of
-        // error stacking in the back of your mind as we develop this and remember we can't throw Exceptions
-       Boolean approved = methodApproval(request, "create");
-        if(approved){
-            content = processRequestBody(request);
-        }
-        else{
-            content = null;
-        }
-        if(null != content){
+        if(null != processRequestBody(request) && methodApproval(request, "create")){
             JSONArray received_array = JSONArray.fromObject(content);
-            // I think this is already handled in requestServerAuthenticationFilter, just commenting out for now
-//            BasicDBObject serverQuery = new BasicDBObject();
-//            serverQuery.append("ip", request.getRemoteAddr());
-//            DBObject asdbo = mongoDBService.findOneByExample(Constant.COLLECTION_ACCEPTEDSERVER, serverQuery);
-//            BasicDBObject asbdbo = (BasicDBObject) asdbo;
             for(int b=0; b<received_array.size(); b++){ //Configure __rerum on each object
                 JSONObject configureMe = received_array.getJSONObject(b);
                 configureMe = configureRerumOptions(configureMe); //configure this object
@@ -591,13 +570,12 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      */
     private List<DBObject> getAllVersions(HttpServletRequest http_request) throws Exception {
         List<DBObject> ls_versions = null;
-        Boolean approved = methodApproval(request, "get");
         if(!methodApproval(request, "get")){
             // TODO: include link to API documentation in error response
             send_error("Unable to retrieve objects; wrong method type.", HttpServletResponse.SC_BAD_REQUEST);
             return ls_versions;
         }
-        if(processRequestBody(request)==null){
+        if(processRequestBody(http_request)==null){
             // TODO: include link to API documentation in error response
             send_error("Unable to retrieve objects; missing key object.", HttpServletResponse.SC_BAD_REQUEST);
             return ls_versions;
@@ -620,12 +598,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * @return annotation object
      */
     public void getAnnotationByObjectID() throws IOException, ServletException, Exception{
-
-        //@cubap unwrapped approved variable.
-        if(!methodApproval(request, "get")){
-            oid=null; //Allow methodApproval error to go to resonse.out
-        }
-        if(null != oid){
+        if(null != oid && methodApproval(request, "get")){
             //find one version by objectID
             BasicDBObject query = new BasicDBObject();
             query.append("_id", new ObjectId(oid));
@@ -669,16 +642,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     // This is not Web Annotation standard as the specifications states you respond with a single object, not a list.  Not sure what to do with these.
     // @cubap answer: I asked on oac-discuss and was told Web Annotation hasn't handled lists yet, so just be nice.
     public void getAnnotationByProperties() throws IOException, ServletException, Exception{
-        Boolean approved = methodApproval(request, "get");
-        if(approved){
-            content = processRequestBody(request);
-        }
-        else{
-            content = null;
-        }
-        // @theHabes: Just try-catch or false check JSONObject.fromObject(processRequestBody(request))
-        // since this is the content= free version.
-        if(null != content){
+        if(null != processRequestBody(request) && methodApproval(request, "get")){
             JSONObject received = JSONObject.fromObject(content);
             BasicDBObject query = new BasicDBObject();
             Set<String> set_received = received.keySet();
@@ -713,53 +677,33 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * @param all annotation properties.
      */
     public void saveNewAnnotation() throws IOException, ServletException, Exception{
-        Boolean approved = methodApproval(request, "create");
-        if(approved){
-            content = processRequestBody(request);
-        }
-        else{
-            content = null;
-        }
-        // @theHabes: Just try-catch or false check JSONObject.fromObject(processRequestBody(request))
-        // since this is the content= free version.
-        // @cubap @agree.  I did not unwrap the original try{JSONPARSE}{catch{JSONPARSE error}, processRequestBody does that for us.
-        // My secondary thought for leaving it was in case an error occurred in JSON.accumulate or JSON.element, but this is unnecessary.
-        
-        // @cubap @agree. We can let the falsey state of processRequestBody() be the switch instead of the null check.  Keep the issue of
-        // error stacking in the back of your mind as we develop this and remember we can't throw Exceptions
-       
-        if(null != content){
-            try{
-                JSONObject received = JSONObject.fromObject(content);
-                DBObject dbo = (DBObject) JSON.parse(received.toString());
-                if(null!=request.getHeader("Slug")){
-                    // Slug is the user suggested ID for the annotation. This could be a cool RERUM thing.
-                    // cubap: if we want, we can just copy the Slug to @id, warning
-                    // if there was some mismatch, since versions are fine with that.
-                }
-                String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
-                //set @id from _id and update the annotation
-                BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
-                String uid = "http://devstore.rerum.io/rerumserver/id/"+newObjectID;
-                dboWithObjectID.append("@id", uid);
-                mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
-                JSONObject jo = new JSONObject();
-                jo.element("code", HttpServletResponse.SC_CREATED);
-                jo.element("@id", uid);
-                try {
-                    response.addHeader("Access-Control-Allow-Origin", "*");
-                    addWebAnnotationHeaders(newObjectID, isContainerType(jo), isLD(jo));
-                    addLocationHeader(jo);
-                    response.setStatus(HttpServletResponse.SC_CREATED);
-                    out = response.getWriter();
-                    out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
-                } 
-                catch (IOException ex) {
-                    Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
-                }
+        if(null != processRequestBody(request) && methodApproval(request, "create")){
+            JSONObject received = JSONObject.fromObject(content);
+            DBObject dbo = (DBObject) JSON.parse(received.toString());
+            if(null!=request.getHeader("Slug")){
+                // Slug is the user suggested ID for the annotation. This could be a cool RERUM thing.
+                // cubap: if we want, we can just copy the Slug to @id, warning
+                // if there was some mismatch, since versions are fine with that.
             }
-            catch (Exception ex){ 
-                send_error("Trouble parsing JSON", HttpServletResponse.SC_BAD_REQUEST);
+            String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
+            //set @id from _id and update the annotation
+            BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
+            String uid = "http://devstore.rerum.io/rerumserver/id/"+newObjectID;
+            dboWithObjectID.append("@id", uid);
+            mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
+            JSONObject jo = new JSONObject();
+            jo.element("code", HttpServletResponse.SC_CREATED);
+            jo.element("@id", uid);
+            try {
+                response.addHeader("Access-Control-Allow-Origin", "*");
+                addWebAnnotationHeaders(newObjectID, isContainerType(jo), isLD(jo));
+                addLocationHeader(jo);
+                response.setStatus(HttpServletResponse.SC_CREATED);
+                out = response.getWriter();
+                out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
+            } 
+            catch (IOException ex) {
+                Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
 
@@ -790,79 +734,59 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         //to avoid collisions of multiple users modifying the same Annotation at the same time
         //cubap: I'm not sold we have to do this. Our versioning would allow multiple changes. 
         //The application might want to throttle internally, but it can.
-        Boolean approved = methodApproval(request, "update");
-        if(approved){
-            content = processRequestBody(request);
-        }
-        else{
-            content = null;
-        }
-        // @theHabes: Just try-catch or false check JSONObject.fromObject(processRequestBody(request))
-        // since this is the content= free version.
-        // @cubap @agree.  I did not unwrap the original try{JSONPARSE}{catch{JSONPARSE error}, processRequestBody does that for us.
-        // My secondary thought for leaving it was in case an error occurred in JSON.accumulate or JSON.element, but this is unnecessary.
-        
-        // @cubap @agree. We can let the falsey state of processRequestBody() be the switch instead of the null check.  Keep the issue of
-        // error stacking in the back of your mind as we develop this and remember we can't throw Exceptions
-       
-        if(null!= content){
-            try{
-                BasicDBObject query = new BasicDBObject();
-                JSONObject received = JSONObject.fromObject(content); //object that has an id and new key:val pairs.
-                query.append("@id", received.getString("@id").trim());
-                BasicDBObject result = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The result DB object
-                
-                if(null != result){
-                    Set<String> update_anno_keys = received.keySet();
-                    boolean existingOptions = false; //Does the result DB object already contain __rerum
-                    if(result.containsKey("__rerum")){
-                        existingOptions = true;
-                    }
-                    //If the object already in the database contains the key found from the object recieved from the user, update it barring a few special keys
-                    for(String key : update_anno_keys){
-                        if(result.containsKey(key) && (!key.equals("@id") || !key.equals("__rerum")) || !key.equals("objectID")){
-                            result.remove(key);
-                            result.append(key, received.get(key));
-                        }
-                    }
-                    JSONObject existing_object = JSONObject.fromObject(result); 
-                    //If the object already in the database already contained __rerum, we can update that field
-                    if(existingOptions){
-                        existing_object = configureRerumOptions(existing_object);//The existing_object actually comes back as the new object to save here
-                        //tricky because we can't use JSONObject here but needed one to configure __rerum on the result.
-                        //convert JSONObject of configured result back to a BasicDBObject so we can write it back to mongo
-                        //this could probably be optimized somehow, this seems too expensive for what it is trying to do.
-                        result = (BasicDBObject) JSON.parse(existing_object.toString()); 
-                    }
-                    else{ //__rerum did not exist so we could not configure it (v0 
-                        //Don't update any __rerum stuff because this key did not exist in the object already
-                        //FIXME in the future we may still want to configureRerumOptions(existing_object) anyway.
-                    }
-                    mongoDBService.update(Constant.COLLECTION_ANNOTATION, query, result); //TODO @deprecate
-                    // @cubap @theHabes #8 #22 FIXME TODO in the future, save the object with the configured __rerum as a new object
-                    //Then we need to pass that new @id to a function that will update the history.next property of the originally received object as deomonstrated below.
-                    //String newNextID = mongoDBService.save(existing_object, query, result);
-                    //alterHistoryNext(received.getString("@id"),  newNextID);
-                    JSONObject jo = new JSONObject();
-                    jo.element("code", HttpServletResponse.SC_OK);
-                    try {
-                        addWebAnnotationHeaders(received.getString("_id"), isContainerType(jo), isLD(jo));
-                        response.addHeader("Access-Control-Allow-Origin", "*");
-                        response.setStatus(HttpServletResponse.SC_OK);
-                        out = response.getWriter();
-                        out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
-                    } 
-                    catch (IOException ex) {
-                        Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
-                    }
+        if(null!= processRequestBody(request) && methodApproval(request, "update")){
+            BasicDBObject query = new BasicDBObject();
+            JSONObject received = JSONObject.fromObject(content); //object that has an id and new key:val pairs.
+            query.append("@id", received.getString("@id").trim());
+            BasicDBObject result = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The result DB object
 
+            if(null != result){
+                Set<String> update_anno_keys = received.keySet();
+                boolean existingOptions = false; //Does the result DB object already contain __rerum
+                if(result.containsKey("__rerum")){
+                    existingOptions = true;
                 }
-                else{
-                    send_error("Object(s) to update not found.", HttpServletResponse.SC_NOT_FOUND);
+                //If the object already in the database contains the key found from the object recieved from the user, update it barring a few special keys
+                for(String key : update_anno_keys){
+                    if(result.containsKey(key) && (!key.equals("@id") || !key.equals("__rerum")) || !key.equals("objectID")){
+                        result.remove(key);
+                        result.append(key, received.get(key));
+                    }
                 }
+                JSONObject existing_object = JSONObject.fromObject(result); 
+                //If the object already in the database already contained __rerum, we can update that field
+                if(existingOptions){
+                    existing_object = configureRerumOptions(existing_object);//The existing_object actually comes back as the new object to save here
+                    //tricky because we can't use JSONObject here but needed one to configure __rerum on the result.
+                    //convert JSONObject of configured result back to a BasicDBObject so we can write it back to mongo
+                    //this could probably be optimized somehow, this seems too expensive for what it is trying to do.
+                    result = (BasicDBObject) JSON.parse(existing_object.toString()); 
+                }
+                else{ //__rerum did not exist so we could not configure it (v0 
+                    //Don't update any __rerum stuff because this key did not exist in the object already
+                    //FIXME in the future we may still want to configureRerumOptions(existing_object) anyway.
+                }
+                mongoDBService.update(Constant.COLLECTION_ANNOTATION, query, result); //TODO @deprecate
+                // @cubap @theHabes #8 #22 FIXME TODO in the future, save the object with the configured __rerum as a new object
+                //Then we need to pass that new @id to a function that will update the history.next property of the originally received object as deomonstrated below.
+                //String newNextID = mongoDBService.save(existing_object, query, result);
+                //alterHistoryNext(received.getString("@id"),  newNextID);
+                JSONObject jo = new JSONObject();
+                jo.element("code", HttpServletResponse.SC_OK);
+                try {
+                    addWebAnnotationHeaders(received.getString("_id"), isContainerType(jo), isLD(jo));
+                    response.addHeader("Access-Control-Allow-Origin", "*");
+                    response.setStatus(HttpServletResponse.SC_OK);
+                    out = response.getWriter();
+                    out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
+                } 
+                catch (IOException ex) {
+                    Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
+                }
+
             }
-            catch(Exception ex){ //could not parse JSON
-                send_error("Trouble parsing JSON", HttpServletResponse.SC_BAD_REQUEST);
+            else{
+                send_error("Object(s) to update not found.", HttpServletResponse.SC_NOT_FOUND);
             }
         }
     }
@@ -875,96 +799,76 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     public void saveNewVersionOfAnnotation() throws IOException, ServletException, Exception{
         // TODO: This is all going to be redone for new versioning.
         // Simply, it will save a new object with .__rerum.history[next,previous,prime] set.
-        Boolean approved = methodApproval(request, "create");
-        if(approved){
-            content = processRequestBody(request);
-        }
-        else{
-            content = null;
-        }
-        // @theHabes: Just try-catch or false check JSONObject.fromObject(processRequestBody(request))
-        // since this is the content= free version.
-        // @cubap @agree.  I did not unwrap the original try{JSONPARSE}{catch{JSONPARSE error}, processRequestBody does that for us.
-        // My secondary thought for leaving it was in case an error occurred in JSON.accumulate or JSON.element, but this is unnecessary.
-        
-        // @cubap @agree. We can let the falsey state of processRequestBody() be the switch instead of the null check.  Keep the issue of
-        // error stacking in the back of your mind as we develop this and remember we can't throw Exceptions
-       
-        if(null!= content){
-            try{
-                BasicDBObject query = new BasicDBObject();
-                JSONObject received = new JSONObject();
-                received = JSONObject.fromObject(content);
-                query.append("_id", received.getString("@id").trim());
-                BasicDBObject result = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query);
-                if(null != result){
-                    BasicDBObject versionQuery = new BasicDBObject();
-                    versionQuery.append("originalAnnoID", result.get("originalAnnoID"));
-                    BasicDBObject orderby = new BasicDBObject();
-                    orderby.append("version", 1);
-                    List<DBObject> ls_count = mongoDBService.findByExampleWithOrder(Constant.COLLECTION_ANNOTATION, versionQuery, orderby);
-                    if(ls_count.size() >= 10){
-                        //the upper limit of version number is 10, when the 11th comes in, it will delete the first one and put 11th as 10th. 
-                        BasicDBObject first = (BasicDBObject) ls_count.get(0);
-                        BasicDBObject last = (BasicDBObject) ls_count.get(ls_count.size() - 1);
-                        //delete the 1st record.
-                        mongoDBService.delete(Constant.COLLECTION_ANNOTATION, first);
-                        int versionNum = last.getInt("version");
-                        
-                        received.remove("version");
-                        received.accumulate("version", versionNum + 1);
-                        Map<String, Object> values = received;
-                        BasicDBObject dbo = new BasicDBObject(values);
-                        String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
-                        //set @id to objectID and update the annotation
-                        BasicDBObject dboWithObjectID = new BasicDBObject(dbo);
-                        //used to be replace, not put.  Not sure why.
-                        dboWithObjectID.put("@id", newObjectID);
-                        mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
-                        JSONObject jo = new JSONObject();
-                        jo.element("code", HttpServletResponse.SC_OK);
-                        jo.element("newObjectID", newObjectID);
-                        try {
-                            response.setStatus(HttpServletResponse.SC_CREATED); //FIXME: Or should this be OK?
-                            out = response.getWriter();
-                            out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
-                        } 
-                        catch (IOException ex) {
-                            Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
-                        }
-                    }
-                    else{
-                        BasicDBObject last = (BasicDBObject) ls_count.get(ls_count.size() - 1);
-                        int versionNum = last.getInt("veresion");
-                        received.remove("version");
-                        received.accumulate("version", versionNum + 1);
-                        Map<String, Object> values = received;
-                        BasicDBObject dbo = new BasicDBObject(values);
-                        String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
-                        //set @id to objectID and update the annotation
-                        BasicDBObject dboWithObjectID = new BasicDBObject(dbo);
-                        //used to be replace, not put.  Not sure why.
-                        dboWithObjectID.put("@id", newObjectID);
-                        mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
-                        JSONObject jo = new JSONObject();
-                        jo.element("code", HttpServletResponse.SC_OK);
-                        jo.element("newObjectID", newObjectID);
-                        try {
-                            response.setStatus(HttpServletResponse.SC_CREATED); //FIXME: or should this be OK?
-                            out = response.getWriter();
-                            out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
-                        } 
-                        catch (IOException ex) {
-                            Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
-                        }
+        if(null!= processRequestBody(request) && methodApproval(request, "create")){
+            BasicDBObject query = new BasicDBObject();
+            JSONObject received = new JSONObject();
+            received = JSONObject.fromObject(content);
+            query.append("_id", received.getString("@id").trim());
+            BasicDBObject result = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query);
+            if(null != result){
+                BasicDBObject versionQuery = new BasicDBObject();
+                versionQuery.append("originalAnnoID", result.get("originalAnnoID"));
+                BasicDBObject orderby = new BasicDBObject();
+                orderby.append("version", 1);
+                List<DBObject> ls_count = mongoDBService.findByExampleWithOrder(Constant.COLLECTION_ANNOTATION, versionQuery, orderby);
+                if(ls_count.size() >= 10){
+                    //the upper limit of version number is 10, when the 11th comes in, it will delete the first one and put 11th as 10th. 
+                    BasicDBObject first = (BasicDBObject) ls_count.get(0);
+                    BasicDBObject last = (BasicDBObject) ls_count.get(ls_count.size() - 1);
+                    //delete the 1st record.
+                    mongoDBService.delete(Constant.COLLECTION_ANNOTATION, first);
+                    int versionNum = last.getInt("version");
+
+                    received.remove("version");
+                    received.accumulate("version", versionNum + 1);
+                    Map<String, Object> values = received;
+                    BasicDBObject dbo = new BasicDBObject(values);
+                    String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
+                    //set @id to objectID and update the annotation
+                    BasicDBObject dboWithObjectID = new BasicDBObject(dbo);
+                    //used to be replace, not put.  Not sure why.
+                    dboWithObjectID.put("@id", newObjectID);
+                    mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
+                    JSONObject jo = new JSONObject();
+                    jo.element("code", HttpServletResponse.SC_OK);
+                    jo.element("newObjectID", newObjectID);
+                    try {
+                        response.setStatus(HttpServletResponse.SC_CREATED); //FIXME: Or should this be OK?
+                        out = response.getWriter();
+                        out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
+                    } 
+                    catch (IOException ex) {
+                        Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
                     }
                 }
                 else{
-                    send_error("The annotation you are trying to make a new version of does not exist.", HttpServletResponse.SC_NOT_FOUND);
+                    BasicDBObject last = (BasicDBObject) ls_count.get(ls_count.size() - 1);
+                    int versionNum = last.getInt("veresion");
+                    received.remove("version");
+                    received.accumulate("version", versionNum + 1);
+                    Map<String, Object> values = received;
+                    BasicDBObject dbo = new BasicDBObject(values);
+                    String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
+                    //set @id to objectID and update the annotation
+                    BasicDBObject dboWithObjectID = new BasicDBObject(dbo);
+                    //used to be replace, not put.  Not sure why.
+                    dboWithObjectID.put("@id", newObjectID);
+                    mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
+                    JSONObject jo = new JSONObject();
+                    jo.element("code", HttpServletResponse.SC_OK);
+                    jo.element("newObjectID", newObjectID);
+                    try {
+                        response.setStatus(HttpServletResponse.SC_CREATED); //FIXME: or should this be OK?
+                        out = response.getWriter();
+                        out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
+                    } 
+                    catch (IOException ex) {
+                        Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
+                    }
                 }
             }
-            catch(Exception ex){ //could not parse JSON
-                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            else{
+                send_error("The annotation you are trying to make a new version of does not exist.", HttpServletResponse.SC_NOT_FOUND);
             }
         }
     }
@@ -974,41 +878,21 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * @param annotation.@id
      */
     public void deleteAnnotation() throws IOException, ServletException, Exception{
-        Boolean approved = methodApproval(request, "delete");
-        if(approved){
-            content = processRequestBody(request);
-        }
-        else{
-            content = null;
-        }
-        // @theHabes: Just try-catch or false check JSONObject.fromObject(processRequestBody(request))
-        // since this is the content= free version.
-        // @cubap @agree.  I did not unwrap the original try{JSONPARSE}{catch{JSONPARSE error}, processRequestBody does that for us.
-        // My secondary thought for leaving it was in case an error occurred in JSON.accumulate or JSON.element, but this is unnecessary.
-        
-        // @cubap @agree. We can let the falsey state of processRequestBody() be the switch instead of the null check.  Keep the issue of
-        // error stacking in the back of your mind as we develop this and remember we can't throw Exceptions
-       
-        if(null != content){ 
+        if(null != processRequestBody(request) && methodApproval(request, "delete")){ 
             BasicDBObject query = new BasicDBObject();
-            try{
-                JSONObject received = JSONObject.fromObject(content);
-                if(received.containsKey("@id")){
-                    // TODO: also support jsut the URI in the body?
-                    //@cubap @agree.  hanyan thought these methods would always be taking objects.
-                    query.append("@id", received.getString("@id").trim());
-                    mongoDBService.delete(Constant.COLLECTION_ANNOTATION, query);
-                    //@webanno If the DELETE request is successfully processed, then the server must return a 204 status response.
-                    // cubap: ahhhh... I don't know. If we flag it as inactive, that's not the same as deleting.
-                    // TODO: more design needed here.
-                    response.setStatus(HttpServletResponse.SC_NO_CONTENT);
-                }
-                else{
-                     send_error("annotation provided for delete has no @id, could not delete", HttpServletResponse.SC_BAD_REQUEST);
-                }
+            JSONObject received = JSONObject.fromObject(content);
+            if(received.containsKey("@id")){
+                // TODO: also support jsut the URI in the body?
+                //@cubap @agree.  hanyan thought these methods would always be taking objects.
+                query.append("@id", received.getString("@id").trim());
+                mongoDBService.delete(Constant.COLLECTION_ANNOTATION, query);
+                //@webanno If the DELETE request is successfully processed, then the server must return a 204 status response.
+                // cubap: ahhhh... I don't know. If we flag it as inactive, that's not the same as deleting.
+                // TODO: more design needed here.
+                response.setStatus(HttpServletResponse.SC_NO_CONTENT);
             }
-            catch (Exception ex){  // try {parse JSON}
-                send_error("annotation provided for delete was not JSON, could not get id to delete", HttpServletResponse.SC_BAD_REQUEST);
+            else{
+                 send_error("annotation provided for delete has no @id, could not delete", HttpServletResponse.SC_BAD_REQUEST);
             }
         }
     }
