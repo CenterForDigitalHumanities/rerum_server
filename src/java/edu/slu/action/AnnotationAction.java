@@ -886,9 +886,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 // TODO: more design needed here.
                 response.setStatus(HttpServletResponse.SC_NO_CONTENT);
             }
-            catch (Exception ex){  // try {parse JSON}
-                writeErrorResponse("annotation provided for delete was not JSON, could not get id to delete", HttpServletResponse.SC_BAD_REQUEST);
-            }
         }
     }
     
