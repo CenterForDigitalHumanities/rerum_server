@@ -132,12 +132,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * @param msg The message to show the user
      * @param status The HTTP response status to return
      */
-    public void send_error(String msg, int status){
-        // TODO: @theHabes the naming of this seems a little off. It does not
-        // send the error, just writes it to the response. Also the casing feels
-        // non-standard.
-        // @cubap @agree it was a weird method to implement so I left it weird.  It should be renamed, all other methods are camelCased. 
-        // maybe needs better documentation to clarify.
+    public void writeErrorResponse(String msg, int status){
         JSONObject jo = new JSONObject();
         jo.element("code", status);
         jo.element("message", msg);
@@ -247,12 +242,12 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             }
             catch(Exception e){ //__rerum array does not exist or history object malformed.  What should I do?
                 //TODO check that this fails like we expect and does not stack.
-                send_error("This object does not contain the proper history property.", HttpServletResponse.SC_CONFLICT);
+                writeErrorResponse("This object does not contain the proper history property.", HttpServletResponse.SC_CONFLICT);
             }
         }
         else{ //THIS IS A 404
             //TODO check that this fails like we expect and does not stack
-            send_error("Object for history.next update not found...", HttpServletResponse.SC_NOT_FOUND);
+            writeErrorResponse("Object for history.next update not found...", HttpServletResponse.SC_NOT_FOUND);
         }
         return altered;
     }
@@ -278,7 +273,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                     restful = true;
                 }
                 else{
-                    send_error("Improper request method for updating, please use PUT or PATCH.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    writeErrorResponse("Improper request method for updating, please use PUT or PATCH.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
                 }
             break;
             case "create":
@@ -286,7 +281,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                     restful = true;
                 }
                 else{
-                    send_error("Improper request method for creating, please use POST.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    writeErrorResponse("Improper request method for creating, please use POST.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
                 }
             break;
             case "delete":
@@ -294,7 +289,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                     restful = true;
                 }
                 else{
-                    send_error("Improper request method for deleting, please use DELETE.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    writeErrorResponse("Improper request method for deleting, please use DELETE.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
                 }
             break;
             case "get":
@@ -302,11 +297,11 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                     restful = true;
                 }
                 else{
-                    send_error("Improper request method for reading, please use GET or receive headers with HEAD.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    writeErrorResponse("Improper request method for reading, please use GET or receive headers with HEAD.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
                 }
             break;
             default:
-                send_error("Improper request method for this type of request (unknown).", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                writeErrorResponse("Improper request method for this type of request (unknown).", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
 
             }  
         return restful;
@@ -348,14 +343,14 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 }
                 catch(Exception ex2){
                     // not a JSONObject or a JSONArray. Throw error. 
-                    send_error("The data passed was not valid JSON:\n"+requestBody, HttpServletResponse.SC_BAD_REQUEST);
+                    writeErrorResponse("The data passed was not valid JSON:\n"+requestBody, HttpServletResponse.SC_BAD_REQUEST);
                     requestBody = null;
                 }
             }          
             // no-catch: Is either JSONObject or JSON Array
         }
         else { 
-            send_error("Invalid Content-Type. Please use 'application/json' or 'application/ld+json'", HttpServletResponse.SC_BAD_REQUEST);
+            writeErrorResponse("Invalid Content-Type. Please use 'application/json' or 'application/ld+json'", HttpServletResponse.SC_BAD_REQUEST);
             requestBody = null;
         }
         //@cubap @theHabes TODO IIIF compliance handling on action objects
@@ -363,7 +358,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         if(null != requestBody){
             complianceInfo = checkIIIFCompliance(requestBody, "2.1");
             if(complianceInfo.getInt("okay") < 1){
-                send_error(complianceInfo.toString(), HttpServletResponse.SC_CONFLICT);
+                writeErrorResponse(complianceInfo.toString(), HttpServletResponse.SC_CONFLICT);
                 requestBody = null;
             }
         }
@@ -594,12 +589,12 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
         Boolean approved = methodApproval(request, "get");
         if(!methodApproval(request, "get")){
             // TODO: include link to API documentation in error response
-            send_error("Unable to retrieve objects; wrong method type.", HttpServletResponse.SC_BAD_REQUEST);
+            writeErrorResponse("Unable to retrieve objects; wrong method type.", HttpServletResponse.SC_BAD_REQUEST);
             return ls_versions;
         }
         if(processRequestBody(request)==null){
             // TODO: include link to API documentation in error response
-            send_error("Unable to retrieve objects; missing key object.", HttpServletResponse.SC_BAD_REQUEST);
+            writeErrorResponse("Unable to retrieve objects; missing key object.", HttpServletResponse.SC_BAD_REQUEST);
             return ls_versions;
         }
         //content is set to body now
@@ -656,7 +651,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 }
             }
             else{
-                send_error("No object found with provided id '"+oid+"'.", HttpServletResponse.SC_NOT_FOUND);
+                writeErrorResponse("No object found with provided id '"+oid+"'.", HttpServletResponse.SC_NOT_FOUND);
             }
         }
     }
@@ -703,7 +698,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 }
             }
             else{
-                send_error("Object(s) not found using provided properties '"+received+"'.", HttpServletResponse.SC_NOT_FOUND);
+                writeErrorResponse("Object(s) not found using provided properties '"+received+"'.", HttpServletResponse.SC_NOT_FOUND);
             }
         }
     }
@@ -759,7 +754,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 }
             }
             catch (Exception ex){ 
-                send_error("Trouble parsing JSON", HttpServletResponse.SC_BAD_REQUEST);
+                writeErrorResponse("Trouble parsing JSON", HttpServletResponse.SC_BAD_REQUEST);
             }
         }
 
@@ -858,11 +853,11 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
 
                 }
                 else{
-                    send_error("Object(s) to update not found.", HttpServletResponse.SC_NOT_FOUND);
+                    writeErrorResponse("Object(s) to update not found.", HttpServletResponse.SC_NOT_FOUND);
                 }
             }
             catch(Exception ex){ //could not parse JSON
-                send_error("Trouble parsing JSON", HttpServletResponse.SC_BAD_REQUEST);
+                writeErrorResponse("Trouble parsing JSON", HttpServletResponse.SC_BAD_REQUEST);
             }
         }
     }
@@ -960,7 +955,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                     }
                 }
                 else{
-                    send_error("The annotation you are trying to make a new version of does not exist.", HttpServletResponse.SC_NOT_FOUND);
+                    writeErrorResponse("The annotation you are trying to make a new version of does not exist.", HttpServletResponse.SC_NOT_FOUND);
                 }
             }
             catch(Exception ex){ //could not parse JSON
@@ -1004,11 +999,11 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                     response.setStatus(HttpServletResponse.SC_NO_CONTENT);
                 }
                 else{
-                     send_error("annotation provided for delete has no @id, could not delete", HttpServletResponse.SC_BAD_REQUEST);
+                     writeErrorResponse("annotation provided for delete has no @id, could not delete", HttpServletResponse.SC_BAD_REQUEST);
                 }
             }
             catch (Exception ex){  // try {parse JSON}
-                send_error("annotation provided for delete was not JSON, could not get id to delete", HttpServletResponse.SC_BAD_REQUEST);
+                writeErrorResponse("annotation provided for delete was not JSON, could not get id to delete", HttpServletResponse.SC_BAD_REQUEST);
             }
         }
     }
@@ -1038,7 +1033,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 mongoDBService.delete(Constant.COLLECTION_ANNOTATION, query);
             }
             else{
-                //Otherwise say it is ok so the action looking do validate does not send_error()
+                //Otherwise say it is ok so the action looking do validate does not writeErrorResponse()
                 iiif_return.element("okay", 1);
             }
         }
