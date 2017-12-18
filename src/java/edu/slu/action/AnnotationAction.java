@@ -724,50 +724,38 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      *      objectID
      */
     public void updateAnnotation() throws IOException, ServletException, Exception{
-        //@webanno must return new state of annotation in response.
         //The client should use the If-Match header with a value of the ETag it received from the server before the editing process began, 
         //to avoid collisions of multiple users modifying the same Annotation at the same time
         //cubap: I'm not sold we have to do this. Our versioning would allow multiple changes. 
         //The application might want to throttle internally, but it can.
         if(null!= processRequestBody(request) && methodApproval(request, "update")){
             BasicDBObject query = new BasicDBObject();
-            JSONObject received = JSONObject.fromObject(content); //object that has an id and new key:val pairs.
-            query.append("@id", received.getString("@id").trim());
-            BasicDBObject result = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The result DB object
-
-            if(null != result){
+            JSONObject received = JSONObject.fromObject(content); 
+            String updateHistoryNextID = received.getString("@id");
+            query.append("@id", updateHistoryNextID);
+            BasicDBObject originalObject = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The originalObject DB object
+            BasicDBObject updatedObject = (BasicDBObject) originalObject.clone(); //A copy of the original, this will be saved as a new object.  Make all edits to this variable.
+            if(null != originalObject){
                 Set<String> update_anno_keys = received.keySet();
-                boolean existingOptions = false; //Does the result DB object already contain __rerum
-                if(result.containsKey("__rerum")){
-                    existingOptions = true;
-                }
                 //If the object already in the database contains the key found from the object recieved from the user, update it barring a few special keys
+                //Users cannot update the __rerum property, so we ignore any update action to that particular field.  
                 for(String key : update_anno_keys){
-                    if(result.containsKey(key) && (!key.equals("@id") || !key.equals("__rerum")) || !key.equals("objectID")){
-                        result.remove(key);
-                        result.append(key, received.get(key));
+                    if(originalObject.containsKey(key) && (!key.equals("@id") || !key.equals("__rerum")) || !key.equals("objectID")){
+                        updatedObject.remove(key);
+                        updatedObject.append(key, received.get(key));
                     }
                 }
-                JSONObject existing_object = JSONObject.fromObject(result); 
-                //If the object already in the database already contained __rerum, we can update that field
-                if(existingOptions){
-                    existing_object = configureRerumOptions(existing_object);//The existing_object actually comes back as the new object to save here
-                    //tricky because we can't use JSONObject here but needed one to configure __rerum on the result.
-                    //convert JSONObject of configured result back to a BasicDBObject so we can write it back to mongo
-                    //this could probably be optimized somehow, this seems too expensive for what it is trying to do.
-                    result = (BasicDBObject) JSON.parse(existing_object.toString()); 
-                }
-                else{ //__rerum did not exist so we could not configure it (v0 
-                    //Don't update any __rerum stuff because this key did not exist in the object already
-                    //FIXME in the future we may still want to configureRerumOptions(existing_object) anyway.
-                }
-                mongoDBService.update(Constant.COLLECTION_ANNOTATION, query, result); //TODO @deprecate
-                // @cubap @theHabes #8 #22 FIXME TODO in the future, save the object with the configured __rerum as a new object
-                //Then we need to pass that new @id to a function that will update the history.next property of the originally received object as deomonstrated below.
-                //String newNextID = mongoDBService.save(existing_object, query, result);
-                //alterHistoryNext(received.getString("@id"),  newNextID);
+                JSONObject newObject = JSONObject.fromObject(updatedObject);//The edited original object meant to be saved as a new object (versioning)
+                newObject.remove("@id"); //This is being saved as a new object, so remove this @id for the new one to be set.
+                //Since we ignore changes to __rerum for existing objects, we do no configureRerumOptions(updatedObject);
+                newObject = configureRerumOptions(newObject); //__rerum for the new object being created because of the update action
+                DBObject dbo = (DBObject) JSON.parse(newObject.toString());
+                String newNextID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
+                String newNextAtID = "http://devstore.rerum.io/rerumserver/id/"+newNextID;
+                alterHistoryNext(updateHistoryNextID, newNextAtID); //update history.next or original object to include the newObject @id
                 JSONObject jo = new JSONObject();
                 jo.element("code", HttpServletResponse.SC_OK);
+                jo.element("new_obj_state", updatedObject); //FIXME: @webanno standards say this should be the response.
                 try {
                     addWebAnnotationHeaders(received.getString("_id"), isContainerType(jo), isLD(jo));
                     response.addHeader("Access-Control-Allow-Origin", "*");
@@ -778,7 +766,6 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 catch (IOException ex) {
                     Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
                 }
-
             }
             else{
                 writeErrorResponse("Object "+received.getString("@id")+" not found in RERUM, could not update.", HttpServletResponse.SC_BAD_REQUEST);
