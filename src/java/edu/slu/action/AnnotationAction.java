@@ -780,8 +780,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 }
 
             }
-            else{ //could not parse JSON
-                writeErrorResponse("Trouble parsing JSON", HttpServletResponse.SC_BAD_REQUEST);
+            else{
+                writeErrorResponse("Object "+received.getString("@id")+" not found in RERUM, could not update.", HttpServletResponse.SC_BAD_REQUEST);
             }
         }
     }
@@ -863,7 +863,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 }
             }
             else{
-                send_error("The annotation you are trying to make a new version of does not exist.", HttpServletResponse.SC_NOT_FOUND);
+                writeErrorResponse("The annotation you are trying to make a new version of does not exist.", HttpServletResponse.SC_NOT_FOUND);
             }
         }
     }
