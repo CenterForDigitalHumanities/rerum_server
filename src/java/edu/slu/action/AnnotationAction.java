@@ -692,7 +692,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             jo.element("@id", uid);
             try {
                 response.addHeader("Access-Control-Allow-Origin", "*");
-                addWebAnnotationHeaders(newObjectID, isContainerType(jo), isLD(jo));
+                addWebAnnotationHeaders(newObjectID, isContainerType(received), isLD(received));
                 addLocationHeader(jo);
                 response.setStatus(HttpServletResponse.SC_CREATED);
                 out = response.getWriter();
