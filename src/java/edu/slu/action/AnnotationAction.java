@@ -363,6 +363,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             }
         }
         */
+        content = requestBody;
         response.setContentType("application/json"); // We create JSON objects for the return body in most cases.  
         response.addHeader("Access-Control-Allow-Headers", "Content-Type");
         response.addHeader("Access-Control-Allow-Methods", "GET,OPTIONS,HEAD,PUT,PATCH,DELETE,POST"); // Must have OPTIONS for @webanno 
