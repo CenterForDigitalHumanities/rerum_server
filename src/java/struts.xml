@@ -14,7 +14,7 @@
     <package name="default" extends="struts-default"></package>
     
     <!-- This package is open to public -->
-    <package name="getAnnotation" extends="default" namespace="/id">
+    <package name="getObject" extends="default" namespace="/id">
         <!-- INTERCEPTOR -->
         <interceptors>
             <interceptor name="responseEncoding" class="edu.slu.filter.ResponseEncoding"></interceptor>
@@ -25,11 +25,11 @@
         </interceptors>
         <default-interceptor-ref name="myDefault" />
         
-        <action name="getAnnotationByObjectID" class="annotationAction" method="getAnnotationByObjectID"></action>
+        <action name="getByID" class="objectAction" method="getByID"></action>
     </package>
     
-    <!-- ANNOTATION -->
-    <package name="anno" extends="default" namespace="/anno">
+    <!-- OBJECTS -->
+    <package name="v1" extends="default" namespace="/v1">
         <!-- INTERCEPTOR -->
         <interceptors>
             <interceptor name="requestServerAuthenticationFilter" class="edu.slu.filter.RequestServerAuthenticationFilter">
@@ -56,19 +56,13 @@
             <result name="403">/403.jsp</result>
         </global-results>
         
-        <action name="getAnnotationByProperties" class="annotationAction" method="getAnnotationByProperties"></action>
-        <action name="getAnnotationByObjectID" class="annotationAction" method="getAnnotationByObjectID"></action>
-        <action name="getAllMyAnnotations" class="annotationAction" method="getAllMyAnnotations"></action>
-        <action name="getAllVersionsOfAnnotationByObjectID" class="annotationAction" method="getAllVersionsOfAnnotationByObjectID"></action>
-        <action name="getAllVersionsOfAnnotationByOriginalAnnoID" class="annotationAction" method="getAllVersionsOfAnnotationByOriginalAnnoID"></action>
-        <action name="getAnnoByResourceOutterRelativeNamespace" class="annotationAction" method="getAnnoByResourceOutterRelativeNamespace"></action>
-        <action name="saveNewAnnotation" class="annotationAction" method="saveNewAnnotation"></action>
-        <action name="updateAnnotation" class="annotationAction" method="updateAnnotation"></action>
-        <action name="saveNewVersionOfAnnotation" class="annotationAction" method="saveNewVersionOfAnnotation"></action>
-        <action name="deleteAnnotationByObjectID" class="annotationAction" method="deleteAnnotationByObjectID"></action>
-        <action name="deleteAnnotationByAtID" class="annotationAction" method="deleteAnnotationByAtID"></action>
-        <action name="batchSaveFromCopy" class="annotationAction" method="batchSaveFromCopy"></action>
-        <action name="batchSaveMetadataForm" class="annotationAction" method="batchSaveMetadataForm"></action>
+        <action name="getByProperties" class="objectAction" method="getByProperties"></action>
+        <action name="getByID" class="objectAction" method="getByID"></action>
+        <action name="getAllAncestors" class="objectAction" method="getAllAncestors"></action>
+        <action name="getAllDescendents" class="objectAction" method="getAllDescendents"></action>
+        <action name="create" class="objectAction" method="saveNewObject"></action>
+        <action name="update" class="objectAction" method="updateObject"></action>
+        <action name="delete" class="objectAction" method="deleteObject"></action>
     </package>
     
     <!-- ACCEPTED SERVER -->
@@ -86,33 +80,6 @@
         <action name="saveNewServer" class="serverAction" method="saveNewServer"></action>
         <action name="updateServerByObjectID" class="serverAction" method="updateServerByObjectID"></action>
         <action name="getServerByIp" class="serverAction" method="getServerByIp"></action>
-    </package>
-    
-    <!-- USER MANAGEMENT -->
-    <package name="user" extends="default" namespace="/user">
-        <!-- INTERCEPTER -->
-        <interceptors>
-            <interceptor name="responseEncoding" class="edu.slu.filter.ResponseEncoding"></interceptor>
-            <interceptor name="inSessionFilter" class="edu.slu.filter.InSessionFilter">
-                <param name="includeMethods">
-                    updateUserInfo,addProjectToUser,updateProjectUserProfile
-                </param>
-            </interceptor>
-            <interceptor-stack name="myDefault">
-                <interceptor-ref name="responseEncoding" />
-                <interceptor-ref name="inSessionFilter" />
-                <interceptor-ref name="defaultStack" />
-            </interceptor-stack>
-        </interceptors>
-        <default-interceptor-ref name="myDefault" />
-        
-        <!-- ACTIONS -->
-        <action name="checkDuEmail" class="serverAction" method="checkDuEmail"></action>
-        <action name="saveNewAgentPerson" class="serverAction" method="saveNewUser"></action>
-        <action name="updateUserInfo" class="serverAction" method="updateUserInfo"></action>
-        <action name="addProjectToUser" class="serverAction" method="addProjectToUser"></action>
-        <action name="updateProjectUserProfile" class="serverAction" method="updateProjectUserProfile"></action>
-        <action name="userLogin" class="serverAction" method="userLogin"></action>
     </package>
     
 </struts>
