@@ -79,12 +79,12 @@ import java.net.URL;
 
 
 /**
- * @author hanyan && bhaberbe
- * All the actions hit as an API like ex. /saveNewAnnotation.action
- * This implementation follows RESTFUL standards.  If you make changes, please adhere to this standard.
+ * @author hanyan &&  bhaberbe
+ All the actions hit as an API like ex. /saveNewObject.action
+ This implementation follows RESTFUL standards.  If you make changes, please adhere to this standard.
 
  */
-public class AnnotationAction extends ActionSupport implements ServletRequestAware, ServletResponseAware{
+public class ObjectAction extends ActionSupport implements ServletRequestAware, ServletResponseAware{
     private String content;
     private String oid;
     private AcceptedServer acceptedServer;
@@ -100,7 +100,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * Check if the proposed object is a container type.
      * Related to Web Annotation compliance.  
      * @param jo  the JSON or JSON-LD object
-     * @see getAnnotationByObjectID(), saveNewAnnotation(), updateAnnotation() 
+     * @see getAnnotationByObjectID(),saveNewObject(),updateObject() 
      * @return containerType Boolean representing if RERUM knows whether it is a container type or not.  
      */
     public Boolean isContainerType(JSONObject jo){
@@ -118,7 +118,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     /**
      * Check if the proposed object is valid JSON-LD.
      * @param jo  the JSON object to check
-     * @see getAnnotationByObjectID(), saveNewAnnotation(), updateAnnotation() 
+     * @see getAnnotationByObjectID(),saveNewObject(),updateObject() 
      * @return isLd Boolean
      */
     public Boolean isLD(JSONObject jo){
@@ -145,7 +145,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             out.write(System.getProperty("line.separator"));
         } 
         catch (IOException ex) {
-            Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
     
@@ -218,8 +218,8 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
     }
     
     /**
-     * Update the history.next property of an object.  This will occur because updateAnnotation will create a new object from a given object, and that
-     * given object will have a new next value of the new object.  Watch out for missing __rerum or malformed __rerum.history
+     * Update the history.next property of an object.  This will occur because updateObject will create a new object from a given object, and that
+ given object will have a new next value of the new object.  Watch out for missing __rerum or malformed __rerum.history
      * 
      * @param idForUpdate the @id of the object whose history.next needs to be updated
      * @param newNextID the @id of the newly created object to be placed in the history.next array.
@@ -470,7 +470,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 response.setStatus(HttpServletResponse.SC_CREATED);
                 out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
             } catch (IOException ex) {
-                Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
     }
@@ -498,7 +498,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(ancestors));
         } 
         catch (IOException ex) {
-            Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
     
@@ -553,7 +553,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(descendants));
         } 
         catch (IOException ex) {
-            Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
     
@@ -593,7 +593,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * @param objectID (oid)
      * @return annotation object
      */
-    public void getAnnotationByObjectID() throws IOException, ServletException, Exception{
+    public void getByID() throws IOException, ServletException, Exception{
         if(null != oid && methodApproval(request, "get")){
             //find one version by objectID
             BasicDBObject query = new BasicDBObject();
@@ -621,7 +621,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                     out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
                 } 
                 catch (IOException ex) {
-                    Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
+                    Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
             else{
@@ -637,7 +637,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      */
     // This is not Web Annotation standard as the specifications states you respond with a single object, not a list.  Not sure what to do with these.
     // @cubap answer: I asked on oac-discuss and was told Web Annotation hasn't handled lists yet, so just be nice.
-    public void getAnnotationByProperties() throws IOException, ServletException, Exception{
+    public void getByProperties() throws IOException, ServletException, Exception{
         if(null != processRequestBody(request) && methodApproval(request, "get")){
             JSONObject received = JSONObject.fromObject(content);
             BasicDBObject query = new BasicDBObject();
@@ -659,7 +659,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                     out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(ja));
                 } 
                 catch (IOException ex) {
-                    Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
+                    Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
             else{
@@ -672,7 +672,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * Save a new annotation. 
      * @param all annotation properties.
      */
-    public void saveNewAnnotation() throws IOException, ServletException, Exception{
+    public void saveNewObject() throws IOException, ServletException, Exception{
         if(null != processRequestBody(request) && methodApproval(request, "create")){
             JSONObject received = JSONObject.fromObject(content);
             DBObject dbo = (DBObject) JSON.parse(received.toString());
@@ -700,7 +700,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
             } 
             catch (IOException ex) {
-                Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
 
@@ -725,7 +725,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      *      @id
      *      objectID
      */
-    public void updateAnnotation() throws IOException, ServletException, Exception{
+    public void updateObject() throws IOException, ServletException, Exception{
         //The client should use the If-Match header with a value of the ETag it received from the server before the editing process began, 
         //to avoid collisions of multiple users modifying the same Annotation at the same time
         //cubap: I'm not sold we have to do this. Our versioning would allow multiple changes. 
@@ -766,93 +766,11 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                     out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
                 } 
                 catch (IOException ex) {
-                    Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
+                    Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
             else{
                 writeErrorResponse("Object "+received.getString("@id")+" not found in RERUM, could not update.", HttpServletResponse.SC_BAD_REQUEST);
-            }
-        }
-    }
-    
-    /**
-     * Save current annotation to a new version. 
-     * @param objectID
-     * @param any to be updated annotation properties. 
-     */
-    public void saveNewVersionOfAnnotation() throws IOException, ServletException, Exception{
-        // TODO: This is all going to be redone for new versioning.
-        // Simply, it will save a new object with .__rerum.history[next,previous,prime] set.
-        if(null!= processRequestBody(request) && methodApproval(request, "create")){
-            BasicDBObject query = new BasicDBObject();
-            JSONObject received = new JSONObject();
-            received = JSONObject.fromObject(content);
-            query.append("_id", received.getString("@id").trim());
-            BasicDBObject result = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query);
-            if(null != result){
-                BasicDBObject versionQuery = new BasicDBObject();
-                versionQuery.append("originalAnnoID", result.get("originalAnnoID"));
-                BasicDBObject orderby = new BasicDBObject();
-                orderby.append("version", 1);
-                List<DBObject> ls_count = mongoDBService.findByExampleWithOrder(Constant.COLLECTION_ANNOTATION, versionQuery, orderby);
-                if(ls_count.size() >= 10){
-                    //the upper limit of version number is 10, when the 11th comes in, it will delete the first one and put 11th as 10th. 
-                    BasicDBObject first = (BasicDBObject) ls_count.get(0);
-                    BasicDBObject last = (BasicDBObject) ls_count.get(ls_count.size() - 1);
-                    //delete the 1st record.
-                    mongoDBService.delete(Constant.COLLECTION_ANNOTATION, first);
-                    int versionNum = last.getInt("version");
-
-                    received.remove("version");
-                    received.accumulate("version", versionNum + 1);
-                    Map<String, Object> values = received;
-                    BasicDBObject dbo = new BasicDBObject(values);
-                    String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
-                    //set @id to objectID and update the annotation
-                    BasicDBObject dboWithObjectID = new BasicDBObject(dbo);
-                    //used to be replace, not put.  Not sure why.
-                    dboWithObjectID.put("@id", newObjectID);
-                    mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
-                    JSONObject jo = new JSONObject();
-                    jo.element("code", HttpServletResponse.SC_OK);
-                    jo.element("newObjectID", newObjectID);
-                    try {
-                        response.setStatus(HttpServletResponse.SC_CREATED); //FIXME: Or should this be OK?
-                        out = response.getWriter();
-                        out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
-                    } 
-                    catch (IOException ex) {
-                        Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
-                    }
-                }
-                else{
-                    BasicDBObject last = (BasicDBObject) ls_count.get(ls_count.size() - 1);
-                    int versionNum = last.getInt("veresion");
-                    received.remove("version");
-                    received.accumulate("version", versionNum + 1);
-                    Map<String, Object> values = received;
-                    BasicDBObject dbo = new BasicDBObject(values);
-                    String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
-                    //set @id to objectID and update the annotation
-                    BasicDBObject dboWithObjectID = new BasicDBObject(dbo);
-                    //used to be replace, not put.  Not sure why.
-                    dboWithObjectID.put("@id", newObjectID);
-                    mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
-                    JSONObject jo = new JSONObject();
-                    jo.element("code", HttpServletResponse.SC_OK);
-                    jo.element("newObjectID", newObjectID);
-                    try {
-                        response.setStatus(HttpServletResponse.SC_CREATED); //FIXME: or should this be OK?
-                        out = response.getWriter();
-                        out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
-                    } 
-                    catch (IOException ex) {
-                        Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
-                    }
-                }
-            }
-            else{
-                writeErrorResponse("The annotation you are trying to make a new version of does not exist.", HttpServletResponse.SC_NOT_FOUND);
             }
         }
     }
@@ -861,7 +779,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
      * Delete a given annotation. 
      * @param annotation.@id
      */
-    public void deleteAnnotation() throws IOException, ServletException, Exception{
+    public void deleteObject() throws IOException, ServletException, Exception{
         if(null != processRequestBody(request) && methodApproval(request, "delete")){ 
             BasicDBObject query = new BasicDBObject();
             JSONObject received = JSONObject.fromObject(content);

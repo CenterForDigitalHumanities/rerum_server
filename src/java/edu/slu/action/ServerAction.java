@@ -146,7 +146,7 @@ public class ServerAction extends ActionSupport implements ServletRequestAware, 
                 out = response.getWriter();
                 out.print(jo);
             } catch (IOException ex) {
-                Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
             }
         }else{
             //if the IP is not duplicated, save the info. 
@@ -160,7 +160,7 @@ public class ServerAction extends ActionSupport implements ServletRequestAware, 
                 out = response.getWriter();
                 out.print(jo);
             } catch (IOException ex) {
-                Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
     }
@@ -179,7 +179,7 @@ public class ServerAction extends ActionSupport implements ServletRequestAware, 
             out = response.getWriter();
             out.print(jo);
         } catch (IOException ex) {
-            Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
     
@@ -201,7 +201,7 @@ public class ServerAction extends ActionSupport implements ServletRequestAware, 
                 out = response.getWriter();
                 out.print(jo);
             } catch (IOException ex) {
-                Logger.getLogger(AnnotationAction.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
     }

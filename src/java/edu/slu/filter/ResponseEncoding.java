@@ -14,8 +14,8 @@ import org.apache.struts2.ServletActionContext;
 /**
  *
  * @author hanyan && bhaberbe
- * @Deprecated there is no need for this anymore, response manipulation is handled in AnnotationAction.java
- * @see AnnotationAction.java, struts.xml
+ * @Deprecated there is no need for this anymore, response manipulation is handled in ObjectAction.java
+ * @see ObjectAction.java, struts.xml
  */
 public class ResponseEncoding extends MethodFilterInterceptor {
 
