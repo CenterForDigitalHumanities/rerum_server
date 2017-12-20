@@ -10,7 +10,7 @@
     <% String basePath = request.getContextPath(); %>
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-        <title>Annotation Store Registration</title>
+        <title>RERUM Registration</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css">
@@ -60,9 +60,9 @@
     <body>
         <h1 onclick="window.location='http://rerum.io'" target="_blank" class="navbar-brand"><i class="fa fa-cubes"></i> rerum</h1>
         <div class='container col-xs-10 col-sm-10 col-md-10 col-lg-10' id="intro">
-            We are so glad you are interested in using Saint Louis University's annotation store, RERUM!  Our annotation store likes to screen calls, so if you would like it
-            to answer you must share your server IP address with it.  Supply any label you would like stored with your IP address (because RERUM doesn't want to think of everyone
-            as just a number).  
+            We are so glad you are interested in using Saint Louis University's public object store, RERUM!  Our store likes to screen calls, so if you would like it
+            to answer you must share your server IP address with it. Supply any label you would like stored with your IP address (because RERUM doesn't want to think
+            of everyone as just a number).  
         </div>
         <div class='container col-xs-10 col-sm-10 col-md-10 col-lg-10' name="block" >
             <h3>Server Registration</h3>
