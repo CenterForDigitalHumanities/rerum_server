@@ -688,12 +688,13 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
             dboWithObjectID.append("@id", uid);
             mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
             JSONObject jo = new JSONObject();
+            JSONObject newObjWithID = JSONObject.fromObject(dbo);
             jo.element("code", HttpServletResponse.SC_CREATED);
             jo.element("@id", uid);
             try {
                 response.addHeader("Access-Control-Allow-Origin", "*");
                 addWebAnnotationHeaders(newObjectID, isContainerType(received), isLD(received));
-                addLocationHeader(jo);
+                addLocationHeader(newObjWithID);
                 response.setStatus(HttpServletResponse.SC_CREATED);
                 out = response.getWriter();
                 out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
@@ -758,7 +759,7 @@ public class AnnotationAction extends ActionSupport implements ServletRequestAwa
                 jo.element("code", HttpServletResponse.SC_OK);
                 jo.element("new_obj_state", updatedObject); //FIXME: @webanno standards say this should be the response.
                 try {
-                    addWebAnnotationHeaders(received.getString("_id"), isContainerType(jo), isLD(jo));
+                    addWebAnnotationHeaders(received.getString("_id"), isContainerType(newObject), isLD(newObject));
                     response.addHeader("Access-Control-Allow-Origin", "*");
                     response.setStatus(HttpServletResponse.SC_OK);
                     out = response.getWriter();
