@@ -33,12 +33,10 @@
         <!-- INTERCEPTOR -->
         <interceptors>
             <interceptor name="requestServerAuthenticationFilter" class="edu.slu.filter.RequestServerAuthenticationFilter">
-                <param name="includeMethods">saveNewAnnotation, batchSaveFromCopy, updateAnnotation, saveNewVersionOfAnnotation, deleteAnnotationByObjectID, 
-                deleteAnnotationByAtID</param>
+                <param name="includeMethods">saveNewObject, batchSaveFromCopy, updateObject, deleteObject </param>
             </interceptor>
             <interceptor name="getRequestClientInfoRecorder" class="edu.slu.filter.GetRequestClientInfoRecorder">
-                <param name="includeMethods">getAnnotationByProperties, getAnnotationByObjectID, getAllMyAnnotations, getAllVersionsOfAnnotationByObjectID, 
-                getAllVersionsOfAnnotationByOriginalAnnoID, getAnnoByResourceOutterRelativeNamespace</param>
+                <param name="includeMethods">getbyProperties, getByID, getAllAncestors, getAllDescendants, getAllVersions</param>
             </interceptor>
             <!--<interceptor name="responseEncoding" class="edu.slu.filter.ResponseEncoding"></interceptor>-->
             <interceptor name="inSessionFilter" class="edu.slu.filter.InSessionFilter"></interceptor>
