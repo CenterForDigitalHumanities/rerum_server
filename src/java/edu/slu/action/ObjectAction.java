@@ -165,7 +165,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @param received A potentially optionless JSONObject from the Mongo Database (not the user).  This prevents tainted __rerum's
      * @return configuredObject The same object that was recieved but with the proper __rerum options.  This object is intended to be saved as a new object (@see versioning)
      */
-    public JSONObject configureRerumOptions(JSONObject received){
+    public JSONObject configureRerumOptions(JSONObject received, boolean update){
         JSONObject configuredObject = received;
         JSONObject received_options;
         try{
@@ -189,12 +189,35 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         rerumOptions.element("isReleased", "");
         if(received_options.containsKey("history")){
             history = received_options.getJSONObject("history");
-            history_prime = history.getString("prime");
-            history_previous = received.getString("@id");
+            if(update){
+                //This means we are configuring from the update action and we have passed in a clone of the originating object (with its @id) that contained a __rerum.history
+                if(history.getString("prime").equals("root")){
+                    //Hitting this case means we are updating from the prime object, so we can't pass "root" on as the prime value
+                    history_prime = received.getString("@id");
+                }
+                else{
+                    //Hitting this means we are updating an object that already knows its prime, so we can pass on the prime value
+                    history_prime = history.getString("prime");
+                }
+                //Either way, we know the previous value shold be the @id of the object received here. 
+                history_previous = received.getString("@id");
+            }
+            else{
+                //Hitting this means we are saving a new object and found that __rerum.history existed.  We don't trust it.
+                history_prime = "root";
+                history_previous = "";
+            }
         }
         else{
-            history_prime = "root";
-            history_previous = "";
+            if(update){
+             //Hitting this means we are updating an object that did not have __rerum history.  This is weird.  What should I do?
+                //FIXME 
+            }
+            else{
+             //Hitting this means we are are saving an object that did not have __rerum history.  This is normal   
+                history_prime = "root";
+                history_previous = "";
+            }
         }
         if(received_options.containsKey("releases")){
             releases = received_options.getJSONObject("releases");
@@ -448,7 +471,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             JSONArray received_array = JSONArray.fromObject(content);
             for(int b=0; b<received_array.size(); b++){ //Configure __rerum on each object
                 JSONObject configureMe = received_array.getJSONObject(b);
-                configureMe = configureRerumOptions(configureMe); //configure this object
+                configureMe = configureRerumOptions(configureMe, false); //configure this object
                 received_array.set(b, configureMe); //Replace the current iterated object in the array with the configured object
             }
             BasicDBList dbo = (BasicDBList) JSON.parse(received_array.toString()); //tricky cause can't use JSONArray here
@@ -677,7 +700,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         if(null != processRequestBody(request) && methodApproval(request, "create")){
             JSONObject received = JSONObject.fromObject(content);
             JSONObject iiif_validation_response = checkIIIFCompliance(received, true); //This boolean should be provided by the user somehow.  It is a intended-to-be-iiif flag
-            configureRerumOptions(received);
+            configureRerumOptions(received, false);
             DBObject dbo = (DBObject) JSON.parse(received.toString());
             if(null!=request.getHeader("Slug")){
                 // Slug is the user suggested ID for the annotation. This could be a cool RERUM thing.
@@ -753,7 +776,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     }
                 }
                 JSONObject newObject = JSONObject.fromObject(updatedObject);//The edited original object meant to be saved as a new object (versioning)
-                newObject = configureRerumOptions(newObject); //__rerum for the new object being created because of the update action
+
+                newObject = configureRerumOptions(newObject, true); //__rerum for the new object being created because of the update action
                 newObject.remove("@id"); //This is being saved as a new object, so remove this @id for the new one to be set.
                 //Since we ignore changes to __rerum for existing objects, we do no configureRerumOptions(updatedObject);
                 DBObject dbo = (DBObject) JSON.parse(newObject.toString());
