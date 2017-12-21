@@ -252,15 +252,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         Boolean altered = false;
         BasicDBObject query = new BasicDBObject();
         query.append("@id", idForUpdate);
-        System.out.println("Alter "+idForUpdate+" by adding "+newNextID+" to the history next array");
         DBObject myAnno = mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query);
         DBObject myAnnoWithHistoryUpdate;
         JSONObject annoToUpdate = JSONObject.fromObject(myAnno);
         if(null != myAnno){
             try{
-                System.out.println(annoToUpdate);
                 annoToUpdate.getJSONObject("__rerum").getJSONObject("history").getJSONArray("next").add(newNextID); //write back to the anno from mongo
-                System.out.println(annoToUpdate);
                 myAnnoWithHistoryUpdate = (DBObject)JSON.parse(annoToUpdate.toString()); //make the JSONObject a DB object
                 mongoDBService.update(Constant.COLLECTION_ANNOTATION, myAnno, myAnnoWithHistoryUpdate); //update in mongo
                 altered = true;
