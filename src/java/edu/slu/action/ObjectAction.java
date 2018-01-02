@@ -165,7 +165,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @param received A potentially optionless JSONObject from the Mongo Database (not the user).  This prevents tainted __rerum's
      * @return configuredObject The same object that was recieved but with the proper __rerum options.  This object is intended to be saved as a new object (@see versioning)
      */
-    public JSONObject configureRerumOptions(JSONObject received){
+    public JSONObject configureRerumOptions(JSONObject received, boolean update){
         JSONObject configuredObject = received;
         JSONObject received_options;
         try{
@@ -189,15 +189,38 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         rerumOptions.element("isReleased", "");
         if(received_options.containsKey("history")){
             history = received_options.getJSONObject("history");
-            history_prime = history.getString("prime");
-            history_previous = received.getString("@id");
+            if(update){
+                //This means we are configuring from the update action and we have passed in a clone of the originating object (with its @id) that contained a __rerum.history
+                if(history.getString("prime").equals("root")){
+                    //Hitting this case means we are updating from the prime object, so we can't pass "root" on as the prime value
+                    history_prime = received.getString("@id");
+                }
+                else{
+                    //Hitting this means we are updating an object that already knows its prime, so we can pass on the prime value
+                    history_prime = history.getString("prime");
+                }
+                //Either way, we know the previous value shold be the @id of the object received here. 
+                history_previous = received.getString("@id");
+            }
+            else{
+                //Hitting this means we are saving a new object and found that __rerum.history existed.  We don't trust it.
+                history_prime = "root";
+                history_previous = "";
+            }
         }
         else{
-            history_prime = "root";
-            history_previous = "";
+            if(update){
+             //Hitting this means we are updating an object that did not have __rerum history.  This is weird.  What should I do?
+                //FIXME 
+            }
+            else{
+             //Hitting this means we are are saving an object that did not have __rerum history.  This is normal   
+                history_prime = "root";
+                history_previous = "";
+            }
         }
         if(received_options.containsKey("releases")){
-            releases = received.getJSONObject("releases");
+            releases = received_options.getJSONObject("releases");
             releases_previous = releases.getString("previous");
         }
         else{
@@ -230,24 +253,21 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         BasicDBObject query = new BasicDBObject();
         query.append("@id", idForUpdate);
         DBObject myAnno = mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query);
+        DBObject myAnnoWithHistoryUpdate;
         JSONObject annoToUpdate = JSONObject.fromObject(myAnno);
         if(null != myAnno){
             try{
-                JSONArray history_next = annoToUpdate.getJSONObject("__rerum").getJSONObject("history").getJSONArray("next"); //JSONArray allows this to be a String[]
-                history_next.add(newNextID); //Add as the last value in the array
-                annoToUpdate.getJSONObject("__rerum").getJSONObject("history").element("next", history_next); //write back to the anno from mongo
-                myAnno = (BasicDBList) JSON.parse(annoToUpdate.toString()); //make the JSONObject a DB object
-                mongoDBService.update(Constant.COLLECTION_ANNOTATION, query, myAnno); //update in mongo
+                annoToUpdate.getJSONObject("__rerum").getJSONObject("history").getJSONArray("next").add(newNextID); //write back to the anno from mongo
+                myAnnoWithHistoryUpdate = (DBObject)JSON.parse(annoToUpdate.toString()); //make the JSONObject a DB object
+                mongoDBService.update(Constant.COLLECTION_ANNOTATION, myAnno, myAnnoWithHistoryUpdate); //update in mongo
                 altered = true;
             }
             catch(Exception e){ //__rerum array does not exist or history object malformed.  What should I do?
-                //TODO check that this fails like we expect and does not stack.
-                writeErrorResponse("This object does not contain the proper history property.", HttpServletResponse.SC_CONFLICT);
+                writeErrorResponse("This object does not contain the proper history property.  It may not be from RERUM, the update failed.", HttpServletResponse.SC_CONFLICT);
             }
         }
         else{ //THIS IS A 404
-            //TODO check that this fails like we expect and does not stack
-            writeErrorResponse("Object for history.next update not found...", HttpServletResponse.SC_NOT_FOUND);
+            writeErrorResponse("Object for update not found...", HttpServletResponse.SC_NOT_FOUND);
         }
         return altered;
     }
@@ -448,7 +468,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             JSONArray received_array = JSONArray.fromObject(content);
             for(int b=0; b<received_array.size(); b++){ //Configure __rerum on each object
                 JSONObject configureMe = received_array.getJSONObject(b);
-                configureMe = configureRerumOptions(configureMe); //configure this object
+                configureMe = configureRerumOptions(configureMe, false); //configure this object
                 received_array.set(b, configureMe); //Replace the current iterated object in the array with the configured object
             }
             BasicDBList dbo = (BasicDBList) JSON.parse(received_array.toString()); //tricky cause can't use JSONArray here
@@ -583,7 +603,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         
         // TODO: @theHabes, this is waiting for something clever to happen.
         // This code is not correct at all, but pseudo-correct.
-        query.append("@id", new ObjectId(received.getString("__rerum.history.prime")));
+        query.append("@id", received.getString("__rerum.history.prime"));
         ls_versions = mongoDBService.findByExample(Constant.COLLECTION_ANNOTATION, query);
         return ls_versions;
     }
@@ -597,11 +617,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         if(null != oid && methodApproval(request, "get")){
             //find one version by objectID
             BasicDBObject query = new BasicDBObject();
-            query.append("_id", new ObjectId(oid));
+            query.append("_id", oid);
             DBObject myAnno = mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query);
             if(null != myAnno){
                 BasicDBObject bdbo = (BasicDBObject) myAnno;
                 JSONObject jo = JSONObject.fromObject(myAnno.toMap());
+                //String idForHeader = jo.getString("_id");
                 //The following are rerum properties that should be stripped.  They should be in __rerum.
                 jo.remove("_id");
                 jo.remove("addedTime");
@@ -614,13 +635,13 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 // @context may not be here and shall not be added, but the response
                 // will not be ld+json without it.
                 try {
-                    addWebAnnotationHeaders(jo.getString("_id"), isContainerType(jo), isLD(jo));
+                    addWebAnnotationHeaders(oid, isContainerType(jo), isLD(jo));
                     response.addHeader("Access-Control-Allow-Origin", "*");
                     response.setStatus(HttpServletResponse.SC_OK);
                     out = response.getWriter();
                     out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
                 } 
-                catch (IOException ex) {
+                catch (IOException ex){
                     Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
@@ -675,6 +696,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     public void saveNewObject() throws IOException, ServletException, Exception{
         if(null != processRequestBody(request) && methodApproval(request, "create")){
             JSONObject received = JSONObject.fromObject(content);
+            JSONObject iiif_validation_response = checkIIIFCompliance(received, true); //This boolean should be provided by the user somehow.  It is a intended-to-be-iiif flag
+            configureRerumOptions(received, false);
             DBObject dbo = (DBObject) JSON.parse(received.toString());
             if(null!=request.getHeader("Slug")){
                 // Slug is the user suggested ID for the annotation. This could be a cool RERUM thing.
@@ -688,9 +711,10 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             dboWithObjectID.append("@id", uid);
             mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
             JSONObject jo = new JSONObject();
-            JSONObject newObjWithID = JSONObject.fromObject(dbo);
+            JSONObject newObjWithID = JSONObject.fromObject(dboWithObjectID);
             jo.element("code", HttpServletResponse.SC_CREATED);
             jo.element("@id", uid);
+            jo.element("iiif_validation", iiif_validation_response);
             try {
                 response.addHeader("Access-Control-Allow-Origin", "*");
                 addWebAnnotationHeaders(newObjectID, isContainerType(received), isLD(received));
@@ -730,6 +754,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         //to avoid collisions of multiple users modifying the same Annotation at the same time
         //cubap: I'm not sold we have to do this. Our versioning would allow multiple changes. 
         //The application might want to throttle internally, but it can.
+        Boolean historyNextUpdatePassed = false;
         if(null!= processRequestBody(request) && methodApproval(request, "update")){
             BasicDBObject query = new BasicDBObject();
             JSONObject received = JSONObject.fromObject(content); 
@@ -748,25 +773,37 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     }
                 }
                 JSONObject newObject = JSONObject.fromObject(updatedObject);//The edited original object meant to be saved as a new object (versioning)
+
+                newObject = configureRerumOptions(newObject, true); //__rerum for the new object being created because of the update action
                 newObject.remove("@id"); //This is being saved as a new object, so remove this @id for the new one to be set.
                 //Since we ignore changes to __rerum for existing objects, we do no configureRerumOptions(updatedObject);
-                newObject = configureRerumOptions(newObject); //__rerum for the new object being created because of the update action
                 DBObject dbo = (DBObject) JSON.parse(newObject.toString());
                 String newNextID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
                 String newNextAtID = "http://devstore.rerum.io/rerumserver/id/"+newNextID;
-                alterHistoryNext(updateHistoryNextID, newNextAtID); //update history.next or original object to include the newObject @id
-                JSONObject jo = new JSONObject();
-                jo.element("code", HttpServletResponse.SC_OK);
-                jo.element("new_obj_state", updatedObject); //FIXME: @webanno standards say this should be the response.
-                try {
-                    addWebAnnotationHeaders(received.getString("_id"), isContainerType(newObject), isLD(newObject));
-                    response.addHeader("Access-Control-Allow-Origin", "*");
-                    response.setStatus(HttpServletResponse.SC_OK);
-                    out = response.getWriter();
-                    out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
-                } 
-                catch (IOException ex) {
-                    Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
+                BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
+                dboWithObjectID.append("@id", newNextAtID);
+                mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
+                historyNextUpdatePassed = alterHistoryNext(updateHistoryNextID, newNextAtID); //update history.next or original object to include the newObject @id
+                if(historyNextUpdatePassed){
+                    JSONObject jo = new JSONObject();
+                    JSONObject iiif_validation_response = checkIIIFCompliance(newNextAtID, "2.1");
+                    jo.element("code", HttpServletResponse.SC_OK);
+                    jo.element("original_object_id", updateHistoryNextID);
+                    jo.element("new_obj_state", newObject); //FIXME: @webanno standards say this should be the response.
+                    jo.element("iiif_validation", iiif_validation_response);
+                    try {
+                        addWebAnnotationHeaders(newNextID, isContainerType(newObject), isLD(newObject));
+                        response.addHeader("Access-Control-Allow-Origin", "*");
+                        response.setStatus(HttpServletResponse.SC_OK);
+                        out = response.getWriter();
+                        out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
+                    } 
+                    catch (IOException ex) {
+                        Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                }
+                else{
+                    //The error is already written to response.out, do nothing.
                 }
             }
             else{
@@ -811,20 +848,25 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     public JSONObject checkIIIFCompliance(JSONObject objectToCheck, boolean intendedIIIF) throws MalformedURLException, IOException{
         JSONObject iiif_return = new JSONObject();
         DBObject dbo = (DBObject) JSON.parse(objectToCheck.toString());
+        BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
         String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
-        iiif_return = checkIIIFCompliance(newObjectID, "2.1"); //If it is an object we are creating, this line means @context must point to Presentation API 2 or 2.1
+        String uid = "http://devstore.rerum.io/rerumserver/id/"+newObjectID;
+        dboWithObjectID.append("@id", uid);
+        mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
+        iiif_return = checkIIIFCompliance(uid, "2.1"); //If it is an object we are creating, this line means @context must point to Presentation API 2 or 2.1
         if(iiif_return.getInt("okay") == 0){
             if(intendedIIIF){
                 //If it was intended to be a IIIF object, then remove this object from the store because it was not valid and return an error to the user
-                BasicDBObject query = new BasicDBObject();
-                query.append("_id", newObjectID);
-                mongoDBService.delete(Constant.COLLECTION_ANNOTATION, query);
+                
             }
             else{
                 //Otherwise say it is ok so the action looking do validate does not writeErrorResponse()
                 iiif_return.element("okay", 1);
             }
         }
+        BasicDBObject query = new BasicDBObject();
+        query.append("_id", newObjectID);
+        mongoDBService.delete(Constant.COLLECTION_ANNOTATION, query);
         return iiif_return;
     }
     

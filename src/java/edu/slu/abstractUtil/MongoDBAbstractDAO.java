@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.regex.Pattern;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import net.sf.json.JSONArray;
+import org.bson.types.ObjectId;
 
 /**
  * @author hanyan
@@ -204,8 +205,11 @@ public abstract class MongoDBAbstractDAO implements MongoDBDAOInterface {
      */
     public String save(String collectionName, DBObject targetEntity){
         DBCollection coll = db.getCollection(collectionName);
+        String generatedID = new ObjectId().toHexString(); //Should always be a hex string for our purposes.
+        //If you do not explicitly create a new objectID hexidecimal string here, it could be a date.
+        targetEntity.put("_id", generatedID);
         coll.save(targetEntity);
-        return targetEntity.get("_id").toString();
+        return targetEntity.get("_id").toString(); //could just do generatedID here.
     }
     
     public JSONArray bulkSaveMetadataForm(String collectionName, BasicDBList entity_array){
