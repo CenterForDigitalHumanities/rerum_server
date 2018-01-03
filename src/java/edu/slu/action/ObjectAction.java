@@ -850,17 +850,25 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     public void deleteObject() throws IOException, ServletException, Exception{
         if(null!=processRequestBody(request, true) && methodApproval(request, "delete")){ 
             BasicDBObject query = new BasicDBObject();
-            BasicDBObject originalObjectToDelete;
+            BasicDBObject originalObject;
+            BasicDBObject updatedObjectWithDeletedFlag;
             //processRequestBody will always return a stringified JSON object here, even if the ID provided was a string in the body.
             JSONObject received = JSONObject.fromObject(content);
             if(received.containsKey("@id")){
                 query.append("@id", received.getString("@id").trim());
-                originalObjectToDelete= (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The originalObject DB object
+                originalObject = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The original object out of mongo for persistance
+                updatedObjectWithDeletedFlag = (BasicDBObject) originalObject.clone(); //A clone of this mongo object for manipulation.
                 //Found the @id in the object, but does it exist in RERUM?
-                if(null != originalObjectToDelete){
-                    // Add __deleted field here and update the object
+                if(null != originalObject){
+                    JSONObject deletedFlag = new JSONObject(); //The __deleted flag is a JSONObject
+                    deletedFlag.element("object", originalObject);
+                    deletedFlag.element("deletor", "TODO");
+                    deletedFlag.element("time", System.currentTimeMillis());
+                    updatedObjectWithDeletedFlag = (BasicDBObject) updatedObjectWithDeletedFlag.put("__deleted", deletedFlag);
+                    mongoDBService.update(Constant.COLLECTION_ANNOTATION, originalObject, updatedObjectWithDeletedFlag);
                     // @webanno If the DELETE request is successfully processed, then the server must return a 204 status response.
                     // cubap: ahhhh... I don't know. If we flag it as inactive, that's not the same as deleting.
+                    // @cubap: Do we need to return the new state of the object?
                     response.setStatus(HttpServletResponse.SC_NO_CONTENT);
                 }
                 else{
