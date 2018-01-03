@@ -872,11 +872,11 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     response.setStatus(HttpServletResponse.SC_NO_CONTENT);
                 }
                 else{
-                    writeErrorResponse("The id string provided for DELETE could not be found in RERUM: "+received.getString("@id")+". \n DELETE failed.", HttpServletResponse.SC_BAD_REQUEST);
+                    writeErrorResponse("The id string provided for DELETE could not be found in RERUM: "+received.getString("@id")+". \n DELETE failed.", HttpServletResponse.SC_NOT_FOUND);
                 }
             }
             else{
-                writeErrorResponse("Object for delete did not contain an id.  Could not update.", HttpServletResponse.SC_BAD_REQUEST);
+                writeErrorResponse("Object for delete did not contain an id.  Could not delete.", HttpServletResponse.SC_BAD_REQUEST);
             }
         }
     }
