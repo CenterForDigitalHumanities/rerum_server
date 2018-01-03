@@ -328,7 +328,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     }
     
     /**
-     * All actions come here to process the request body. We check if it is JSON
+     * All actions come here to process the request body. We check if it is JSON.
+     * DELETE is a special case because the content could be JSON or just the @id string and it only has to specify a content type if passing a JSONy object.  
      * and pretty format it. Returns pretty stringified JSON or fail to null.
      * Methods that call this should handle requestBody==null as unexpected.
      * @param http_request Incoming request to check.
@@ -337,16 +338,16 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @throws javax.servlet.ServletException
      * @throws java.lang.Exception
      */
-    public String processRequestBody(HttpServletRequest http_request) throws IOException, ServletException, Exception{
+    public String processRequestBody(HttpServletRequest http_request, boolean deletion) throws IOException, ServletException, Exception{
         String cType = http_request.getContentType();
         String requestBody;
         JSONObject complianceInfo = new JSONObject();
+        bodyReader = http_request.getReader();
+        bodyString = new StringBuilder();
+        String line;
         if(cType.contains("application/json") || cType.contains("application/ld+json")) {
-            bodyReader = http_request.getReader();
-            bodyString = new StringBuilder();
             JSONObject test;
             JSONArray test2;
-            String line;
             while ((line = bodyReader.readLine()) != null)
             {
               bodyString.append(line).append("\n");
@@ -357,21 +358,46 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
               test = JSONObject.fromObject(requestBody);
             }
             catch(Exception ex){ 
-              // not a JSONObject; test for JSONArray
-                try{
-                    test2 = JSONArray.fromObject(requestBody);
-                }
-                catch(Exception ex2){
-                    // not a JSONObject or a JSONArray. Throw error. 
-                    writeErrorResponse("The data passed was not valid JSON:\n"+requestBody, HttpServletResponse.SC_BAD_REQUEST);
+                // not a JSONObject; test for JSONArray
+                if(deletion){
+                    //DELETE allows {@id:val} or the whole JSON object to be passed for deletion.
+                    //They attempted to provide a JSON object for DELETE but it was not valid JSON
+                    writeErrorResponse("The data passed was not valid JSON.  Could not get @id for delete:\n"+requestBody, HttpServletResponse.SC_BAD_REQUEST);
                     requestBody = null;
+                }
+                else{
+                    try{
+                        test2 = JSONArray.fromObject(requestBody);
+                    }
+                    catch(Exception ex2){
+                        // not a JSONObject or a JSONArray. 
+                        writeErrorResponse("The data passed was not valid JSON:\n"+requestBody, HttpServletResponse.SC_BAD_REQUEST);
+                        requestBody = null;
+                    }
                 }
             }          
             // no-catch: Is either JSONObject or JSON Array
         }
-        else { 
-            writeErrorResponse("Invalid Content-Type. Please use 'application/json' or 'application/ld+json'", HttpServletResponse.SC_BAD_REQUEST);
-            requestBody = null;
+        else{ 
+            if(deletion){ //Content type is not JSONy, looking for @id as body
+                while ((line = bodyReader.readLine()) != null)
+                {
+                  bodyString.append(line).append("\n");
+                }
+                requestBody = bodyString.toString(); //This should be a string id at this point.
+                if("".equals(requestBody)){
+                    //No ID provided
+                    writeErrorResponse("Must provide an id or a JSON object containing @id of object to delete.", HttpServletResponse.SC_BAD_REQUEST);
+                    requestBody = null;
+                }
+                else{
+                    //They passed some kind of string and this will be provided to the DELETE action where it is handled.  
+                }
+            }
+            else{ //This is an error, actions must use the correct content type
+                writeErrorResponse("Invalid Content-Type. Please use 'application/json' or 'application/ld+json'", HttpServletResponse.SC_BAD_REQUEST);
+                requestBody = null;
+            }
         }
         //@cubap @theHabes TODO IIIF compliance handling on action objects
         /*
@@ -464,7 +490,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         * @see MongoDBAbstractDAO.bulkSetIDProperty(String collectionName, BasicDBObject[] entity_array);
     */ 
     public void batchSaveFromCopy() throws UnsupportedEncodingException, IOException, ServletException, Exception{
-        if(null != processRequestBody(request) && methodApproval(request, "create")){
+        if(null != processRequestBody(request, false) && methodApproval(request, "create")){
             JSONArray received_array = JSONArray.fromObject(content);
             for(int b=0; b<received_array.size(); b++){ //Configure __rerum on each object
                 JSONObject configureMe = received_array.getJSONObject(b);
@@ -591,7 +617,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             writeErrorResponse("Unable to retrieve objects; wrong method type.", HttpServletResponse.SC_BAD_REQUEST);
             return ls_versions;
         }
-        if(processRequestBody(http_request)==null){
+        if(processRequestBody(http_request, false)==null){
             // TODO: include link to API documentation in error response
             writeErrorResponse("Unable to retrieve objects; missing key object.", HttpServletResponse.SC_BAD_REQUEST);
             return ls_versions;
@@ -659,7 +685,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     // This is not Web Annotation standard as the specifications states you respond with a single object, not a list.  Not sure what to do with these.
     // @cubap answer: I asked on oac-discuss and was told Web Annotation hasn't handled lists yet, so just be nice.
     public void getByProperties() throws IOException, ServletException, Exception{
-        if(null != processRequestBody(request) && methodApproval(request, "get")){
+        if(null != processRequestBody(request, false) && methodApproval(request, "get")){
             JSONObject received = JSONObject.fromObject(content);
             BasicDBObject query = new BasicDBObject();
             Set<String> set_received = received.keySet();
@@ -694,7 +720,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @param all annotation properties.
      */
     public void saveNewObject() throws IOException, ServletException, Exception{
-        if(null != processRequestBody(request) && methodApproval(request, "create")){
+        if(null != processRequestBody(request, false) && methodApproval(request, "create")){
             JSONObject received = JSONObject.fromObject(content);
             JSONObject iiif_validation_response = checkIIIFCompliance(received, true); //This boolean should be provided by the user somehow.  It is a intended-to-be-iiif flag
             configureRerumOptions(received, false);
@@ -755,7 +781,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         //cubap: I'm not sold we have to do this. Our versioning would allow multiple changes. 
         //The application might want to throttle internally, but it can.
         Boolean historyNextUpdatePassed = false;
-        if(null!= processRequestBody(request) && methodApproval(request, "update")){
+        if(null!= processRequestBody(request, false) && methodApproval(request, "update")){
             BasicDBObject query = new BasicDBObject();
             JSONObject received = JSONObject.fromObject(content); 
             String updateHistoryNextID = received.getString("@id");
@@ -817,18 +843,47 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @param annotation.@id
      */
     public void deleteObject() throws IOException, ServletException, Exception{
-        if(null != processRequestBody(request) && methodApproval(request, "delete")){ 
+        if(null!=processRequestBody(request, true) && methodApproval(request, "delete")){ 
             BasicDBObject query = new BasicDBObject();
-            JSONObject received = JSONObject.fromObject(content);
-            if(received.containsKey("@id")){
-                // TODO: also support jsut the URI in the body?
-                //@cubap @agree.  hanyan thought these methods would always be taking objects.
-                query.append("@id", received.getString("@id").trim());
-                mongoDBService.delete(Constant.COLLECTION_ANNOTATION, query);
-                //@webanno If the DELETE request is successfully processed, then the server must return a 204 status response.
-                // cubap: ahhhh... I don't know. If we flag it as inactive, that's not the same as deleting.
-                // TODO: more design needed here.
-                response.setStatus(HttpServletResponse.SC_NO_CONTENT);
+            BasicDBObject originalObjectToDelete;
+            //First, check if the provided content is JSON
+            try{
+                JSONObject received = JSONObject.fromObject(content);
+                //It is JSON, so it must contain @id:val or else its an error
+                if(received.containsKey("@id")){
+                    query.append("@id", received.getString("@id").trim());
+                    originalObjectToDelete= (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The originalObject DB object
+                    //Found the @id in the object, but does it exist in RERUM?
+                    if(null != originalObjectToDelete){
+                        //Add __deleted field here and update the object
+                        // @webanno If the DELETE request is successfully processed, then the server must return a 204 status response.
+                        // cubap: ahhhh... I don't know. If we flag it as inactive, that's not the same as deleting.
+                        // TODO: more design needed here.
+                        response.setStatus(HttpServletResponse.SC_NO_CONTENT);
+                    }
+                    else{
+                        writeErrorResponse("The id string provided for DELETE could not be found in RERUM: "+received.getString("@id")+". \n DELETE failed.", HttpServletResponse.SC_BAD_REQUEST);
+                    }
+                }
+                else{
+                    writeErrorResponse("Object for delete did not contain an id.  Could not update.", HttpServletResponse.SC_BAD_REQUEST);
+                }
+            }
+            catch(Exception e){ //It was not JSON, but may be an @id string.  Check for it in Mongo
+                query.append("@id", content);
+                originalObjectToDelete= (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The originalObject DB object
+                if(null != originalObjectToDelete){
+                    //It was an @id string and we found it.  We can delete.  Add the __deleted flag.
+                    // @webanno If the DELETE request is successfully processed, then the server must return a 204 status response.
+                    // cubap: ahhhh... I don't know. If we flag it as inactive, that's not the same as deleting.
+                    // TODO: more design needed here.
+                    //Add __deleted field here and update the object
+                    response.setStatus(HttpServletResponse.SC_NO_CONTENT);
+                }
+                else{
+                    //The string provided was either not an @id or we could not find the provided @id in RERUM.
+                    writeErrorResponse("The id string provided for DELETE could not be found in RERUM: "+content+". \n DELETE failed.", HttpServletResponse.SC_BAD_REQUEST);
+                }
             }
         }
     }
