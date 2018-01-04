@@ -842,10 +842,35 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             }
         }
     }
+    
+    /**
+     * A helper function that determines whether or not an object has been flagged as deleted.
+     * @param obj
+     * @return A boolean representing the truth.
+     */
+    public boolean checkIfDeleted(JSONObject obj){
+        boolean deleted = obj.containsKey("__deleted");
+        return deleted;
+    }
+    
+    /**
+     * A helper function that gathers an object by its id and determines whether or not it is flagged as deleted.
+     * @param obj_id
+     * @return A boolean representing the truth.
+     */
+    public boolean checkIfDeleted(String obj_id){
+        boolean deleted = false;
+        BasicDBObject query = new BasicDBObject();
+        BasicDBObject dbObj;
+        query.append("@id", obj_id);
+        dbObj = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); 
+        JSONObject checkThis = JSONObject.fromObject(dbObj);
+        deleted = checkThis.containsKey("__deleted");
+        return deleted;
+    }
        
     /**
      * Delete a given annotation. 
-     * @param annotation.@id
      */
     public void deleteObject() throws IOException, ServletException, Exception{
         if(null!=processRequestBody(request, true) && methodApproval(request, "delete")){ 
@@ -854,33 +879,111 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             BasicDBObject updatedObjectWithDeletedFlag;
             //processRequestBody will always return a stringified JSON object here, even if the ID provided was a string in the body.
             JSONObject received = JSONObject.fromObject(content);
-            if(received.containsKey("@id")){
-                query.append("@id", received.getString("@id").trim());
-                originalObject = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The original object out of mongo for persistance
-                updatedObjectWithDeletedFlag = (BasicDBObject) originalObject.clone(); //A clone of this mongo object for manipulation.
-                //Found the @id in the object, but does it exist in RERUM?
-                if(null != originalObject){
-                    JSONObject deletedFlag = new JSONObject(); //The __deleted flag is a JSONObject
-                    deletedFlag.element("object", originalObject);
-                    deletedFlag.element("deletor", "TODO");
-                    deletedFlag.element("time", System.currentTimeMillis());
-                    updatedObjectWithDeletedFlag = (BasicDBObject) updatedObjectWithDeletedFlag.put("__deleted", deletedFlag);
-                    mongoDBService.update(Constant.COLLECTION_ANNOTATION, originalObject, updatedObjectWithDeletedFlag);
-                    // @webanno If the DELETE request is successfully processed, then the server must return a 204 status response.
-                    // cubap: ahhhh... I don't know. If we flag it as inactive, that's not the same as deleting.
-                    // @cubap: Do we need to return the new state of the object?
-                    response.setStatus(HttpServletResponse.SC_NO_CONTENT);
-                }
-                else{
-                    writeErrorResponse("The id string provided for DELETE could not be found in RERUM: "+received.getString("@id")+". \n DELETE failed.", HttpServletResponse.SC_NOT_FOUND);
-                }
+            boolean alreadyDeleted = checkIfDeleted(received);
+            if(alreadyDeleted){ //Self explanatory 
+                writeErrorResponse("Object for delete is already deleted.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
             }
             else{
-                writeErrorResponse("Object for delete did not contain an id.  Could not delete.", HttpServletResponse.SC_BAD_REQUEST);
+                if(received.containsKey("@id")){
+                    query.append("@id", received.getString("@id").trim());
+                    originalObject = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The original object out of mongo for persistance
+                    updatedObjectWithDeletedFlag = (BasicDBObject) originalObject.clone(); //A clone of this mongo object for manipulation.
+                    //Found the @id in the object, but does it exist in RERUM?
+                    if(null != originalObject){
+                        JSONObject deletedFlag = new JSONObject(); //The __deleted flag is a JSONObject
+                        deletedFlag.element("object", originalObject);
+                        deletedFlag.element("deletor", "TODO"); //@cubap I assume this will be an API key?
+                        deletedFlag.element("time", System.currentTimeMillis());
+                        updatedObjectWithDeletedFlag = (BasicDBObject) updatedObjectWithDeletedFlag.put("__deleted", deletedFlag);
+                        boolean treeHealed = greenThumb(JSONObject.fromObject(originalObject));
+                        // @webanno If the DELETE request is successfully processed, then the server must return a 204 status response.
+                        // cubap: ahhhh... I don't know. If we flag it as inactive, that's not the same as deleting.
+                        // @cubap: Do we need to return the new state of the object?
+                        if(treeHealed){
+                            mongoDBService.update(Constant.COLLECTION_ANNOTATION, originalObject, updatedObjectWithDeletedFlag);
+                            response.setStatus(HttpServletResponse.SC_NO_CONTENT);
+                        }
+                        else{
+                            writeErrorResponse("We could not update the history tree correctly.  The delete failed.", HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                        }
+                    }
+                    else{
+                        writeErrorResponse("The id string provided for DELETE could not be found in RERUM: "+received.getString("@id")+". \n DELETE failed.", HttpServletResponse.SC_NOT_FOUND);
+                    }
+                }
+                else{
+                    writeErrorResponse("Object for delete did not contain an id.  Could not delete.", HttpServletResponse.SC_BAD_REQUEST);
+                }
             }
         }
     }
     
+    /**
+     * When an object is deleted, the history tree around it will need amending.  This function acts as the green thumb for tree trimming.
+     * 
+     * @param deletedObj A JSONObject of the object being deleted.
+     * @return A boolean representing whether or not this function succeeded. 
+     */
+     public boolean greenThumb(JSONObject obj){
+         boolean success = true;
+         String previous_id = obj.getJSONObject("history").getString("previous");
+         String prime_id = obj.getJSONObject("history").getString("prime");
+         JSONArray next_ids = obj.getJSONObject("history").getJSONArray("next");
+         //@cubap We are operating under the assumption the object MUST HAVE these values.  This will throw an error if not.  Should I handle with a try-catch?
+         boolean isRoot = prime_id.equals("root"); 
+         boolean detectedPrevious = !previous_id.equals("");
+         //Update the history.previous of all the next ids in the array of the deleted object
+         for(int n=0; n<next_ids.size(); n++){
+             BasicDBObject query = new BasicDBObject();
+             BasicDBObject objToUpdate;
+             BasicDBObject objWithUpdate;
+             String nextID = next_ids.getString(n);
+             query.append("@id", nextID);
+             objToUpdate = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); 
+             if(null != objToUpdate){
+                JSONObject fixHistory = JSONObject.fromObject(objToUpdate);
+                if(isRoot){ //The object being deleted was root.  That means these next objects must become root.  Strictly, all history trees must have num(root) > 0.  
+                    fixHistory.getJSONObject("history").element("previous", ""); //Root objects MUST NOT have a previous
+                    fixHistory.getJSONObject("history").element("prime", "root"); //Root objects MUST have prime=root;
+                }
+                else if(detectedPrevious){ //The object being deleted had a previous.  That is now absorbed by this object.  
+                    fixHistory.getJSONObject("history").element("previous", previous_id);
+                }
+                else{
+                    //Yikes this is some kind of error...it is either root or has a previous, this case means neither are true.
+                    success = false;
+                }
+                Object forMongo = JSON.parse(fixHistory.toString()); //JSONObject cannot be converted to BasicDBObject
+                objWithUpdate = (BasicDBObject)forMongo;
+                mongoDBService.update(Constant.COLLECTION_ANNOTATION, objToUpdate, objWithUpdate);
+             }
+             else{
+                 success = false;
+                 //Yikes this is an error, could not find an object assosiated with id found in history tree.
+             }
+         }
+         if(detectedPrevious){ 
+             //The object being deleted had a previous.  That previous object next[] must be updated with the deleted object's next[].
+             BasicDBObject query2 = new BasicDBObject();
+             BasicDBObject objToUpdate2;
+             BasicDBObject objWithUpdate2;
+             query2.append("@id", previous_id);
+             objToUpdate2 = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query2); 
+             if(null != objToUpdate2){
+                JSONObject fixHistory2 = JSONObject.fromObject(objToUpdate2);  
+                fixHistory2.getJSONObject("history").element("next", next_ids);
+                Object forMongo2 = JSON.parse(fixHistory2.toString()); //JSONObject cannot be converted to BasicDBObject
+                objWithUpdate2 = (BasicDBObject)forMongo2;
+                mongoDBService.update(Constant.COLLECTION_ANNOTATION, objToUpdate2, objWithUpdate2);
+             }
+             else{
+                 //Yikes this is an error.  We had a previous id in the object but could not find it in the store.
+                 success = false;
+             }
+         }
+         return success;
+     }
+     
      /**
      * Validate data is IIIF compliant against IIIF's validator.  This object is intended for creation and not yet saved into RERUM so it does not yet have an @id.
      * The only way to hit the IIIF Validation API is to use the object's @id. The idea would be to save the objects to get an id, hit the 
