@@ -328,7 +328,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     }
     
     /**
-     * All actions come here to process the request body. We check if it is JSON
+     * All actions come here to process the request body. We check if it is JSON.
+     * DELETE is a special case because the content could be JSON or just the @id string and it only has to specify a content type if passing a JSONy object.  
      * and pretty format it. Returns pretty stringified JSON or fail to null.
      * Methods that call this should handle requestBody==null as unexpected.
      * @param http_request Incoming request to check.
@@ -337,41 +338,71 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @throws javax.servlet.ServletException
      * @throws java.lang.Exception
      */
-    public String processRequestBody(HttpServletRequest http_request) throws IOException, ServletException, Exception{
+    public String processRequestBody(HttpServletRequest http_request, boolean deletion) throws IOException, ServletException, Exception{
         String cType = http_request.getContentType();
         String requestBody;
         JSONObject complianceInfo = new JSONObject();
-        if(cType.contains("application/json") || cType.contains("application/ld+json")) {
-            bodyReader = http_request.getReader();
-            bodyString = new StringBuilder();
+        bodyReader = http_request.getReader();
+        bodyString = new StringBuilder();
+        String line;
+        if(cType.contains("application/json") || cType.contains("application/ld+json")){
             JSONObject test;
             JSONArray test2;
-            String line;
             while ((line = bodyReader.readLine()) != null)
             {
               bodyString.append(line).append("\n");
             }
             requestBody = bodyString.toString();
             try{ 
-              // JSON test
+              //JSONObject test
               test = JSONObject.fromObject(requestBody);
             }
             catch(Exception ex){ 
-              // not a JSONObject; test for JSONArray
-                try{
-                    test2 = JSONArray.fromObject(requestBody);
-                }
-                catch(Exception ex2){
-                    // not a JSONObject or a JSONArray. Throw error. 
-                    writeErrorResponse("The data passed was not valid JSON:\n"+requestBody, HttpServletResponse.SC_BAD_REQUEST);
+                if(deletion){
+                    //We do not allow arrays of ID's for DELETE, so if it failed JSONObject parsing then this is a hard fail for DELETE.
+                    //They attempted to provide a JSON object for DELETE but it was not valid JSON
+                    writeErrorResponse("The data passed was not valid JSON.  Could not get @id for DELETE: \n"+requestBody, HttpServletResponse.SC_BAD_REQUEST);
                     requestBody = null;
+                }
+                else{
+                    //Maybe it was an action on a JSONArray, check that before failing JSON parse test.
+                    try{
+                        //JSONArray test
+                        test2 = JSONArray.fromObject(requestBody);
+                    }
+                    catch(Exception ex2){
+                        // not a JSONObject or a JSONArray. 
+                        writeErrorResponse("The data passed was not valid JSON:\n"+requestBody, HttpServletResponse.SC_BAD_REQUEST);
+                        requestBody = null;
+                    }
                 }
             }          
             // no-catch: Is either JSONObject or JSON Array
         }
-        else { 
-            writeErrorResponse("Invalid Content-Type. Please use 'application/json' or 'application/ld+json'", HttpServletResponse.SC_BAD_REQUEST);
-            requestBody = null;
+        else{ 
+            if(deletion){ //Content type is not JSONy, looking for @id string as body
+                while ((line = bodyReader.readLine()) != null)
+                {
+                  bodyString.append(line).append("\n");
+                }
+                requestBody = bodyString.toString(); 
+                if("".equals(requestBody)){
+                    //No ID provided
+                    writeErrorResponse("Must provide an id or a JSON object containing @id of object to delete.", HttpServletResponse.SC_BAD_REQUEST);
+                    requestBody = null;
+                }
+                else{ 
+                    // This string could be ANYTHING.  ANY string is valid at this point.  Create a wrapper JSONObject for elegant handling in deleteObject().  
+                    // We will check against the string for existing objects in deleteObject(), processing the body is completed as far as this method is concerned.
+                    JSONObject modifiedDeleteRequest = new JSONObject();
+                    modifiedDeleteRequest.element("@id", requestBody);
+                    requestBody = modifiedDeleteRequest.toString();
+                }
+            }
+            else{ //This is an error, actions must use the correct content type
+                writeErrorResponse("Invalid Content-Type. Please use 'application/json' or 'application/ld+json'", HttpServletResponse.SC_BAD_REQUEST);
+                requestBody = null;
+            }
         }
         //@cubap @theHabes TODO IIIF compliance handling on action objects
         /*
@@ -464,7 +495,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         * @see MongoDBAbstractDAO.bulkSetIDProperty(String collectionName, BasicDBObject[] entity_array);
     */ 
     public void batchSaveFromCopy() throws UnsupportedEncodingException, IOException, ServletException, Exception{
-        if(null != processRequestBody(request) && methodApproval(request, "create")){
+        if(null != processRequestBody(request, false) && methodApproval(request, "create")){
             JSONArray received_array = JSONArray.fromObject(content);
             for(int b=0; b<received_array.size(); b++){ //Configure __rerum on each object
                 JSONObject configureMe = received_array.getJSONObject(b);
@@ -553,6 +584,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     /**
      * Servlet method to find all downstream versions of an object.
      * If this object is the last, the return will be null.
+     * @TODO this needs to return an array of JSONObjects.
      * @param  http_request Servlet request for relatives
      * @throws Exception 
      */
@@ -591,7 +623,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             writeErrorResponse("Unable to retrieve objects; wrong method type.", HttpServletResponse.SC_BAD_REQUEST);
             return ls_versions;
         }
-        if(processRequestBody(http_request)==null){
+        if(processRequestBody(http_request, false)==null){
             // TODO: include link to API documentation in error response
             writeErrorResponse("Unable to retrieve objects; missing key object.", HttpServletResponse.SC_BAD_REQUEST);
             return ls_versions;
@@ -659,7 +691,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     // This is not Web Annotation standard as the specifications states you respond with a single object, not a list.  Not sure what to do with these.
     // @cubap answer: I asked on oac-discuss and was told Web Annotation hasn't handled lists yet, so just be nice.
     public void getByProperties() throws IOException, ServletException, Exception{
-        if(null != processRequestBody(request) && methodApproval(request, "get")){
+        if(null != processRequestBody(request, false) && methodApproval(request, "get")){
             JSONObject received = JSONObject.fromObject(content);
             BasicDBObject query = new BasicDBObject();
             Set<String> set_received = received.keySet();
@@ -694,7 +726,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @param all annotation properties.
      */
     public void saveNewObject() throws IOException, ServletException, Exception{
-        if(null != processRequestBody(request) && methodApproval(request, "create")){
+        if(null != processRequestBody(request, false) && methodApproval(request, "create")){
             JSONObject received = JSONObject.fromObject(content);
             JSONObject iiif_validation_response = checkIIIFCompliance(received, true); //This boolean should be provided by the user somehow.  It is a intended-to-be-iiif flag
             configureRerumOptions(received, false);
@@ -755,7 +787,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         //cubap: I'm not sold we have to do this. Our versioning would allow multiple changes. 
         //The application might want to throttle internally, but it can.
         Boolean historyNextUpdatePassed = false;
-        if(null!= processRequestBody(request) && methodApproval(request, "update")){
+        if(null!= processRequestBody(request, false) && methodApproval(request, "update")){
             BasicDBObject query = new BasicDBObject();
             JSONObject received = JSONObject.fromObject(content); 
             String updateHistoryNextID = received.getString("@id");
@@ -811,28 +843,247 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             }
         }
     }
+    
+    /**
+     * A helper function that determines whether or not an object has been flagged as deleted.
+     * @param obj
+     * @return A boolean representing the truth.
+     */
+    public boolean checkIfDeleted(JSONObject obj){
+        boolean deleted = obj.containsKey("__deleted");
+        return deleted;
+    }
+    
+    /**
+     * A helper function that gathers an object by its id and determines whether or not it is flagged as deleted.
+     * @param obj_id
+     * @return A boolean representing the truth.
+     */
+    public boolean checkIfDeleted(String obj_id){
+        BasicDBObject query = new BasicDBObject();
+        BasicDBObject dbObj;
+        query.append("@id", obj_id);
+        dbObj = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); 
+        JSONObject checkThis = JSONObject.fromObject(dbObj);
+        return checkIfDeleted(checkThis);
+
+    }
+    
+    /**
+    * check that the API keys match and that this application has permission to delete the object
+    */
+    public boolean checkApplicationPermission(JSONObject obj){
+        boolean permission = true;
+        //@cubap @theHabes TODO check that the API keys match and that this application has permission to delete the object
+        return permission;
+    }
+    
+    /**
+     * A helper function that gathers an object by its id and determines whether or not it is flagged as released.
+     * @param obj
+     * @return 
+     */
+    public boolean checkIfReleased(JSONObject obj){
+        boolean released = false;
+        if(!obj.getJSONObject("__rerum").getString("isReleased").equals("")){
+            released = true;
+        }
+        return released;
+    }
+    
+    /**
+     * A helper function that gathers an object by its id and determines whether or not it is flagged as released.
+     * @param obj_id
+     * @return 
+     */
+    public boolean checkIfReleased(String obj_id){
+        BasicDBObject query = new BasicDBObject();
+        BasicDBObject dbObj;
+        query.append("@id", obj_id);
+        dbObj = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); 
+        JSONObject checkThis = JSONObject.fromObject(dbObj);
+        return checkIfReleased(checkThis);
+    }
        
     /**
      * Delete a given annotation. 
-     * @param annotation.@id
      */
     public void deleteObject() throws IOException, ServletException, Exception{
-        if(null != processRequestBody(request) && methodApproval(request, "delete")){ 
+        if(null!=processRequestBody(request, true) && methodApproval(request, "delete")){ 
             BasicDBObject query = new BasicDBObject();
+            BasicDBObject originalObject;
+            BasicDBObject updatedObjectWithDeletedFlag;
+            //processRequestBody will always return a stringified JSON object here, even if the ID provided was a string in the body.
             JSONObject received = JSONObject.fromObject(content);
-            if(received.containsKey("@id")){
-                // TODO: also support jsut the URI in the body?
-                //@cubap @agree.  hanyan thought these methods would always be taking objects.
-                query.append("@id", received.getString("@id").trim());
-                mongoDBService.delete(Constant.COLLECTION_ANNOTATION, query);
-                //@webanno If the DELETE request is successfully processed, then the server must return a 204 status response.
-                // cubap: ahhhh... I don't know. If we flag it as inactive, that's not the same as deleting.
-                // TODO: more design needed here.
-                response.setStatus(HttpServletResponse.SC_NO_CONTENT);
+            boolean alreadyDeleted = checkIfDeleted(received);
+            boolean permission = false;
+            boolean isReleased = false;
+            boolean passedAllChecks = false;
+            if(alreadyDeleted){
+                writeErrorResponse("Object for delete is already deleted.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+            }
+            else{
+                isReleased = checkIfReleased(received);
+                if(isReleased){
+                    writeErrorResponse("This object is in a released state and cannot be deleted.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);  
+                }
+                else{
+                    permission = checkApplicationPermission(received);
+                    if(permission){
+                       passedAllChecks = true;
+                    }
+                    else{
+                       writeErrorResponse("Only the application that created this object can delete it.", HttpServletResponse.SC_UNAUTHORIZED);   
+                    }
+                }
+            }
+            if(passedAllChecks){ //If all checks have passed.  If not, we want to make sure their writeErrorReponse() don't stack.  
+                if(received.containsKey("@id")){
+                    query.append("@id", received.getString("@id").trim());
+                    originalObject = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The original object out of mongo for persistance
+                    updatedObjectWithDeletedFlag = (BasicDBObject) originalObject.clone(); //A clone of this mongo object for manipulation.
+                    //Found the @id in the object, but does it exist in RERUM?
+                    if(null != originalObject){
+                        JSONObject deletedFlag = new JSONObject(); //The __deleted flag is a JSONObject
+                        deletedFlag.element("object", originalObject);
+                        deletedFlag.element("deletor", "TODO"); //@cubap I assume this will be an API key?
+                        deletedFlag.element("time", System.currentTimeMillis());
+                        updatedObjectWithDeletedFlag = (BasicDBObject) updatedObjectWithDeletedFlag.put("__deleted", deletedFlag);
+                        boolean treeHealed = greenThumb(JSONObject.fromObject(originalObject));
+                        if(treeHealed){
+                            mongoDBService.update(Constant.COLLECTION_ANNOTATION, originalObject, updatedObjectWithDeletedFlag);
+                            response.setStatus(HttpServletResponse.SC_NO_CONTENT);
+                        }
+                        else{
+                            //@cubap @theHabes FIXME By default, objects that don't have the history property will fail to this line.
+                            writeErrorResponse("We could not update the history tree correctly.  The delete failed.", HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                        }
+                    }
+                    else{
+                        writeErrorResponse("The '@id' string provided for DELETE could not be found in RERUM: "+received.getString("@id")+". \n DELETE failed.", HttpServletResponse.SC_NOT_FOUND);
+                    }
+                }
+                else{
+                    writeErrorResponse("Object for delete did not contain an '@id'.  Could not delete.", HttpServletResponse.SC_BAD_REQUEST);
+                }
             }
         }
     }
     
+    /**
+     * When an object is deleted, the history tree around it will need amending.  This function acts as the green thumb for tree trimming.
+     * 
+     * @param obj A JSONObject of the object being deleted.
+     * @return A boolean representing whether or not this function succeeded. 
+     */
+     public boolean greenThumb(JSONObject obj){
+         boolean success = true;
+         String previous_id = "";
+         String prime_id = "";
+         JSONArray next_ids = new JSONArray();
+         try{
+             //Try to dig down the object and get these properties
+            previous_id = obj.getJSONObject("__rerum").getJSONObject("history").getString("previous");
+            prime_id = obj.getJSONObject("__rerum").getJSONObject("history").getString("prime");
+            next_ids = obj.getJSONObject("__rerum").getJSONObject("history").getJSONArray("next");
+         }
+         catch(Exception e){
+             //@cubap @theHabes FIXME this should probably be handled separately and gracefully and have its own writeErrorReponse() that doesn't stack with deleteObject().  @see treeHealed
+            previous_id = ""; //This ensures detectedPrevious is false
+            prime_id = ""; //This ensures isRoot is false
+            next_ids = new JSONArray(); //This ensures the loop below does not run.
+            success = false; //This will bubble out to deleteObj() and have the side effect that this object is not deleted.  @see treeHealed
+         }
+         boolean isRoot = prime_id.equals("root"); 
+         boolean detectedPrevious = !previous_id.equals("");
+         //Update the history.previous of all the next ids in the array of the deleted object
+         for(int n=0; n<next_ids.size(); n++){
+             BasicDBObject query = new BasicDBObject();
+             BasicDBObject objToUpdate;
+             BasicDBObject objWithUpdate;
+             String nextID = next_ids.getString(n);
+             query.append("@id", nextID);
+             objToUpdate = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); 
+             if(null != objToUpdate){
+                JSONObject fixHistory = JSONObject.fromObject(objToUpdate);
+                if(isRoot){ //The object being deleted was root.  That means these next objects must become root.  Strictly, all history trees must have num(root) > 0.  
+                    fixHistory.getJSONObject("__rerum").getJSONObject("history").element("prime", "root");
+                    newTreePrime(fixHistory);
+                }
+                else if(detectedPrevious){ //The object being deleted had a previous.  That is now absorbed by this next object to mend the gap.  
+                    fixHistory.getJSONObject("__rerum").getJSONObject("history").element("previous", previous_id);
+                }
+                else{
+                    // @cubap @theHabes TODO Yikes this is some kind of error...it is either root or has a previous, this case means neither are true.
+                    // cubap: Since this is a __rerum error and it means that the object is already not well-placed in a tree, maybe it shouldn't fail to delete?
+                    // theHabes: Are their bad implications on the relevant nodes in the tree that reference this one if we allow it to delete?  Will their account of the history be correct?
+                    //success = false;
+                }
+                Object forMongo = JSON.parse(fixHistory.toString()); //JSONObject cannot be converted to BasicDBObject
+                objWithUpdate = (BasicDBObject)forMongo;
+                mongoDBService.update(Constant.COLLECTION_ANNOTATION, objToUpdate, objWithUpdate);
+             }
+             else{
+                 success = false;
+                 //Yikes this is an error, could not find an object assosiated with id found in history tree.
+             }
+         }
+         if(detectedPrevious){ 
+             //The object being deleted had a previous.  That previous object next[] must be updated with the deleted object's next[].
+             BasicDBObject query2 = new BasicDBObject();
+             BasicDBObject objToUpdate2;
+             BasicDBObject objWithUpdate2;
+             query2.append("@id", previous_id);
+             objToUpdate2 = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query2); 
+             if(null != objToUpdate2){
+                JSONObject fixHistory2 = JSONObject.fromObject(objToUpdate2); 
+                JSONArray origNextArray = fixHistory2.getJSONObject("__rerum").getJSONObject("history").getJSONArray("next");
+                JSONArray newNextArray = new JSONArray();  
+                //JSONArray does not have splice, but we can code our own.  This will splice out obj["@id"].
+                for (int i=0; i<origNextArray.size(); i++){ 
+                    if (!origNextArray.getString(i).equals(obj.getString("@id"))){
+                        //So long as the value is not the deleted id, add it to the newNextArray (this is the splice).  
+                        newNextArray.add(origNextArray.get(i));
+                    }
+                } 
+                newNextArray.addAll(next_ids); //Adds next array of deleted object to the end of this array in order.
+                fixHistory2.getJSONObject("__rerum").getJSONObject("history").element("next", newNextArray); //Rewrite the next[] array to fix the history
+                Object forMongo2 = JSON.parse(fixHistory2.toString()); //JSONObject cannot be converted to BasicDBObject
+                objWithUpdate2 = (BasicDBObject)forMongo2;
+                mongoDBService.update(Constant.COLLECTION_ANNOTATION, objToUpdate2, objWithUpdate2);
+             }
+             else{
+                 //Yikes this is an error.  We had a previous id in the object but could not find it in the store.
+                 success = false;
+             }
+         }
+         return success;
+     }
+     
+     /**
+     * All descendants of this JSONObject must take on a new history.prime of this object's ID
+     * 
+     * @param obj A new prime object whose descendants must take on its id
+     */
+     public boolean newTreePrime(JSONObject obj){
+         boolean success = true;
+         String primeID = obj.getString("@id");
+         //TODO
+         JSONArray descendants = new JSONArray();
+         //JSONArray descendants = getAllDescendants(obj);
+         for(int n=0; n< descendants.size(); n++){
+             JSONObject descendantForUpdate = descendants.getJSONObject(n);
+             JSONObject originalDescendant = descendants.getJSONObject(n);
+             Object orig = JSON.parse(originalDescendant.toString()); //JSONObject cannot be converted to BasicDBObject
+             BasicDBObject objToUpdate = (BasicDBObject)orig;
+             descendantForUpdate.getJSONObject("__rerum").getJSONObject("history").element("prime", primeID);
+             Object forMongo = JSON.parse(descendantForUpdate.toString()); //JSONObject cannot be converted to BasicDBObject
+             BasicDBObject objWithUpdate = (BasicDBObject)forMongo;
+             mongoDBService.update(Constant.COLLECTION_ANNOTATION, objToUpdate, objWithUpdate);
+         }
+         return success;
+     }
+     
      /**
      * Validate data is IIIF compliant against IIIF's validator.  This object is intended for creation and not yet saved into RERUM so it does not yet have an @id.
      * The only way to hit the IIIF Validation API is to use the object's @id. The idea would be to save the objects to get an id, hit the 
