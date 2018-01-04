@@ -896,14 +896,15 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         deletedFlag.element("time", System.currentTimeMillis());
                         updatedObjectWithDeletedFlag = (BasicDBObject) updatedObjectWithDeletedFlag.put("__deleted", deletedFlag);
                         boolean treeHealed = greenThumb(JSONObject.fromObject(originalObject));
-                        // @webanno If the DELETE request is successfully processed, then the server must return a 204 status response.
-                        // cubap: ahhhh... I don't know. If we flag it as inactive, that's not the same as deleting.
-                        // @cubap: Do we need to return the new state of the object?
                         if(treeHealed){
+                            // @webanno If the DELETE request is successfully processed, then the server must return a 204 status response.
+                            // cubap: ahhhh... I don't know. If we flag it as inactive, that's not the same as deleting.
+                            // @cubap: Do we need to return the new state of the object?
                             mongoDBService.update(Constant.COLLECTION_ANNOTATION, originalObject, updatedObjectWithDeletedFlag);
                             response.setStatus(HttpServletResponse.SC_NO_CONTENT);
                         }
                         else{
+                            //@cubap I don't know if this is what we want to say if this happens...
                             writeErrorResponse("We could not update the history tree correctly.  The delete failed.", HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
                         }
                     }
@@ -946,7 +947,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     fixHistory.getJSONObject("history").element("previous", ""); //Root objects MUST NOT have a previous
                     fixHistory.getJSONObject("history").element("prime", "root"); //Root objects MUST have prime=root;
                 }
-                else if(detectedPrevious){ //The object being deleted had a previous.  That is now absorbed by this object.  
+                else if(detectedPrevious){ //The object being deleted had a previous.  That is now absorbed by this next object to mend the gap.  
                     fixHistory.getJSONObject("history").element("previous", previous_id);
                 }
                 else{
