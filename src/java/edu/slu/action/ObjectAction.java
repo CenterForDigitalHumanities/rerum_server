@@ -584,6 +584,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     /**
      * Servlet method to find all downstream versions of an object.
      * If this object is the last, the return will be null.
+     * @TODO this needs to return an array of JSONObjects.
      * @param  http_request Servlet request for relatives
      * @throws Exception 
      */
@@ -877,6 +878,35 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         //@cubap @theHabes TODO check that the API keys match and that this application has permission to delete the object
         return permission;
     }
+    
+    /**
+     * A helper function that gathers an object by its id and determines whether or not it is flagged as released.
+     * @param obj
+     * @return 
+     */
+    public boolean checkIfReleased(JSONObject obj){
+        boolean released = false;
+        if(!obj.getJSONObject("__rerum").getString("isReleased").equals("")){
+            released = true;
+        }
+        return released;
+    }
+    
+    /**
+     * A helper function that gathers an object by its id and determines whether or not it is flagged as released.
+     * @param obj_id
+     * @return 
+     */
+    public boolean checkIfReleased(String obj_id){
+        boolean released = false;
+        BasicDBObject query = new BasicDBObject();
+        BasicDBObject dbObj;
+        query.append("@id", obj_id);
+        dbObj = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); 
+        JSONObject checkThis = JSONObject.fromObject(dbObj);
+        released = !checkThis.getJSONObject("__rerum").getString("isReleased").equals("");
+        return released;
+    }
        
     /**
      * Delete a given annotation. 
@@ -890,8 +920,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             JSONObject received = JSONObject.fromObject(content);
             boolean alreadyDeleted = checkIfDeleted(received);
             boolean permission = checkApplicationPermission(received);
+            boolean isReleased = checkIfReleased(received);
             if(!permission){
-               writeErrorResponse("Only the application that created this object can delete it.", HttpServletResponse.SC_UNAUTHORIZED); 
+                writeErrorResponse("Only the application that created this object can delete it.", HttpServletResponse.SC_UNAUTHORIZED); 
+            }
+            else if(isReleased){
+                writeErrorResponse("This object is in a released state and cannot be deleted.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);  
             }
             else if(alreadyDeleted){ //Self explanatory 
                 writeErrorResponse("Object for delete is already deleted.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
@@ -940,9 +974,9 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      */
      public boolean greenThumb(JSONObject obj){
          boolean success = true;
-         String previous_id = obj.getJSONObject("history").getString("previous");
-         String prime_id = obj.getJSONObject("history").getString("prime");
-         JSONArray next_ids = obj.getJSONObject("history").getJSONArray("next");
+         String previous_id = obj.getJSONObject("__rerum").getJSONObject("history").getString("previous");
+         String prime_id = obj.getJSONObject("__rerum").getJSONObject("history").getString("prime");
+         JSONArray next_ids = obj.getJSONObject("__rerum").getJSONObject("history").getJSONArray("next");
          //@cubap We are operating under the assumption the object MUST HAVE these values.  This will throw an error if not.  Should I handle with a try-catch?
          boolean isRoot = prime_id.equals("root"); 
          boolean detectedPrevious = !previous_id.equals("");
@@ -957,11 +991,13 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
              if(null != objToUpdate){
                 JSONObject fixHistory = JSONObject.fromObject(objToUpdate);
                 if(isRoot){ //The object being deleted was root.  That means these next objects must become root.  Strictly, all history trees must have num(root) > 0.  
-                    fixHistory.getJSONObject("history").element("previous", ""); //Root objects MUST NOT have a previous
-                    fixHistory.getJSONObject("history").element("prime", "root"); //Root objects MUST have prime=root;
+                    fixHistory.getJSONObject("__rerum").getJSONObject("history").element("prime", "root");
+                    newTreePrime(fixHistory);
+                    //Do not overwrite previous of the new prime objects so they reference the deleted prime object for the future.
+                    //fixHistory.getJSONObject("__rerum").getJSONObject("history").element("previous", "");
                 }
                 else if(detectedPrevious){ //The object being deleted had a previous.  That is now absorbed by this next object to mend the gap.  
-                    fixHistory.getJSONObject("history").element("previous", previous_id);
+                    fixHistory.getJSONObject("__rerum").getJSONObject("history").element("previous", previous_id);
                 }
                 else{
                     //Yikes this is some kind of error...it is either root or has a previous, this case means neither are true.
@@ -985,7 +1021,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
              objToUpdate2 = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query2); 
              if(null != objToUpdate2){
                 JSONObject fixHistory2 = JSONObject.fromObject(objToUpdate2);  
-                fixHistory2.getJSONObject("history").element("next", next_ids);
+                fixHistory2.getJSONObject("__rerum").getJSONObject("history").element("next", next_ids);
                 Object forMongo2 = JSON.parse(fixHistory2.toString()); //JSONObject cannot be converted to BasicDBObject
                 objWithUpdate2 = (BasicDBObject)forMongo2;
                 mongoDBService.update(Constant.COLLECTION_ANNOTATION, objToUpdate2, objWithUpdate2);
@@ -994,6 +1030,31 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                  //Yikes this is an error.  We had a previous id in the object but could not find it in the store.
                  success = false;
              }
+         }
+         return success;
+     }
+     
+     /**
+     * All descendants of this JSONObject must take on a new history.prime of this object's ID
+     * 
+     * @param obj A new prime object whose descendants must take on its id
+     * @param primeID The ID of the root object being deleted to be passed on to the descendants
+     */
+     public boolean newTreePrime(JSONObject obj){
+         boolean success = true;
+         String primeID = obj.getString("@id");
+         //TODO
+         JSONArray descendants = new JSONArray();
+         //JSONArray descendants = getAllDescendants(obj);
+         for(int n=0; n< descendants.size(); n++){
+             JSONObject descendantForUpdate = descendants.getJSONObject(n);
+             JSONObject originalDescendant = descendants.getJSONObject(n);
+             Object orig = JSON.parse(originalDescendant.toString()); //JSONObject cannot be converted to BasicDBObject
+             BasicDBObject objToUpdate = (BasicDBObject)orig;
+             descendantForUpdate.getJSONObject("__rerum").getJSONObject("history").element("prime", primeID);
+             Object forMongo = JSON.parse(descendantForUpdate.toString()); //JSONObject cannot be converted to BasicDBObject
+             BasicDBObject objWithUpdate = (BasicDBObject)forMongo;
+             mongoDBService.update(Constant.COLLECTION_ANNOTATION, objToUpdate, objWithUpdate);
          }
          return success;
      }
