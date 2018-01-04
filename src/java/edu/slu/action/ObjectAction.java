@@ -860,14 +860,13 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @return A boolean representing the truth.
      */
     public boolean checkIfDeleted(String obj_id){
-        boolean deleted = false;
         BasicDBObject query = new BasicDBObject();
         BasicDBObject dbObj;
         query.append("@id", obj_id);
         dbObj = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); 
         JSONObject checkThis = JSONObject.fromObject(dbObj);
-        deleted = checkThis.containsKey("__deleted");
-        return deleted;
+        return checkIfDeleted(checkThis);
+
     }
     
     /**
@@ -898,14 +897,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @return 
      */
     public boolean checkIfReleased(String obj_id){
-        boolean released = false;
         BasicDBObject query = new BasicDBObject();
         BasicDBObject dbObj;
         query.append("@id", obj_id);
         dbObj = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); 
         JSONObject checkThis = JSONObject.fromObject(dbObj);
-        released = !checkThis.getJSONObject("__rerum").getString("isReleased").equals("");
-        return released;
+        return checkIfReleased(checkThis);
     }
        
     /**
@@ -919,18 +916,28 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             //processRequestBody will always return a stringified JSON object here, even if the ID provided was a string in the body.
             JSONObject received = JSONObject.fromObject(content);
             boolean alreadyDeleted = checkIfDeleted(received);
-            boolean permission = checkApplicationPermission(received);
-            boolean isReleased = checkIfReleased(received);
-            if(!permission){
-                writeErrorResponse("Only the application that created this object can delete it.", HttpServletResponse.SC_UNAUTHORIZED); 
-            }
-            else if(isReleased){
-                writeErrorResponse("This object is in a released state and cannot be deleted.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);  
-            }
-            else if(alreadyDeleted){ //Self explanatory 
+            boolean permission = false;
+            boolean isReleased = false;
+            boolean passedAllChecks = false;
+            if(alreadyDeleted){
                 writeErrorResponse("Object for delete is already deleted.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
             }
             else{
+                isReleased = checkIfReleased(received);
+                if(isReleased){
+                    writeErrorResponse("This object is in a released state and cannot be deleted.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);  
+                }
+                else{
+                    permission = checkApplicationPermission(received);
+                    if(permission){
+                       passedAllChecks = true;
+                    }
+                    else{
+                       writeErrorResponse("Only the application that created this object can delete it.", HttpServletResponse.SC_UNAUTHORIZED);   
+                    }
+                }
+            }
+            if(passedAllChecks){ //If all checks have passed.  If not, we want to make sure their writeErrorReponse() don't stack.  
                 if(received.containsKey("@id")){
                     query.append("@id", received.getString("@id").trim());
                     originalObject = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The original object out of mongo for persistance
@@ -944,23 +951,20 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         updatedObjectWithDeletedFlag = (BasicDBObject) updatedObjectWithDeletedFlag.put("__deleted", deletedFlag);
                         boolean treeHealed = greenThumb(JSONObject.fromObject(originalObject));
                         if(treeHealed){
-                            // @webanno If the DELETE request is successfully processed, then the server must return a 204 status response.
-                            // cubap: ahhhh... I don't know. If we flag it as inactive, that's not the same as deleting.
-                            // @cubap: Do we need to return the new state of the object?
                             mongoDBService.update(Constant.COLLECTION_ANNOTATION, originalObject, updatedObjectWithDeletedFlag);
                             response.setStatus(HttpServletResponse.SC_NO_CONTENT);
                         }
                         else{
-                            //@cubap I don't know if this is what we want to say if this happens...
+                            //@cubap @theHabes FIXME By default, objects that don't have the history property will fail to this line.
                             writeErrorResponse("We could not update the history tree correctly.  The delete failed.", HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
                         }
                     }
                     else{
-                        writeErrorResponse("The id string provided for DELETE could not be found in RERUM: "+received.getString("@id")+". \n DELETE failed.", HttpServletResponse.SC_NOT_FOUND);
+                        writeErrorResponse("The '@id' string provided for DELETE could not be found in RERUM: "+received.getString("@id")+". \n DELETE failed.", HttpServletResponse.SC_NOT_FOUND);
                     }
                 }
                 else{
-                    writeErrorResponse("Object for delete did not contain an id.  Could not delete.", HttpServletResponse.SC_BAD_REQUEST);
+                    writeErrorResponse("Object for delete did not contain an '@id'.  Could not delete.", HttpServletResponse.SC_BAD_REQUEST);
                 }
             }
         }
@@ -969,15 +973,27 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     /**
      * When an object is deleted, the history tree around it will need amending.  This function acts as the green thumb for tree trimming.
      * 
-     * @param deletedObj A JSONObject of the object being deleted.
+     * @param obj A JSONObject of the object being deleted.
      * @return A boolean representing whether or not this function succeeded. 
      */
      public boolean greenThumb(JSONObject obj){
          boolean success = true;
-         String previous_id = obj.getJSONObject("__rerum").getJSONObject("history").getString("previous");
-         String prime_id = obj.getJSONObject("__rerum").getJSONObject("history").getString("prime");
-         JSONArray next_ids = obj.getJSONObject("__rerum").getJSONObject("history").getJSONArray("next");
-         //@cubap We are operating under the assumption the object MUST HAVE these values.  This will throw an error if not.  Should I handle with a try-catch?
+         String previous_id = "";
+         String prime_id = "";
+         JSONArray next_ids = new JSONArray();
+         try{
+             //Try to dig down the object and get these properties
+            previous_id = obj.getJSONObject("__rerum").getJSONObject("history").getString("previous");
+            prime_id = obj.getJSONObject("__rerum").getJSONObject("history").getString("prime");
+            next_ids = obj.getJSONObject("__rerum").getJSONObject("history").getJSONArray("next");
+         }
+         catch(Exception e){
+             //@cubap @theHabes FIXME this should probably be handled separately and gracefully and have its own writeErrorReponse() that doesn't stack with deleteObject().  @see treeHealed
+            previous_id = ""; //This ensures detectedPrevious is false
+            prime_id = ""; //This ensures isRoot is false
+            next_ids = new JSONArray(); //This ensures the loop below does not run.
+            success = false; //This will bubble out to deleteObj() and have the side effect that this object is not deleted.  @see treeHealed
+         }
          boolean isRoot = prime_id.equals("root"); 
          boolean detectedPrevious = !previous_id.equals("");
          //Update the history.previous of all the next ids in the array of the deleted object
@@ -993,15 +1009,15 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 if(isRoot){ //The object being deleted was root.  That means these next objects must become root.  Strictly, all history trees must have num(root) > 0.  
                     fixHistory.getJSONObject("__rerum").getJSONObject("history").element("prime", "root");
                     newTreePrime(fixHistory);
-                    //Do not overwrite previous of the new prime objects so they reference the deleted prime object for the future.
-                    //fixHistory.getJSONObject("__rerum").getJSONObject("history").element("previous", "");
                 }
                 else if(detectedPrevious){ //The object being deleted had a previous.  That is now absorbed by this next object to mend the gap.  
                     fixHistory.getJSONObject("__rerum").getJSONObject("history").element("previous", previous_id);
                 }
                 else{
-                    //Yikes this is some kind of error...it is either root or has a previous, this case means neither are true.
-                    success = false;
+                    // @cubap @theHabes TODO Yikes this is some kind of error...it is either root or has a previous, this case means neither are true.
+                    // cubap: Since this is a __rerum error and it means that the object is already not well-placed in a tree, maybe it shouldn't fail to delete?
+                    // theHabes: Are their bad implications on the relevant nodes in the tree that reference this one if we allow it to delete?  Will their account of the history be correct?
+                    //success = false;
                 }
                 Object forMongo = JSON.parse(fixHistory.toString()); //JSONObject cannot be converted to BasicDBObject
                 objWithUpdate = (BasicDBObject)forMongo;
@@ -1020,8 +1036,18 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
              query2.append("@id", previous_id);
              objToUpdate2 = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query2); 
              if(null != objToUpdate2){
-                JSONObject fixHistory2 = JSONObject.fromObject(objToUpdate2);  
-                fixHistory2.getJSONObject("__rerum").getJSONObject("history").element("next", next_ids);
+                JSONObject fixHistory2 = JSONObject.fromObject(objToUpdate2); 
+                JSONArray origNextArray = fixHistory2.getJSONObject("__rerum").getJSONObject("history").getJSONArray("next");
+                JSONArray newNextArray = new JSONArray();  
+                //JSONArray does not have splice, but we can code our own.  This will splice out obj["@id"].
+                for (int i=0; i<origNextArray.size(); i++){ 
+                    if (!origNextArray.getString(i).equals(obj.getString("@id"))){
+                        //So long as the value is not the deleted id, add it to the newNextArray (this is the splice).  
+                        newNextArray.add(origNextArray.get(i));
+                    }
+                } 
+                newNextArray.addAll(next_ids); //Adds next array of deleted object to the end of this array in order.
+                fixHistory2.getJSONObject("__rerum").getJSONObject("history").element("next", newNextArray); //Rewrite the next[] array to fix the history
                 Object forMongo2 = JSON.parse(fixHistory2.toString()); //JSONObject cannot be converted to BasicDBObject
                 objWithUpdate2 = (BasicDBObject)forMongo2;
                 mongoDBService.update(Constant.COLLECTION_ANNOTATION, objToUpdate2, objWithUpdate2);
@@ -1038,7 +1064,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * All descendants of this JSONObject must take on a new history.prime of this object's ID
      * 
      * @param obj A new prime object whose descendants must take on its id
-     * @param primeID The ID of the root object being deleted to be passed on to the descendants
      */
      public boolean newTreePrime(JSONObject obj){
          boolean success = true;
