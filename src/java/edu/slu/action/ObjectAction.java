@@ -868,6 +868,15 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         deleted = checkThis.containsKey("__deleted");
         return deleted;
     }
+    
+    /**
+    * check that the API keys match and that this application has permission to delete the object
+    */
+    public boolean checkApplicationPermission(JSONObject obj){
+        boolean permission = true;
+        //@cubap @theHabes TODO check that the API keys match and that this application has permission to delete the object
+        return permission;
+    }
        
     /**
      * Delete a given annotation. 
@@ -880,7 +889,11 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             //processRequestBody will always return a stringified JSON object here, even if the ID provided was a string in the body.
             JSONObject received = JSONObject.fromObject(content);
             boolean alreadyDeleted = checkIfDeleted(received);
-            if(alreadyDeleted){ //Self explanatory 
+            boolean permission = checkApplicationPermission(received);
+            if(!permission){
+               writeErrorResponse("Only the application that created this object can delete it.", HttpServletResponse.SC_UNAUTHORIZED); 
+            }
+            else if(alreadyDeleted){ //Self explanatory 
                 writeErrorResponse("Object for delete is already deleted.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
             }
             else{
