@@ -533,23 +533,25 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @throws Exception 
      */
     public void getAllAncestors(HttpServletRequest http_request) throws Exception{
-        // TODO: @theHabes, this is waiting for something clever to happen.
-        // This code is not correct at all, but pseudo-correct.
-        List<DBObject> ls_versions = getAllVersions(http_request);
-        // cubap: At this point, we have all the versions of the object (except maybe the
-        // original?) and need to filter to the ones we want.
-        // Getting the whole document is a mess, but if we get subdocuments of __rerum, 
-        // we don't need to worry as much.
-        
-        JSONArray ancestors = getAllAncestors(ls_versions);
-        try {
-            response.addHeader("Access-Control-Allow-Origin", "*");
-            response.setStatus(HttpServletResponse.SC_OK);
-            out = response.getWriter();
-            out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(ancestors));
-        } 
-        catch (IOException ex) {
-            Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
+        if(null != processRequestBody(request, true) && methodApproval(request, "get")){
+            // TODO: @theHabes, this is waiting for something clever to happen.
+            // This code is not correct at all, but pseudo-correct.
+            List<DBObject> ls_versions = getAllVersions(http_request);
+            // cubap: At this point, we have all the versions of the object (except maybe the
+            // original?) and need to filter to the ones we want.
+            // Getting the whole document is a mess, but if we get subdocuments of __rerum, 
+            // we don't need to worry as much.
+
+            JSONArray ancestors = getAllAncestors(ls_versions);
+            try {
+                response.addHeader("Access-Control-Allow-Origin", "*");
+                response.setStatus(HttpServletResponse.SC_OK);
+                out = response.getWriter();
+                out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(ancestors));
+            } 
+            catch (IOException ex) {
+                Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
     }
     
@@ -559,6 +561,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @return array of objects
      */
     private JSONArray getAllAncestors(List<DBObject> ls_versions) {
+        
         List<DBObject> ls_objects = null;
         // TODO: Iterate the List and find the original object. Then move from
         // _rerum.history.previous to _rerum.history.previous, building a new List
@@ -582,30 +585,33 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     }
     
     /**
-     * Servlet method to find all downstream versions of an object.
+     * Servlet method to find all downstream versions of an object.  
      * If this object is the last, the return will be null.
-     * @TODO this needs to return an array of JSONObjects.
+     * @TODO this needs to return an array of JSONObjects.  It needs to support a request by string id or object with {@id:id} in it.
      * @param  http_request Servlet request for relatives
      * @throws Exception 
      */
     public void getAllDescendants(HttpServletRequest http_request) throws Exception{
-        // TODO: @theHabes, this is waiting for something clever to happen.
-        // This code is not correct at all, but pseudo-correct.
-        List<DBObject> ls_versions = getAllVersions(http_request);
-        // cubap: At this point, we have all the versions of the object (except maybe the
-        // original?) and need to filter to the ones we want.
-        // Getting the whole document is a mess, but if we get subdocuments of __rerum, 
-        // we don't need to worry as much.
-        
-        JSONArray descendants = getAllDescendants(ls_versions);
-        try {
-            response.addHeader("Access-Control-Allow-Origin", "*");
-            response.setStatus(HttpServletResponse.SC_OK);
-            out = response.getWriter();
-            out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(descendants));
-        } 
-        catch (IOException ex) {
-            Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
+        if(null != processRequestBody(request, true) && methodApproval(request, "get")){
+            // TODO: @theHabes, this is waiting for something clever to happen.
+            // This code is not correct at all, but pseudo-correct.
+            JSONObject received = JSONObject.fromObject(content);
+            List<DBObject> ls_versions = getAllVersions(received);
+            // cubap: At this point, we have all the versions of the object (except maybe the
+            // original?) and need to filter to the ones we want.
+            // Getting the whole document is a mess, but if we get subdocuments of __rerum, 
+            // we don't need to worry as much.
+
+            JSONArray descendants = getAllDescendants(ls_versions);
+            try {
+                response.addHeader("Access-Control-Allow-Origin", "*");
+                response.setStatus(HttpServletResponse.SC_OK);
+                out = response.getWriter();
+                out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(descendants));
+            } 
+            catch (IOException ex) {
+                Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
     }
     
@@ -616,27 +622,30 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @return All versions from the store of the object in the request
      * @throws Exception 
      */
-    private List<DBObject> getAllVersions(HttpServletRequest http_request) throws Exception {
+    private List<DBObject> getAllVersions(JSONObject obj) throws Exception {
         List<DBObject> ls_versions = null;
-        if(!methodApproval(request, "get")){
-            // TODO: include link to API documentation in error response
-            writeErrorResponse("Unable to retrieve objects; wrong method type.", HttpServletResponse.SC_BAD_REQUEST);
-            return ls_versions;
-        }
-        if(processRequestBody(http_request, false)==null){
-            // TODO: include link to API documentation in error response
-            writeErrorResponse("Unable to retrieve objects; missing key object.", HttpServletResponse.SC_BAD_REQUEST);
-            return ls_versions;
-        }
-        //content is set to body now
-        JSONObject received = JSONObject.fromObject(content);
-        // get reliable copy of key object
+        BasicDBObject rootObj;
         BasicDBObject query = new BasicDBObject();
-        
-        // TODO: @theHabes, this is waiting for something clever to happen.
-        // This code is not correct at all, but pseudo-correct.
-        query.append("@id", received.getString("__rerum.history.prime"));
-        ls_versions = mongoDBService.findByExample(Constant.COLLECTION_ANNOTATION, query);
+        BasicDBObject queryForRoot = new BasicDBObject();  
+        String primeID;
+        if(obj.getJSONObject("__rerum").getJSONObject("history").getString("prime").equals("root")){
+            primeID = obj.getString("@id");
+            //Get all objects whose prime is this things @id
+            query.append("__rerum.history.prime", primeID);
+            ls_versions = mongoDBService.findByExample(Constant.COLLECTION_ANNOTATION, query);
+            rootObj = (BasicDBObject) JSON.parse(obj.toString()); 
+            ls_versions.add(0, rootObj);
+        }
+        else{
+            primeID = obj.getString("@id");
+            //Get all objects whose prime is equal to this ID
+            query.append("__rerum.history.prime", primeID);
+            ls_versions = mongoDBService.findByExample(Constant.COLLECTION_ANNOTATION, query);
+            queryForRoot.append("@id", primeID);
+            rootObj = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, queryForRoot);
+            ls_versions.add(0, rootObj);
+        }
+        // get reliable copy of key object
         return ls_versions;
     }
         
