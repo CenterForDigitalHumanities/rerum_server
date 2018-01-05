@@ -830,7 +830,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             String updateHistoryNextID = received.getString("@id");
             query.append("@id", updateHistoryNextID);
             BasicDBObject originalObject = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The originalObject DB object
-            BasicDBObject updatedObject = (BasicDBObject) originalObject.clone(); //A copy of the original, this will be saved as a new object.  Make all edits to this variable.
+            BasicDBObject updatedObject = (BasicDBObject) originalObject.copy(); //A copy of the original, this will be saved as a new object.  Make all edits to this variable.
             if(null != originalObject){
                 Set<String> update_anno_keys = received.keySet();
                 //If the object already in the database contains the key found from the object recieved from the user, update it barring a few special keys
@@ -998,9 +998,9 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     }
                 }
                 if(passedAllChecks){ //If all checks have passed.  If not, we want to make sure their writeErrorReponse() don't stack.  
-                    updatedObjectWithDeletedFlag = (BasicDBObject) originalObject.clone(); //A clone of this mongo object for manipulation.
                     //Found the @id in the object, but does it exist in RERUM?
                     if(null != originalObject){
+                        updatedObjectWithDeletedFlag = (BasicDBObject) originalObject.copy(); //A clone of this mongo object for manipulation.
                         JSONObject deletedFlag = new JSONObject(); //The __deleted flag is a JSONObject
                         deletedFlag.element("object", originalObject);
                         deletedFlag.element("deletor", "TODO"); //@cubap I assume this will be an API key?
@@ -1011,6 +1011,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         if(treeHealed){
                             System.out.println("Tree healed, want to update.");
                             System.out.println(originalObject);
+                            
                             System.out.println(updatedObjectWithDeletedFlag);
                             mongoDBService.update(Constant.COLLECTION_ANNOTATION, originalObject, updatedObjectWithDeletedFlag);
                             response.setStatus(HttpServletResponse.SC_NO_CONTENT);
