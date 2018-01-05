@@ -857,6 +857,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     String newNextAtID = "http://devstore.rerum.io/rerumserver/id/"+newNextID;
                     BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
                     dboWithObjectID.append("@id", newNextAtID);
+                    newObject.element("@id", newNextAtID);
                     mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
                     historyNextUpdatePassed = alterHistoryNext(updateHistoryNextID, newNextAtID); //update history.next or original object to include the newObject @id
                     if(historyNextUpdatePassed){
