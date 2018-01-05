@@ -1001,6 +1001,11 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     //Found the @id in the object, but does it exist in RERUM?
                     if(null != originalObject){
                         updatedObjectWithDeletedFlag = (BasicDBObject) originalObject; //A clone of this mongo object for manipulation.
+                        BasicDBObject tester = (BasicDBObject) originalObject.copy();
+                        System.out.println("Did it make a copy?");
+                        System.out.println(updatedObjectWithDeletedFlag);
+                        System.out.println("how bout this");
+                        System.out.println(tester);
                         JSONObject deletedFlag = new JSONObject(); //The __deleted flag is a JSONObject
                         deletedFlag.element("object", originalObject);
                         deletedFlag.element("deletor", "TODO"); //@cubap I assume this will be an API key?
@@ -1011,6 +1016,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         if(treeHealed){
                             System.out.println("Tree healed, want to update.");
                             System.out.println(originalObject);
+                            System.out.println("with");
                             System.out.println(updatedObjectWithDeletedFlag);
                             mongoDBService.update(Constant.COLLECTION_ANNOTATION, originalObject, updatedObjectWithDeletedFlag);
                             response.setStatus(HttpServletResponse.SC_NO_CONTENT);
@@ -1037,7 +1043,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @param obj A JSONObject of the object being deleted.
      * @return A boolean representing whether or not this function succeeded. 
      */
-     public boolean greenThumb(JSONObject obj){
+     private boolean greenThumb(JSONObject obj){
          boolean success = true;
          String previous_id = "";
          String prime_id = "";
