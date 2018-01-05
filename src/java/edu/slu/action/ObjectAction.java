@@ -889,6 +889,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @return A boolean representing the truth.
      */
     private boolean checkIfDeleted(JSONObject obj){
+        System.out.println("Is this deleted?");
+        System.out.println(obj);
         boolean deleted = obj.containsKey("__deleted");
         return deleted;
     }
@@ -965,13 +967,13 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         if(null!=processRequestBody(request, true) && methodApproval(request, "delete")){ 
             BasicDBObject query = new BasicDBObject();
             BasicDBObject originalObject;
-            
             //processRequestBody will always return a stringified JSON object here, even if the ID provided was a string in the body.
             JSONObject received = JSONObject.fromObject(content);
             if(received.containsKey("@id")){
                 query.append("@id", received.getString("@id"));
                 originalObject = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The original object out of mongo for persistance
-                boolean alreadyDeleted = checkIfDeleted(received);
+                JSONObject checkThis = JSONObject.fromObject(originalObject);
+                boolean alreadyDeleted = checkIfDeleted(checkThis);
                 boolean permission = false;
                 boolean isReleased = false;
                 boolean passedAllChecks = false;
@@ -1222,6 +1224,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         }
         connection.disconnect();
         iiif_return = JSONObject.fromObject(stringBuilder.toString());
+        iiif_return.remove("received");
         return iiif_return;
     }
 
