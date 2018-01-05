@@ -350,7 +350,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             JSONArray test2;
             while ((line = bodyReader.readLine()) != null)
             {
-              bodyString.append(line).append("\n");
+              bodyString.append(line);
             }
             requestBody = bodyString.toString();
             try{ 
@@ -385,7 +385,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 System.out.println("Must be deletable string id if not using JSON type");
                 while ((line = bodyReader.readLine()) != null)
                 {
-                  bodyString.append(line).append("\n");
+                  bodyString.append(line);
                 }
                 requestBody = bodyString.toString(); 
                 if("".equals(requestBody)){
@@ -1166,7 +1166,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         String line = null;
         while ((line = reader.readLine()) != null)
         {
-          stringBuilder.append(line + "\n");
+          stringBuilder.append(line);
         }
         connection.disconnect();
         iiif_return = JSONObject.fromObject(stringBuilder.toString());
