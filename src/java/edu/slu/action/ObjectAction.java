@@ -1000,7 +1000,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 if(passedAllChecks){ //If all checks have passed.  If not, we want to make sure their writeErrorReponse() don't stack.  
                     //Found the @id in the object, but does it exist in RERUM?
                     if(null != originalObject){
-                        updatedObjectWithDeletedFlag = (BasicDBObject) originalObject.copy(); //A clone of this mongo object for manipulation.
+                        updatedObjectWithDeletedFlag = (BasicDBObject) originalObject; //A clone of this mongo object for manipulation.
                         JSONObject deletedFlag = new JSONObject(); //The __deleted flag is a JSONObject
                         deletedFlag.element("object", originalObject);
                         deletedFlag.element("deletor", "TODO"); //@cubap I assume this will be an API key?
@@ -1011,7 +1011,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         if(treeHealed){
                             System.out.println("Tree healed, want to update.");
                             System.out.println(originalObject);
-                            
                             System.out.println(updatedObjectWithDeletedFlag);
                             mongoDBService.update(Constant.COLLECTION_ANNOTATION, originalObject, updatedObjectWithDeletedFlag);
                             response.setStatus(HttpServletResponse.SC_NO_CONTENT);
