@@ -391,13 +391,24 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 try{
                     test=JSONObject.fromObject(requestBody);
                     if(test.containsKey("@id")){
+                        System.out.println("It was JSON, but I found the @id so count it as a string.");
                         requestBody = test.getString("@id");
+                        if("".equals(requestBody)){
+                        //No ID provided
+                            writeErrorResponse("Must provide an id or a JSON object containing @id of object to delete.", HttpServletResponse.SC_BAD_REQUEST);
+                            requestBody = null;
+                        }
+                        else{
+                            // This string could be ANYTHING.  ANY string is valid at this point.  Create a wrapper JSONObject for elegant handling in deleteObject().  
+                            // We will check against the string for existing objects in deleteObject(), processing the body is completed as far as this method is concerned.
+                            JSONObject modifiedDeleteRequest = new JSONObject();
+                            modifiedDeleteRequest.element("@id", requestBody);
+                            requestBody = modifiedDeleteRequest.toString();
+                        }
                     }
-                    //writeErrorResponse("Must provide string id if not using application/json or application/ld+json content type.", HttpServletResponse.SC_BAD_REQUEST);
-                    //requestBody = null;
                 }
                 catch (Exception e){
-                    //This is good, they should not be using a JSONObject so this is the 'successful' bit
+                    //This is good, they should not be using a JSONObject
                     if("".equals(requestBody)){
                         //No ID provided
                         writeErrorResponse("Must provide an id or a JSON object containing @id of object to delete.", HttpServletResponse.SC_BAD_REQUEST);
