@@ -1000,15 +1000,18 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 if(passedAllChecks){ //If all checks have passed.  If not, we want to make sure their writeErrorReponse() don't stack.  
                     //Found the @id in the object, but does it exist in RERUM?
                     if(null != originalObject){
-                        BasicDBObject updatedObjectWithDeletedFlag = (BasicDBObject) originalObject.copy();//A clone of this mongo object for manipulation.
+                        BasicDBObject updatedObjectWithDeletedFlag = (BasicDBObject) originalObject.copy();//A clone of this mongo object
+                        JSONObject updatedWithFlag = JSONObject.fromObject(updatedObjectWithDeletedFlag);
                         System.out.println("Did it make a copy?");
                         System.out.println(updatedObjectWithDeletedFlag);
                         JSONObject deletedFlag = new JSONObject(); //The __deleted flag is a JSONObject
                         deletedFlag.element("object", originalObject);
                         deletedFlag.element("deletor", "TODO"); //@cubap I assume this will be an API key?
                         deletedFlag.element("time", System.currentTimeMillis());
-                        updatedObjectWithDeletedFlag = (BasicDBObject) updatedObjectWithDeletedFlag.put("__deleted", deletedFlag);
-                        System.out.println("Is the copy OK after putting?");
+                        updatedWithFlag.element("__deleted", deletedFlag);
+                        Object forMongo = JSON.parse(updatedWithFlag.toString()); //JSONObject cannot be converted to BasicDBObject
+                        updatedObjectWithDeletedFlag = (BasicDBObject) forMongo;
+                        System.out.println("Is the copy OK after manipulation?");
                         System.out.println(updatedObjectWithDeletedFlag);
                         boolean treeHealed = greenThumb(JSONObject.fromObject(originalObject));
                         System.out.println("Passed checks, tried to heal tree.");
