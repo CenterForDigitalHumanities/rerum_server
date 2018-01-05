@@ -727,6 +727,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      */
     public void saveNewObject() throws IOException, ServletException, Exception{
         if(null != processRequestBody(request, false) && methodApproval(request, "create")){
+            boolean intendedToHaveNewID = true;
             JSONObject received = JSONObject.fromObject(content);
             JSONObject iiif_validation_response = checkIIIFCompliance(received, true); //This boolean should be provided by the user somehow.  It is a intended-to-be-iiif flag
             configureRerumOptions(received, false);
@@ -740,6 +741,16 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             //set @id from _id and update the annotation
             BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
             String uid = "http://devstore.rerum.io/rerumserver/id/"+newObjectID;
+            if(dboWithObjectID.containsKey("@id")){
+                //Someone tried to create an object that already had an @id.  How do we want to handle this?
+                if(intendedToHaveNewID){
+                    dboWithObjectID.remove("@id");
+                    dboWithObjectID.append("@id", uid);
+                }
+                else{
+                    //If we want this to be an a stopping error or warning, we will have to handle this method differently so we don't continue on here. 
+                }
+            }
             dboWithObjectID.append("@id", uid);
             mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
             JSONObject jo = new JSONObject();
@@ -1115,6 +1126,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 iiif_return.element("okay", 1);
             }
         }
+        iiif_return.remove("received");
         BasicDBObject query = new BasicDBObject();
         query.append("_id", newObjectID);
         mongoDBService.delete(Constant.COLLECTION_ANNOTATION, query);
