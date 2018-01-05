@@ -103,7 +103,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @see getAnnotationByObjectID(),saveNewObject(),updateObject() 
      * @return containerType Boolean representing if RERUM knows whether it is a container type or not.  
      */
-    public Boolean isContainerType(JSONObject jo){
+    private Boolean isContainerType(JSONObject jo){
         Boolean containerType = false;
         String typestring;
         try{
@@ -976,6 +976,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 boolean isReleased = false;
                 boolean passedAllChecks = false;
                 if(alreadyDeleted){
+                    System.out.println("This object was already deleted");
                     writeErrorResponse("Object for delete is already deleted.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
                 }
                 else{
@@ -1009,12 +1010,15 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         Object forMongo = JSON.parse(updatedWithFlag.toString()); //JSONObject cannot be converted to BasicDBObject
                         updatedObjectWithDeletedFlag = (BasicDBObject) forMongo;
                         boolean treeHealed = greenThumb(JSONObject.fromObject(originalObject));
+                        System.out.println("Tried to heal tree...");
                         if(treeHealed){
+                            System.out.println("Tree healed...");
                             mongoDBService.update(Constant.COLLECTION_ANNOTATION, originalObject, updatedObjectWithDeletedFlag);
                             response.setStatus(HttpServletResponse.SC_NO_CONTENT);
                         }
                         else{
                             //@cubap @theHabes FIXME By default, objects that don't have the history property will fail to this line.
+                            System.out.println("Failed.");
                             writeErrorResponse("We could not update the history tree correctly.  The delete failed.", HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
                         }
                     }
@@ -1036,6 +1040,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @return A boolean representing whether or not this function succeeded. 
      */
      private boolean greenThumb(JSONObject obj){
+         System.out.println("green thumb...");
          boolean success = true;
          String previous_id = "";
          String prime_id = "";
@@ -1052,6 +1057,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             prime_id = ""; //This ensures isRoot is false
             next_ids = new JSONArray(); //This ensures the loop below does not run.
             success = false; //This will bubble out to deleteObj() and have the side effect that this object is not deleted.  @see treeHealed
+            System.out.println("green thumb won't work on this object");
          }
          boolean isRoot = prime_id.equals("root"); 
          boolean detectedPrevious = !previous_id.equals("");
@@ -1066,13 +1072,16 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
              if(null != objToUpdate){
                 JSONObject fixHistory = JSONObject.fromObject(objToUpdate);
                 if(isRoot){ //The object being deleted was root.  That means these next objects must become root.  Strictly, all history trees must have num(root) > 0.  
+                    System.out.println("object was root");
                     fixHistory.getJSONObject("__rerum").getJSONObject("history").element("prime", "root");
                     newTreePrime(fixHistory);
                 }
                 else if(detectedPrevious){ //The object being deleted had a previous.  That is now absorbed by this next object to mend the gap.  
+                    System.out.println("object had a previous");
                     fixHistory.getJSONObject("__rerum").getJSONObject("history").element("previous", previous_id);
                 }
                 else{
+                    System.out.println("object did not have previous and was not root.  Weird...");
                     // @cubap @theHabes TODO Yikes this is some kind of error...it is either root or has a previous, this case means neither are true.
                     // cubap: Since this is a __rerum error and it means that the object is already not well-placed in a tree, maybe it shouldn't fail to delete?
                     // theHabes: Are their bad implications on the relevant nodes in the tree that reference this one if we allow it to delete?  Will their account of the history be correct?
@@ -1083,12 +1092,14 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 mongoDBService.update(Constant.COLLECTION_ANNOTATION, objToUpdate, objWithUpdate);
              }
              else{
+                 System.out.println("could not find an object assosiated with id found in history tree");
                  success = false;
                  //Yikes this is an error, could not find an object assosiated with id found in history tree.
              }
          }
          if(detectedPrevious){ 
              //The object being deleted had a previous.  That previous object next[] must be updated with the deleted object's next[].
+             System.out.println("detected previous");
              BasicDBObject query2 = new BasicDBObject();
              BasicDBObject objToUpdate2;
              BasicDBObject objWithUpdate2;
@@ -1113,9 +1124,11 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
              }
              else{
                  //Yikes this is an error.  We had a previous id in the object but could not find it in the store.
+                 System.out.println("We had a previous id in the object but could not find it in the store");
                  success = false;
              }
          }
+         System.out.println("Green thumb says "+success);
          return success;
      }
      
