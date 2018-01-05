@@ -357,7 +357,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
               //JSONObject test
               test = JSONObject.fromObject(requestBody);
             }
-            catch(Exception ex){ 
+            catch(Exception ex){
                 if(deletion){
                     System.out.println("Must delete JSON object if using application type.");
                     //We do not allow arrays of ID's for DELETE, so if it failed JSONObject parsing then this is a hard fail for DELETE.
@@ -390,8 +390,11 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 requestBody = bodyString.toString(); 
                 try{
                     test=JSONObject.fromObject(requestBody);
-                    writeErrorResponse("Must provide string id if not using application/json or application/ld+json content type.", HttpServletResponse.SC_BAD_REQUEST);
-                    requestBody = null;
+                    if(test.containsKey("@id")){
+                        requestBody = test.getString("@id");
+                    }
+                    //writeErrorResponse("Must provide string id if not using application/json or application/ld+json content type.", HttpServletResponse.SC_BAD_REQUEST);
+                    //requestBody = null;
                 }
                 catch (Exception e){
                     //This is good, they should not be using a JSONObject so this is the 'successful' bit
@@ -400,7 +403,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         writeErrorResponse("Must provide an id or a JSON object containing @id of object to delete.", HttpServletResponse.SC_BAD_REQUEST);
                         requestBody = null;
                     }
-                    else{ 
+                    else{
                         // This string could be ANYTHING.  ANY string is valid at this point.  Create a wrapper JSONObject for elegant handling in deleteObject().  
                         // We will check against the string for existing objects in deleteObject(), processing the body is completed as far as this method is concerned.
                         JSONObject modifiedDeleteRequest = new JSONObject();
