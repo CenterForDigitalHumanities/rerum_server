@@ -105,7 +105,13 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      */
     public Boolean isContainerType(JSONObject jo){
         Boolean containerType = false;
-        String typestring = jo.getString("@type");
+        String typestring;
+        try{
+            typestring = jo.getString("@type");
+        }
+        catch (Exception e){
+            typestring = "";
+        }
         //These are the types RERUM knows and IIIF says these types are containers.  How can we check against custom @context and types?
         if(typestring.equals("sc:Sequence") || typestring.equals("sc:AnnotationList") 
             || typestring.equals("sc:Range") || typestring.equals("sc:Layer")
