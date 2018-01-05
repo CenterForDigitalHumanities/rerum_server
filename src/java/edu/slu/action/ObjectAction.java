@@ -345,9 +345,9 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         bodyReader = http_request.getReader();
         bodyString = new StringBuilder();
         String line;
+        JSONObject test;
+        JSONArray test2;
         if(cType.contains("application/json") || cType.contains("application/ld+json")){
-            JSONObject test;
-            JSONArray test2;
             while ((line = bodyReader.readLine()) != null)
             {
               bodyString.append(line);
@@ -388,17 +388,25 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                   bodyString.append(line);
                 }
                 requestBody = bodyString.toString(); 
-                if("".equals(requestBody)){
-                    //No ID provided
-                    writeErrorResponse("Must provide an id or a JSON object containing @id of object to delete.", HttpServletResponse.SC_BAD_REQUEST);
+                try{
+                    test=JSONObject.fromObject(requestBody);
+                    writeErrorResponse("Must provide string id if not using application/json or application/ld+json content type.", HttpServletResponse.SC_BAD_REQUEST);
                     requestBody = null;
                 }
-                else{ 
-                    // This string could be ANYTHING.  ANY string is valid at this point.  Create a wrapper JSONObject for elegant handling in deleteObject().  
-                    // We will check against the string for existing objects in deleteObject(), processing the body is completed as far as this method is concerned.
-                    JSONObject modifiedDeleteRequest = new JSONObject();
-                    modifiedDeleteRequest.element("@id", requestBody);
-                    requestBody = modifiedDeleteRequest.toString();
+                catch (Exception e){
+                    //This is good, they should not be using a JSONObject so this is the 'successful' bit
+                    if("".equals(requestBody)){
+                        //No ID provided
+                        writeErrorResponse("Must provide an id or a JSON object containing @id of object to delete.", HttpServletResponse.SC_BAD_REQUEST);
+                        requestBody = null;
+                    }
+                    else{ 
+                        // This string could be ANYTHING.  ANY string is valid at this point.  Create a wrapper JSONObject for elegant handling in deleteObject().  
+                        // We will check against the string for existing objects in deleteObject(), processing the body is completed as far as this method is concerned.
+                        JSONObject modifiedDeleteRequest = new JSONObject();
+                        modifiedDeleteRequest.element("@id", requestBody);
+                        requestBody = modifiedDeleteRequest.toString();
+                    }
                 }
             }
             else{ //This is an error, actions must use the correct content type
@@ -860,21 +868,23 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     }
     
     /**
-     * A helper function that determines whether or not an object has been flagged as deleted.
+     * A helper function that determines whether or not an object has been flagged as deleted. These are internal and the objects passed in are
+     * first taken from mongo, they are not the obj provided by the application.
      * @param obj
      * @return A boolean representing the truth.
      */
-    public boolean checkIfDeleted(JSONObject obj){
+    private boolean checkIfDeleted(JSONObject obj){
         boolean deleted = obj.containsKey("__deleted");
         return deleted;
     }
     
     /**
-     * A helper function that gathers an object by its id and determines whether or not it is flagged as deleted.
+     * A helper function that gathers an object by its id and determines whether or not it is flagged as deleted. These are internal and the objects passed in are
+     * first taken from mongo, they are not the obj provided by the application.
      * @param obj_id
      * @return A boolean representing the truth.
      */
-    public boolean checkIfDeleted(String obj_id){
+    private boolean checkIfDeleted(String obj_id){
         BasicDBObject query = new BasicDBObject();
         BasicDBObject dbObj;
         query.append("@id", obj_id);
@@ -885,29 +895,32 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     }
     
     /**
-    * check that the API keys match and that this application has permission to delete the object
+    * check that the API keys match and that this application has permission to delete the object. These are internal and the objects passed in are
+     * first taken from mongo, they are not the obj provided by the application.
     */
-    public boolean checkApplicationPermission(JSONObject obj){
+    private boolean checkApplicationPermission(JSONObject obj){
         boolean permission = true;
         //@cubap @theHabes TODO check that the API keys match and that this application has permission to delete the object
         return permission;
     }
     
     /**
-    * check that the API keys match and that this application has permission to delete the object
+    * check that the API keys match and that this application has permission to delete the object. These are internal and the objects passed in are
+     * first taken from mongo, they are not the obj provided by the application.
     */
-    public boolean checkApplicationPermission(String obj_id){
+    private boolean checkApplicationPermission(String obj_id){
         boolean permission = true;
         //@cubap @theHabes TODO check that the API keys match and that this application has permission to delete the object
         return permission;
     }
     
     /**
-     * A helper function that gathers an object by its id and determines whether or not it is flagged as released.
+     * A helper function that gathers an object by its id and determines whether or not it is flagged as released. These are internal and the objects passed in are
+     * first taken from mongo, they are not the obj provided by the application.
      * @param obj
      * @return 
      */
-    public boolean checkIfReleased(JSONObject obj){
+    private boolean checkIfReleased(JSONObject obj){
         boolean released = false;
         System.out.println("In the check, what is the object to check");
         System.out.println(obj);
@@ -919,11 +932,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     }
     
     /**
-     * A helper function that gathers an object by its id and determines whether or not it is flagged as released.
+     * A helper function that gathers an object by its id and determines whether or not it is flagged as released.  These are internal and the objects passed in are
+     * first taken from mongo, they are not the obj provided by the application.
      * @param obj_id
      * @return 
      */
-    public boolean checkIfReleased(String obj_id){
+    private boolean checkIfReleased(String obj_id){
         BasicDBObject query = new BasicDBObject();
         BasicDBObject dbObj;
         query.append("@id", obj_id);
@@ -942,34 +956,34 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             BasicDBObject updatedObjectWithDeletedFlag;
             //processRequestBody will always return a stringified JSON object here, even if the ID provided was a string in the body.
             JSONObject received = JSONObject.fromObject(content);
-            boolean alreadyDeleted = checkIfDeleted(received.getString("@id"));
-            boolean permission = false;
-            boolean isReleased = false;
-            boolean passedAllChecks = false;
-            if(alreadyDeleted){
-                writeErrorResponse("Object for delete is already deleted.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-            }
-            else{
-                System.out.println("Check if this is released");
-                System.out.println(received);
-                isReleased = checkIfReleased(received.getString("@id")); 
-                if(isReleased){
-                    writeErrorResponse("This object is in a released state and cannot be deleted.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);  
+            if(received.containsKey("@id")){
+                query.append("@id", received.getString("@id"));
+                originalObject = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The original object out of mongo for persistance
+                boolean alreadyDeleted = checkIfDeleted(received);
+                boolean permission = false;
+                boolean isReleased = false;
+                boolean passedAllChecks = false;
+                if(alreadyDeleted){
+                    writeErrorResponse("Object for delete is already deleted.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
                 }
                 else{
-                    permission = checkApplicationPermission(received.getString("@id"));
-                    if(permission){
-                       passedAllChecks = true;
+                    System.out.println("Check if this is released");
+                    System.out.println(received);
+                    isReleased = checkIfReleased(received.getString("@id")); 
+                    if(isReleased){
+                        writeErrorResponse("This object is in a released state and cannot be deleted.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);  
                     }
                     else{
-                       writeErrorResponse("Only the application that created this object can delete it.", HttpServletResponse.SC_UNAUTHORIZED);   
+                        permission = checkApplicationPermission(received.getString("@id"));
+                        if(permission){
+                           passedAllChecks = true;
+                        }
+                        else{
+                           writeErrorResponse("Only the application that created this object can delete it.", HttpServletResponse.SC_UNAUTHORIZED);   
+                        }
                     }
                 }
-            }
-            if(passedAllChecks){ //If all checks have passed.  If not, we want to make sure their writeErrorReponse() don't stack.  
-                if(received.containsKey("@id")){
-                    query.append("@id", received.getString("@id").trim());
-                    originalObject = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The original object out of mongo for persistance
+                if(passedAllChecks){ //If all checks have passed.  If not, we want to make sure their writeErrorReponse() don't stack.  
                     updatedObjectWithDeletedFlag = (BasicDBObject) originalObject.clone(); //A clone of this mongo object for manipulation.
                     //Found the @id in the object, but does it exist in RERUM?
                     if(null != originalObject){
@@ -992,9 +1006,9 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         writeErrorResponse("The '@id' string provided for DELETE could not be found in RERUM: "+received.getString("@id")+". \n DELETE failed.", HttpServletResponse.SC_NOT_FOUND);
                     }
                 }
-                else{
-                    writeErrorResponse("Object for delete did not contain an '@id'.  Could not delete.", HttpServletResponse.SC_BAD_REQUEST);
-                }
+            }
+            else{
+                writeErrorResponse("Object for delete did not contain an '@id'.  Could not delete.", HttpServletResponse.SC_BAD_REQUEST);
             }
         }
     }
