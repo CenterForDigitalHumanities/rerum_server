@@ -29,7 +29,7 @@ documentation, but broadly, you will find:
 * `isOverwritten`  specific date (if any) this version was updated without versioning
 * `generator`  the agent for the application that authenticated to create this object
 * `isReleased`  a special flag for RERUM, indicating this version is intentionally public and immutable
-* `release`  an object containing the most recent anscestor and descendant releases
+* `releases`  an object containing the most recent anscestor and descendant releases
 * `history`  an object containing the first, previous, and immediate derivative versions of this object
 
 ## Who is to blame?
