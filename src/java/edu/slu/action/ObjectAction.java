@@ -1007,7 +1007,11 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         deletedFlag.element("time", System.currentTimeMillis());
                         updatedObjectWithDeletedFlag = (BasicDBObject) updatedObjectWithDeletedFlag.put("__deleted", deletedFlag);
                         boolean treeHealed = greenThumb(JSONObject.fromObject(originalObject));
+                        System.out.println("Passed checks, tried to heal tree.");
                         if(treeHealed){
+                            System.out.println("Tree healed, want to update.");
+                            System.out.println(originalObject);
+                            System.out.println(updatedObjectWithDeletedFlag);
                             mongoDBService.update(Constant.COLLECTION_ANNOTATION, originalObject, updatedObjectWithDeletedFlag);
                             response.setStatus(HttpServletResponse.SC_NO_CONTENT);
                         }
