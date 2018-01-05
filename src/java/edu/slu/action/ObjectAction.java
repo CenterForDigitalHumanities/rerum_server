@@ -894,6 +894,15 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     }
     
     /**
+    * check that the API keys match and that this application has permission to delete the object
+    */
+    public boolean checkApplicationPermission(String obj_id){
+        boolean permission = true;
+        //@cubap @theHabes TODO check that the API keys match and that this application has permission to delete the object
+        return permission;
+    }
+    
+    /**
      * A helper function that gathers an object by its id and determines whether or not it is flagged as released.
      * @param obj
      * @return 
@@ -933,7 +942,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             BasicDBObject updatedObjectWithDeletedFlag;
             //processRequestBody will always return a stringified JSON object here, even if the ID provided was a string in the body.
             JSONObject received = JSONObject.fromObject(content);
-            boolean alreadyDeleted = checkIfDeleted(received);
+            boolean alreadyDeleted = checkIfDeleted(received.getString("@id"));
             boolean permission = false;
             boolean isReleased = false;
             boolean passedAllChecks = false;
@@ -943,12 +952,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             else{
                 System.out.println("Check if this is released");
                 System.out.println(received);
-                isReleased = checkIfReleased(received);
+                isReleased = checkIfReleased(received.getString("@id")); 
                 if(isReleased){
                     writeErrorResponse("This object is in a released state and cannot be deleted.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);  
                 }
                 else{
-                    permission = checkApplicationPermission(received);
+                    permission = checkApplicationPermission(received.getString("@id"));
                     if(permission){
                        passedAllChecks = true;
                     }
