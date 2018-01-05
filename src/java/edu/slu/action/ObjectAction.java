@@ -359,6 +359,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             }
             catch(Exception ex){ 
                 if(deletion){
+                    System.out.println("Must delete JSON object if using application type.");
                     //We do not allow arrays of ID's for DELETE, so if it failed JSONObject parsing then this is a hard fail for DELETE.
                     //They attempted to provide a JSON object for DELETE but it was not valid JSON
                     writeErrorResponse("The data passed was not valid JSON.  Could not get @id for DELETE: \n"+requestBody, HttpServletResponse.SC_BAD_REQUEST);
@@ -381,6 +382,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         }
         else{ 
             if(deletion){ //Content type is not JSONy, looking for @id string as body
+                System.out.println("Must be deletable string id if not using JSON type");
                 while ((line = bodyReader.readLine()) != null)
                 {
                   bodyString.append(line).append("\n");
@@ -415,6 +417,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         }
         */
         content = requestBody;
+        System.out.println("Content processed into");
+        System.out.println(content);
         response.setContentType("application/json"); // We create JSON objects for the return body in most cases.  
         response.addHeader("Access-Control-Allow-Headers", "Content-Type");
         response.addHeader("Access-Control-Allow-Methods", "GET,OPTIONS,HEAD,PUT,PATCH,DELETE,POST"); // Must have OPTIONS for @webanno 
@@ -896,9 +900,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      */
     public boolean checkIfReleased(JSONObject obj){
         boolean released = false;
+        System.out.println("In the check, what is the object to check");
+        System.out.println(obj);
         if(!obj.getJSONObject("__rerum").getString("isReleased").equals("")){
             released = true;
         }
+        System.out.println("I can tell if it is released or not: "+released);
         return released;
     }
     
@@ -934,6 +941,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 writeErrorResponse("Object for delete is already deleted.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
             }
             else{
+                System.out.println("Check if this is released");
+                System.out.println(received);
                 isReleased = checkIfReleased(received);
                 if(isReleased){
                     writeErrorResponse("This object is in a released state and cannot be deleted.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);  
