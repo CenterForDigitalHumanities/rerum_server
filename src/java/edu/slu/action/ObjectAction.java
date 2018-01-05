@@ -359,7 +359,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             }
             catch(Exception ex){
                 if(deletion){
-                    System.out.println("Must delete JSON object if using application type.");
                     //We do not allow arrays of ID's for DELETE, so if it failed JSONObject parsing then this is a hard fail for DELETE.
                     //They attempted to provide a JSON object for DELETE but it was not valid JSON
                     writeErrorResponse("The data passed was not valid JSON.  Could not get @id for DELETE: \n"+requestBody, HttpServletResponse.SC_BAD_REQUEST);
@@ -382,7 +381,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         }
         else{ 
             if(deletion){ //Content type is not JSONy, looking for @id string as body
-                System.out.println("Must be deletable string id if not using JSON type");
                 while ((line = bodyReader.readLine()) != null)
                 {
                   bodyString.append(line);
@@ -391,7 +389,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 try{
                     test=JSONObject.fromObject(requestBody);
                     if(test.containsKey("@id")){
-                        System.out.println("It was JSON, but I found the @id so count it as a string.");
                         requestBody = test.getString("@id");
                         if("".equals(requestBody)){
                         //No ID provided
@@ -439,8 +436,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         }
         */
         content = requestBody;
-        System.out.println("Content processed into");
-        System.out.println(content);
         response.setContentType("application/json"); // We create JSON objects for the return body in most cases.  
         response.addHeader("Access-Control-Allow-Headers", "Content-Type");
         response.addHeader("Access-Control-Allow-Methods", "GET,OPTIONS,HEAD,PUT,PATCH,DELETE,POST"); // Must have OPTIONS for @webanno 
@@ -936,12 +931,9 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      */
     private boolean checkIfReleased(JSONObject obj){
         boolean released = false;
-        System.out.println("In the check, what is the object to check");
-        System.out.println(obj);
         if(!obj.getJSONObject("__rerum").getString("isReleased").equals("")){
             released = true;
         }
-        System.out.println("I can tell if it is released or not: "+released);
         return released;
     }
     
@@ -981,8 +973,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     writeErrorResponse("Object for delete is already deleted.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
                 }
                 else{
-                    System.out.println("Check if this is released");
-                    System.out.println(received);
                     isReleased = checkIfReleased(received.getString("@id")); 
                     if(isReleased){
                         writeErrorResponse("This object is in a released state and cannot be deleted.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);  
@@ -1002,24 +992,18 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     if(null != originalObject){
                         BasicDBObject updatedObjectWithDeletedFlag = (BasicDBObject) originalObject.copy();//A clone of this mongo object
                         JSONObject updatedWithFlag = JSONObject.fromObject(updatedObjectWithDeletedFlag);
-                        System.out.println("Did it make a copy?");
-                        System.out.println(updatedObjectWithDeletedFlag);
+                        String preserveID = updatedWithFlag.getString("@id");
                         JSONObject deletedFlag = new JSONObject(); //The __deleted flag is a JSONObject
                         deletedFlag.element("object", originalObject);
                         deletedFlag.element("deletor", "TODO"); //@cubap I assume this will be an API key?
                         deletedFlag.element("time", System.currentTimeMillis());
+                        updatedWithFlag.clear(); //We want everything wrapped in deleted except the @id.
+                        updatedWithFlag.element("@id", preserveID);
                         updatedWithFlag.element("__deleted", deletedFlag);
                         Object forMongo = JSON.parse(updatedWithFlag.toString()); //JSONObject cannot be converted to BasicDBObject
                         updatedObjectWithDeletedFlag = (BasicDBObject) forMongo;
-                        System.out.println("Is the copy OK after manipulation?");
-                        System.out.println(updatedObjectWithDeletedFlag);
                         boolean treeHealed = greenThumb(JSONObject.fromObject(originalObject));
-                        System.out.println("Passed checks, tried to heal tree.");
                         if(treeHealed){
-                            System.out.println("Tree healed, want to update.");
-                            System.out.println(originalObject);
-                            System.out.println("with");
-                            System.out.println(updatedObjectWithDeletedFlag);
                             mongoDBService.update(Constant.COLLECTION_ANNOTATION, originalObject, updatedObjectWithDeletedFlag);
                             response.setStatus(HttpServletResponse.SC_NO_CONTENT);
                         }
