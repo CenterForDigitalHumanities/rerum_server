@@ -527,7 +527,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     }
     
     /**
-     * Servlet method to find all upstream versions of an object.
+     * Servlet method to find all upstream versions of an object.  This is the action the user hits with the API.
      * If this object is `prime`, it will be the only object in the array.
      * @param  http_request Servlet request for relatives
      * @throws Exception 
@@ -536,13 +536,30 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         if(null != processRequestBody(request, true) && methodApproval(request, "get")){
             // TODO: @theHabes, this is waiting for something clever to happen.
             // This code is not correct at all, but pseudo-correct.
-            List<DBObject> ls_versions = getAllVersions(http_request);
+            JSONObject received = JSONObject.fromObject(content);
+            
+            List<DBObject> ls_versions = getAllVersions(received);
             // cubap: At this point, we have all the versions of the object (except maybe the
             // original?) and need to filter to the ones we want.
             // Getting the whole document is a mess, but if we get subdocuments of __rerum, 
             // we don't need to worry as much.
+            
+            //What are we trying to return to the user here.  Resolved objects or @ids?
+            //What is faster?  Taking this ID and resolving all previous too root, or make one call for everything for all versions and parse out what we need from memory. https://www.sitepoint.com/7-simple-speed-solutions-mongodb/
+            //What is safer?  Is it ok to gather a large collection to memory and read from it.  Is there a limit on this?  Whats our limit?
+            //ls_versions as a list cannot be trusted, so we would have to search the whole list each time (instead of a query by @id each time) which I have to assume is faster. 
+            // http://snmaynard.com/2012/10/17/things-i-wish-i-knew-about-mongodb-a-year-ago/
+            // https://www.datadoghq.com/blog/collecting-mongodb-metrics-and-statistics/
+            
+            
+            /*
+            Sorting results from MongoDB note
+            If you don’t have an index defined, MongoDB must sort the result itself, and this can be problematic when analyzing a large set of returned documents. 
+            The database imposes a 32MB memory limit on sorting operations and, in my experience, 1,000 relatively small documents is enough to push it over the edge. 
+            MongoDB won’t necessarily return an error — just an empty set of records.
+            */
 
-            JSONArray ancestors = getAllAncestors(ls_versions);
+            JSONArray ancestors = getAllAncestors(ls_versions, received.getString("@id"));
             try {
                 response.addHeader("Access-Control-Allow-Origin", "*");
                 response.setStatus(HttpServletResponse.SC_OK);
@@ -556,11 +573,11 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     }
     
     /**
-     * Filters ancestors upstream from `key object` until `prime`.
+     * Filters ancestors upstream from `key object` until `prime`.  This is the internal private function that gathers the data for the action available to the user.
      * @param  ls_versions all the versions of the key object on all branches
      * @return array of objects
      */
-    private JSONArray getAllAncestors(List<DBObject> ls_versions) {
+    private JSONArray getAllAncestors(List<DBObject> ls_versions, String startingID) {
         
         List<DBObject> ls_objects = null;
         // TODO: Iterate the List and find the original object. Then move from
@@ -575,13 +592,23 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @param  ls_versions all the versions of the key object on all branches
      * @return array of objects
      */
-    private JSONArray getAllDescendants(List<DBObject> ls_versions) {
+    public void getAllDescendants(HttpServletRequest http_request) throws Exception {
         List<DBObject> ls_objects = null;
+        JSONObject received = JSONObject.fromObject(content);
+        List<DBObject> ls_versions = getAllVersions(received);
+        JSONArray descendants = getAllDescendants(ls_versions, received.getString("@id"));
         // TODO: Iterate the List and find the original object. Then move from
         // _rerum.history.next to _rerum.history.next, building a new List
         // to return to the servlet. Consider organizing tree in arrays.
-        JSONArray objects = JSONArray.fromObject(ls_objects);
-        return objects;
+        try {
+            response.addHeader("Access-Control-Allow-Origin", "*");
+            response.setStatus(HttpServletResponse.SC_OK);
+            out = response.getWriter();
+            out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(descendants));
+        } 
+        catch (IOException ex) {
+            Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
     
     /**
@@ -591,28 +618,9 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @param  http_request Servlet request for relatives
      * @throws Exception 
      */
-    public void getAllDescendants(HttpServletRequest http_request) throws Exception{
-        if(null != processRequestBody(request, true) && methodApproval(request, "get")){
-            // TODO: @theHabes, this is waiting for something clever to happen.
-            // This code is not correct at all, but pseudo-correct.
-            JSONObject received = JSONObject.fromObject(content);
-            List<DBObject> ls_versions = getAllVersions(received);
-            // cubap: At this point, we have all the versions of the object (except maybe the
-            // original?) and need to filter to the ones we want.
-            // Getting the whole document is a mess, but if we get subdocuments of __rerum, 
-            // we don't need to worry as much.
-
-            JSONArray descendants = getAllDescendants(ls_versions);
-            try {
-                response.addHeader("Access-Control-Allow-Origin", "*");
-                response.setStatus(HttpServletResponse.SC_OK);
-                out = response.getWriter();
-                out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(descendants));
-            } 
-            catch (IOException ex) {
-                Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }
+    private JSONArray getAllDescendants(List<DBObject> ls_versions, String startingID) throws Exception{
+        JSONArray descendants = new JSONArray();
+        return descendants;
     }
     
     /**
@@ -628,6 +636,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         BasicDBObject query = new BasicDBObject();
         BasicDBObject queryForRoot = new BasicDBObject();  
         String primeID;
+         //@theHabes @cubap   So here is a pinch point.  If we index __rerum, this would be much faster.
         if(obj.getJSONObject("__rerum").getJSONObject("history").getString("prime").equals("root")){
             primeID = obj.getString("@id");
             //Get all objects whose prime is this things @id
