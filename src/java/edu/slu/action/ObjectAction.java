@@ -241,14 +241,14 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     }
     
     /**
-     * Update the history.next property of an object.  This will occur because updateObject will create a new object from a given object, and that
+     * Internal helper method to update the history.next property of an object.  This will occur because updateObject will create a new object from a given object, and that
  given object will have a new next value of the new object.  Watch out for missing __rerum or malformed __rerum.history
      * 
      * @param idForUpdate the @id of the object whose history.next needs to be updated
      * @param newNextID the @id of the newly created object to be placed in the history.next array.
      * @return Boolean altered true on success, false on fail
      */
-    public boolean alterHistoryNext (String idForUpdate, String newNextID){
+    private boolean alterHistoryNext (String idForUpdate, String newNextID){
         Boolean altered = false;
         BasicDBObject query = new BasicDBObject();
         query.append("@id", idForUpdate);
