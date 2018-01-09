@@ -527,32 +527,21 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     }
     
     /**
-     * Servlet method to find all upstream versions of an object.  This is the action the user hits with the API.
+     * Public facing servlet action to find all upstream versions of an object.  This is the action the user hits with the API.
      * If this object is `prime`, it will be the only object in the array.
      * @param  http_request Servlet request for relatives
+     * @return JSONArray to the response out for parsing by the client application.
      * @throws Exception 
      */
     public void getAllAncestors(HttpServletRequest http_request) throws Exception{
         if(null != processRequestBody(request, true) && methodApproval(request, "get")){
-            // TODO: @theHabes, this is waiting for something clever to happen.
-            // This code is not correct at all, but pseudo-correct.
-            JSONObject received = JSONObject.fromObject(content);
-            
-            List<DBObject> ls_versions = getAllVersions(received);
-            // cubap: At this point, we have all the versions of the object (except maybe the
-            // original?) and need to filter to the ones we want.
-            // Getting the whole document is a mess, but if we get subdocuments of __rerum, 
-            // we don't need to worry as much.
-            
-            //What are we trying to return to the user here.  Resolved objects or @ids?
-            //What is faster?  Taking this ID and resolving all previous too root, or make one call for everything for all versions and parse out what we need from memory. 
-            //What is safer?  Is it ok to gather a large collection to memory and read from it.  Is there a limit on this?  Whats our limit?
-            //ls_versions as a list cannot be trusted, so we would have to search the whole list each time (instead of a query by @id each time) which I have to assume is faster. 
-            // http://snmaynard.com/2012/10/17/things-i-wish-i-knew-about-mongodb-a-year-ago/
-            // https://www.datadoghq.com/blog/collecting-mongodb-metrics-and-statistics/
-            // https://www.sitepoint.com/7-simple-speed-solutions-mongodb/
-            
-            JSONArray ancestors = getAllAncestors(ls_versions, received, new JSONArray());
+            JSONObject received = JSONObject.fromObject(content);  //All we can trust is that this is a JSONObject with an @id.
+            BasicDBObject queryForRoot = new BasicDBObject();
+            queryForRoot.append("@id", received.getString("@id"));
+            BasicDBObject mongo_obj = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, queryForRoot);
+            JSONObject safe_received = JSONObject.fromObject(mongo_obj); //We can trust this is the object as it exists in mongo
+            List<DBObject> ls_versions = getAllVersions(safe_received);
+            JSONArray ancestors = getAllAncestors(ls_versions, safe_received, new JSONArray());
             try {
                 response.addHeader("Access-Control-Allow-Origin", "*");
                 response.setStatus(HttpServletResponse.SC_OK);
@@ -566,50 +555,37 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     }
     
     /**
-     * Filters ancestors upstream from `key object` until `prime`.  This is the internal private function that gathers the data for the action available to the user.
+     * Internal method to filter ancestors upstream from `key object` until `root`. It should always receive a reliable object, not one from the user.
      * This list WILL NOT contains the keyObj.
      * @param  ls_versions all the versions of the key object on all branches
      * @param keyObj The object from which to start looking for ancestors.  It is not included in the return. 
+     * @param discoveredAncestors The array storing the ancestor objects discovered by the recursion.
      * @return array of objects
      */
     private JSONArray getAllAncestors(List<DBObject> ls_versions, JSONObject keyObj, JSONArray discoveredAncestors) {
         String previousID = keyObj.getJSONObject("__rerum").getJSONObject("history").getString("previous"); //The first previous to look for
         String rootCheck = keyObj.getJSONObject("__rerum").getJSONObject("history").getString("prime"); //Make sure the keyObj is not root.
-        DBObject previousObj;
-        List<DBObject> ls_objects = null;
-        for(int n=0; n<ls_versions.size(); n++){
-            DBObject thisVersion = ls_versions.get(n);
-            JSONObject thisObject = JSONObject.fromObject(thisVersion);
-            //@cubap what should we do if we detect malformed objects here?
-            /*
-            try{
-                
-            }
-            catch (Exception e){
-                writeErrorResponse("Could not gather the ancestors.  One of the nodes did not contains a proper history object.",  HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-                break;
-            }
-            */
+        //@cubap what should I do if I find malformed objects here?  Do we need a try-catch?
+        for (DBObject thisVersion : ls_versions) {
+            JSONObject thisObject = JSONObject.fromObject(thisVersion);      
             if("root".equals(rootCheck)){
                 //Check if we found root when we got the last object out of the list.  If so, we are done.  If keyObj was root, it will be detected here.  Break out. 
-                System.out.println("END SCENARIO!");
                 break;
             }
             else if(thisObject.getString("@id").equals(previousID)){
-                //If this object's @id is equal to the previous from the last object we found, its the one we want.  Look to its previous to keep building the ancestors Array.  
-                
+                //If this object's @id is equal to the previous from the last object we found, its the one we want.  Look to its previous to keep building the ancestors Array.   
                 previousID = thisObject.getJSONObject("__rerum").getJSONObject("history").getString("previous");
                 rootCheck = thisObject.getJSONObject("__rerum").getJSONObject("history").getString("prime");
-                
-                if("".equals(previousID) && !"root".equals(thisObject)){
+                //@cubap what should I do if I find malformed objects here?  Do we need a try-catch?
+                if("".equals(previousID) && !"root".equals(rootCheck)){
                     //previous is blank and this object is not the root.  This is gunna trip it up.  
-                    //@cubap Yikes this is a problem.  This branch on the tree is broken...what should we tell the user?
-                    return new JSONArray();
+                    //@cubap Yikes this is a problem.  This branch on the tree is broken...what should we tell the user?  How should we handle?
+                    
+                    break;
                 }
                 else{
-                    //either previous had a value or we found root and it will be caught in the next iteration.  Proceed with confidence. 
-                    previousObj = (DBObject) JSON.parse(thisVersion.toString());
-                    discoveredAncestors.add(previousObj);
+                    discoveredAncestors.add(thisObject);
+                    //Recurse with what you have discovered so far and this object as the new keyObj
                     getAllAncestors(ls_versions, thisObject, discoveredAncestors);
                     break;
                 }
@@ -619,64 +595,57 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     }
     
     /**
-     * Filters for all versions downstream from `key object`.
-     * @param  ls_versions all the versions of the key object on all branches
-     * @return array of objects
+     * Public facing servlet to gather for all versions downstream from a provided `key object`.
+     * @param  http_request The HTTP request made for the API
+     * @return JSONArray to the response out for parsing by the client application.
      */
     public void getAllDescendants(HttpServletRequest http_request) throws Exception {
-        List<DBObject> ls_objects = null;
-        JSONObject received = JSONObject.fromObject(content);
-        List<DBObject> ls_versions = getAllVersions(received);
-        JSONArray descendants = getAllDescendants(ls_versions, received, new JSONArray());
-        // TODO: Iterate the List and find the original object. Then move from
-        // _rerum.history.next to _rerum.history.next, building a new List
-        // to return to the servlet. Consider organizing tree in arrays.
-        try {
-            response.addHeader("Access-Control-Allow-Origin", "*");
-            response.setStatus(HttpServletResponse.SC_OK);
-            out = response.getWriter();
-            out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(descendants));
-        } 
-        catch (IOException ex) {
-            Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
+        if(null != processRequestBody(request, true) && methodApproval(request, "get")){
+            JSONObject received = JSONObject.fromObject(content);  //All we can trust is that this is a JSONObject with an @id.
+            BasicDBObject queryForRoot = new BasicDBObject();
+            queryForRoot.append("@id", received.getString("@id"));
+            BasicDBObject mongo_obj = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, queryForRoot);
+            JSONObject safe_received = JSONObject.fromObject(mongo_obj); //We can trust this is the object as it exists in mongo
+            List<DBObject> ls_versions = getAllVersions(safe_received);
+            JSONArray descendants = getAllDescendants(ls_versions, safe_received, new JSONArray());
+            try {
+                response.addHeader("Access-Control-Allow-Origin", "*");
+                response.setStatus(HttpServletResponse.SC_OK);
+                out = response.getWriter();
+                out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(descendants));
+            } 
+            catch (IOException ex) {
+                Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
     }
     
     /**
-     * Servlet method to find all downstream versions of an object.  
-     * If this object is the last, the return will be null.
-     * @TODO this needs to return an array of JSONObjects.  It needs to support a request by string id or object with {@id:id} in it.
-     * @param  http_request Servlet request for relatives
-     * @throws Exception 
+     * Internal method to find all downstream versions of an object.  It should always receive a reliable object, not one from the user.
+     * If this object is the last, the return will be an empty JSONArray.  The keyObj WILL NOT be a part of the array.  
+     * @param  ls_versions All the given versions, including root, of a provided object.
+     * @param  keyObj The provided object
+     * @param  discoveredDescendants The array storing the descendants objects discovered by the recursion.
+     * @return All the objects that were deemed descendants in a JSONArray
      */
 
     private JSONArray getAllDescendants(List<DBObject> ls_versions, JSONObject keyObj, JSONArray discoveredDescendants){
         JSONArray nextIDarr = new JSONArray();
-        //var helperArr = [];
-        System.out.println("What is end scenario for getting desc on "+keyObj.getString("@id")+"?");
-        System.out.println(keyObj.getJSONObject("__rerum").getJSONObject("history").getJSONArray("next"));
         if(keyObj.getJSONObject("__rerum").getJSONObject("history").getJSONArray("next").size() > 0){
             //essentially, do nothing.  This branch is done.
-            System.out.println("END SCENARIO!");
         }
         else{
             //The provided object has nexts, get them to add them to known descendants then check their descendants.
             nextIDarr = keyObj.getJSONObject("__rerum").getJSONObject("history").getJSONArray("next");
         }
-        System.out.println("Nexts: "+nextIDarr);
+        //@cubap what should I do if I find malformed objects here?  Do we need a try-catch?
         for(int m=0; m<nextIDarr.size(); m++){ //For each id in the array
             String nextID = nextIDarr.getString(m);
-            //System.out.println("2");
-            for(int n=0; n<ls_versions.size(); n++){ //Check if obj[@id] is equal to the id from the array
-                DBObject thisVersion = ls_versions.get(n);
+            for (DBObject thisVersion : ls_versions) {
                 JSONObject thisObject = JSONObject.fromObject(thisVersion);
-                System.out.println("Main does "+thisObject.getString("@id")+" == "+nextID);
-                if(thisObject.getString("@id") == nextID){ //If it is equal, add it to the known descendants
-                    //System.out.println("Push "+nextID+" into discovered arr.");
-                    System.out.println("Push this object into discovered array "+thisObject.getString("@id"));
-                    //helperArr.concat(thisVersion["next"]);
+                if(thisObject.getString("@id").equals(nextID)){ //If it is equal, add it to the known descendants
                     discoveredDescendants.add(thisObject);
-                    System.out.println("Now recurse on "+thisObject.getString("@id"));
+                    //Recurse with what you have discovered so far and this object as the new keyObj
                     getAllDescendants(ls_versions, thisObject, discoveredDescendants);
                     break;
                 }
@@ -686,10 +655,10 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     }
     
     /**
-     * Loads all derivative versions from the `prime` object. Used to resolve the history tree to memory for reads from memory.
-     * This means we don't make O(n) calls to the database for objects, we do it to a List.  
-     * in other methods. May be replaced later with more optimized logic.
-     * @param  http_request Servlet request for relatives
+     * Internal private method to loads all derivative versions from the `root` object. It should always receive a reliable object, not one from the user.
+     * Used to resolve the history tree for storing into memory.
+     * @param  obj A JSONObject to find all versions of.  If it is root, make sure to prepend it to the result.  If it isn't root, query for root from the ID
+     * found in prime using that result as a reliable root object. 
      * @return All versions from the store of the object in the request
      * @throws Exception 
      */
@@ -699,13 +668,14 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         BasicDBObject query = new BasicDBObject();
         BasicDBObject queryForRoot = new BasicDBObject();  
         String primeID;
-         //@theHabes @cubap   So here is a pinch point.  If we index __rerum, this would be much faster.
+        //@cubap what should I do if I find malformed objects here?  Do we need a try-catch?
         if(obj.getJSONObject("__rerum").getJSONObject("history").getString("prime").equals("root")){
             primeID = obj.getString("@id");
             //Get all objects whose prime is this things @id
             query.append("__rerum.history.prime", primeID);
             ls_versions = mongoDBService.findByExample(Constant.COLLECTION_ANNOTATION, query);
             rootObj = (BasicDBObject) JSON.parse(obj.toString()); 
+            //Prepend the rootObj we know about
             ls_versions.add(0, rootObj);
         }
         else{
@@ -715,9 +685,9 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             ls_versions = mongoDBService.findByExample(Constant.COLLECTION_ANNOTATION, query);
             queryForRoot.append("@id", primeID);
             rootObj = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, queryForRoot);
+            //Prepend the rootObj whose ID we knew and we queried for
             ls_versions.add(0, rootObj);
         }
-        // get reliable copy of key object
         return ls_versions;
     }
         
@@ -927,16 +897,18 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     
     /**
      * A helper function that determines whether or not an object has been flagged as deleted.
+     * This should only be fed reliable objects from mongo
      * @param obj
      * @return A boolean representing the truth.
      */
-    public boolean checkIfDeleted(JSONObject obj){
+    private boolean checkIfDeleted(JSONObject obj){
         boolean deleted = obj.containsKey("__deleted");
         return deleted;
     }
     
     /**
-     * A helper function that gathers an object by its id and determines whether or not it is flagged as deleted.
+     * A public facing servlet to determine if a given object ID is for a deleted object.
+     * @FIXME make the parameter the http_request, get the @id, get from mongo and feed to private version.
      * @param obj_id
      * @return A boolean representing the truth.
      */
@@ -953,18 +925,19 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     /**
     * check that the API keys match and that this application has permission to delete the object
     */
-    public boolean checkApplicationPermission(JSONObject obj){
+    private boolean checkApplicationPermission(JSONObject obj){
         boolean permission = true;
         //@cubap @theHabes TODO check that the API keys match and that this application has permission to delete the object
         return permission;
     }
     
     /**
-     * A helper function that gathers an object by its id and determines whether or not it is flagged as released.
+     * An internal helper function to check if an object is released.
+     * This should only be fed reliable objects from mongo.
      * @param obj
      * @return 
      */
-    public boolean checkIfReleased(JSONObject obj){
+    private boolean checkIfReleased(JSONObject obj){
         boolean released = false;
         if(!obj.getJSONObject("__rerum").getString("isReleased").equals("")){
             released = true;
@@ -973,7 +946,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     }
     
     /**
-     * A helper function that gathers an object by its id and determines whether or not it is flagged as released.
+     * Public facing servlet that checks whether the provided object id is of a released object.
      * @param obj_id
      * @return 
      */
@@ -987,7 +960,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     }
        
     /**
-     * Delete a given annotation. 
+     * Public facing servlet to delete a given annotation. 
      */
     public void deleteObject() throws IOException, ServletException, Exception{
         if(null!=processRequestBody(request, true) && methodApproval(request, "delete")){ 
@@ -996,35 +969,38 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             BasicDBObject updatedObjectWithDeletedFlag;
             //processRequestBody will always return a stringified JSON object here, even if the ID provided was a string in the body.
             JSONObject received = JSONObject.fromObject(content);
-            boolean alreadyDeleted = checkIfDeleted(received);
-            boolean permission = false;
-            boolean isReleased = false;
-            boolean passedAllChecks = false;
-            if(alreadyDeleted){
-                writeErrorResponse("Object for delete is already deleted.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-            }
-            else{
-                isReleased = checkIfReleased(received);
-                if(isReleased){
-                    writeErrorResponse("This object is in a released state and cannot be deleted.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);  
+            JSONObject safe_received;
+            if(received.containsKey("@id")){
+                query.append("@id", received.getString("@id"));
+                BasicDBObject mongo_obj = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query);
+                safe_received = JSONObject.fromObject(mongo_obj); //We can trust this is the object as it exists in mongo
+                boolean alreadyDeleted = checkIfDeleted(safe_received);
+                boolean permission = false;
+                boolean isReleased = false;
+                boolean passedAllChecks = false;
+                if(alreadyDeleted){
+                    writeErrorResponse("Object for delete is already deleted.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
                 }
                 else{
-                    permission = checkApplicationPermission(received);
-                    if(permission){
-                       passedAllChecks = true;
+                    isReleased = checkIfReleased(safe_received);
+                    if(isReleased){
+                        writeErrorResponse("This object is in a released state and cannot be deleted.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);  
                     }
                     else{
-                       writeErrorResponse("Only the application that created this object can delete it.", HttpServletResponse.SC_UNAUTHORIZED);   
+                        permission = checkApplicationPermission(safe_received);
+                        if(permission){
+                           passedAllChecks = true;
+                        }
+                        else{
+                           writeErrorResponse("Only the application that created this object can delete it.", HttpServletResponse.SC_UNAUTHORIZED);   
+                        }
                     }
                 }
-            }
-            if(passedAllChecks){ //If all checks have passed.  If not, we want to make sure their writeErrorReponse() don't stack.  
-                if(received.containsKey("@id")){
-                    query.append("@id", received.getString("@id").trim());
-                    originalObject = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The original object out of mongo for persistance
-                    updatedObjectWithDeletedFlag = (BasicDBObject) originalObject.clone(); //A clone of this mongo object for manipulation.
+                if(passedAllChecks){ //If all checks have passed.  If not, we want to make sure their writeErrorReponse() don't stack.  
+                    originalObject = (BasicDBObject) JSON.parse(safe_received.toString()); //The original object out of mongo for persistance
                     //Found the @id in the object, but does it exist in RERUM?
                     if(null != originalObject){
+                        updatedObjectWithDeletedFlag = (BasicDBObject) originalObject.clone(); //A clone of this mongo object for manipulation.
                         JSONObject deletedFlag = new JSONObject(); //The __deleted flag is a JSONObject
                         deletedFlag.element("object", originalObject);
                         deletedFlag.element("deletor", "TODO"); //@cubap I assume this will be an API key?
@@ -1041,23 +1017,24 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         }
                     }
                     else{
-                        writeErrorResponse("The '@id' string provided for DELETE could not be found in RERUM: "+received.getString("@id")+". \n DELETE failed.", HttpServletResponse.SC_NOT_FOUND);
+                        writeErrorResponse("The '@id' string provided for DELETE could not be found in RERUM: "+safe_received.getString("@id")+". \n DELETE failed.", HttpServletResponse.SC_NOT_FOUND);
                     }
                 }
-                else{
-                    writeErrorResponse("Object for delete did not contain an '@id'.  Could not delete.", HttpServletResponse.SC_BAD_REQUEST);
-                }
+            }
+            else{
+                writeErrorResponse("Object for delete did not contain an '@id'.  Could not delete.", HttpServletResponse.SC_BAD_REQUEST);
             }
         }
     }
     
     /**
-     * When an object is deleted, the history tree around it will need amending.  This function acts as the green thumb for tree trimming.
+     * An internal method to handle when an object is deleted and the history tree around it will need amending.  
+     * This function should only be handed a reliable object from mongo.
      * 
      * @param obj A JSONObject of the object being deleted.
      * @return A boolean representing whether or not this function succeeded. 
      */
-     public boolean greenThumb(JSONObject obj){
+     private boolean greenThumb(JSONObject obj){
          boolean success = true;
          String previous_id = "";
          String prime_id = "";
@@ -1142,24 +1119,20 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      }
      
      /**
-     * All descendants of this JSONObject must take on a new history.prime of this object's ID
-     * 
+     * An internal method to make all descendants of this JSONObject take on a new history.prime = this object's @id
+     * This should only be fed a reliable object from mongo
      * @param obj A new prime object whose descendants must take on its id
      */
-     public boolean newTreePrime(JSONObject obj){
+     private boolean newTreePrime(JSONObject obj){
          boolean success = true;
          String primeID = obj.getString("@id");
-         //TODO
          JSONArray descendants = new JSONArray();
-         //JSONArray descendants = getAllDescendants(obj);
          for(int n=0; n< descendants.size(); n++){
              JSONObject descendantForUpdate = descendants.getJSONObject(n);
              JSONObject originalDescendant = descendants.getJSONObject(n);
-             Object orig = JSON.parse(originalDescendant.toString()); //JSONObject cannot be converted to BasicDBObject
-             BasicDBObject objToUpdate = (BasicDBObject)orig;
+             BasicDBObject objToUpdate = (BasicDBObject)JSON.parse(originalDescendant.toString());;
              descendantForUpdate.getJSONObject("__rerum").getJSONObject("history").element("prime", primeID);
-             Object forMongo = JSON.parse(descendantForUpdate.toString()); //JSONObject cannot be converted to BasicDBObject
-             BasicDBObject objWithUpdate = (BasicDBObject)forMongo;
+             BasicDBObject objWithUpdate = (BasicDBObject)JSON.parse(descendantForUpdate.toString());
              mongoDBService.update(Constant.COLLECTION_ANNOTATION, objToUpdate, objWithUpdate);
          }
          return success;
