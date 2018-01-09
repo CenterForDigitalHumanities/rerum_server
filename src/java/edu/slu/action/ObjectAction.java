@@ -552,7 +552,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             // https://www.datadoghq.com/blog/collecting-mongodb-metrics-and-statistics/
             // https://www.sitepoint.com/7-simple-speed-solutions-mongodb/
             
-            JSONArray ancestors = getAllAncestors(ls_versions, received);
+            JSONArray ancestors = getAllAncestors(ls_versions, received, new JSONArray());
             try {
                 response.addHeader("Access-Control-Allow-Origin", "*");
                 response.setStatus(HttpServletResponse.SC_OK);
@@ -611,6 +611,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     previousObj = (DBObject) JSON.parse(thisVersion.toString());
                     discoveredAncestors.add(previousObj);
                     getAllAncestors(ls_versions, thisObject, discoveredAncestors);
+                    break;
                 }
             }                  
         }
@@ -677,6 +678,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     discoveredDescendants.add(thisObject);
                     System.out.println("Now recurse on "+thisObject.getString("@id"));
                     getAllDescendants(ls_versions, thisObject, discoveredDescendants);
+                    break;
                 }
             }
         }
