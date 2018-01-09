@@ -545,21 +545,14 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             // we don't need to worry as much.
             
             //What are we trying to return to the user here.  Resolved objects or @ids?
-            //What is faster?  Taking this ID and resolving all previous too root, or make one call for everything for all versions and parse out what we need from memory. https://www.sitepoint.com/7-simple-speed-solutions-mongodb/
+            //What is faster?  Taking this ID and resolving all previous too root, or make one call for everything for all versions and parse out what we need from memory. 
             //What is safer?  Is it ok to gather a large collection to memory and read from it.  Is there a limit on this?  Whats our limit?
             //ls_versions as a list cannot be trusted, so we would have to search the whole list each time (instead of a query by @id each time) which I have to assume is faster. 
             // http://snmaynard.com/2012/10/17/things-i-wish-i-knew-about-mongodb-a-year-ago/
             // https://www.datadoghq.com/blog/collecting-mongodb-metrics-and-statistics/
+            // https://www.sitepoint.com/7-simple-speed-solutions-mongodb/
             
-            
-            /*
-            Sorting results from MongoDB note
-            If you don’t have an index defined, MongoDB must sort the result itself, and this can be problematic when analyzing a large set of returned documents. 
-            The database imposes a 32MB memory limit on sorting operations and, in my experience, 1,000 relatively small documents is enough to push it over the edge. 
-            MongoDB won’t necessarily return an error — just an empty set of records.
-            */
-
-            JSONArray ancestors = getAllAncestors(ls_versions, received.getString("@id"));
+            JSONArray ancestors = getAllAncestors(ls_versions, received);
             try {
                 response.addHeader("Access-Control-Allow-Origin", "*");
                 response.setStatus(HttpServletResponse.SC_OK);
@@ -574,17 +567,54 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     
     /**
      * Filters ancestors upstream from `key object` until `prime`.  This is the internal private function that gathers the data for the action available to the user.
+     * This list WILL NOT contains the keyObj.
      * @param  ls_versions all the versions of the key object on all branches
+     * @param keyObj The object from which to start looking for ancestors.  It is not included in the return. 
      * @return array of objects
      */
-    private JSONArray getAllAncestors(List<DBObject> ls_versions, String startingID) {
-        
+    private JSONArray getAllAncestors(List<DBObject> ls_versions, JSONObject keyObj, JSONArray discoveredAncestors) {
+        String previousID = keyObj.getJSONObject("__rerum").getJSONObject("history").getString("previous"); //The first previous to look for
+        String rootCheck = keyObj.getJSONObject("__rerum").getJSONObject("history").getString("prime"); //Make sure the keyObj is not root.
+        DBObject previousObj;
         List<DBObject> ls_objects = null;
-        // TODO: Iterate the List and find the original object. Then move from
-        // _rerum.history.previous to _rerum.history.previous, building a new List
-        // to return to the servlet. Stop at "root".
-        JSONArray objects = JSONArray.fromObject(ls_objects);
-        return objects;
+        for(int n=0; n<ls_versions.size(); n++){
+            DBObject thisVersion = ls_versions.get(n);
+            JSONObject thisObject = JSONObject.fromObject(thisVersion);
+            //@cubap what should we do if we detect malformed objects here?
+            /*
+            try{
+                
+            }
+            catch (Exception e){
+                writeErrorResponse("Could not gather the ancestors.  One of the nodes did not contains a proper history object.",  HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+                break;
+            }
+            */
+            if("root".equals(rootCheck)){
+                //Check if we found root when we got the last object out of the list.  If so, we are done.  If keyObj was root, it will be detected here.  Break out. 
+                System.out.println("END SCENARIO!");
+                break;
+            }
+            else if(thisObject.getString("@id").equals(previousID)){
+                //If this object's @id is equal to the previous from the last object we found, its the one we want.  Look to its previous to keep building the ancestors Array.  
+                
+                previousID = thisObject.getJSONObject("__rerum").getJSONObject("history").getString("previous");
+                rootCheck = thisObject.getJSONObject("__rerum").getJSONObject("history").getString("prime");
+                
+                if("".equals(previousID) && !"root".equals(thisObject)){
+                    //previous is blank and this object is not the root.  This is gunna trip it up.  
+                    //@cubap Yikes this is a problem.  This branch on the tree is broken...what should we tell the user?
+                    return new JSONArray();
+                }
+                else{
+                    //either previous had a value or we found root and it will be caught in the next iteration.  Proceed with confidence. 
+                    previousObj = (DBObject) JSON.parse(thisVersion.toString());
+                    discoveredAncestors.add(previousObj);
+                    getAllAncestors(ls_versions, thisObject, discoveredAncestors);
+                }
+            }                  
+        }
+        return discoveredAncestors;
     }
     
     /**
@@ -596,7 +626,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         List<DBObject> ls_objects = null;
         JSONObject received = JSONObject.fromObject(content);
         List<DBObject> ls_versions = getAllVersions(received);
-        JSONArray descendants = getAllDescendants(ls_versions, received.getString("@id"));
+        JSONArray descendants = getAllDescendants(ls_versions, received, new JSONArray());
         // TODO: Iterate the List and find the original object. Then move from
         // _rerum.history.next to _rerum.history.next, building a new List
         // to return to the servlet. Consider organizing tree in arrays.
@@ -618,13 +648,44 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @param  http_request Servlet request for relatives
      * @throws Exception 
      */
-    private JSONArray getAllDescendants(List<DBObject> ls_versions, String startingID) throws Exception{
-        JSONArray descendants = new JSONArray();
-        return descendants;
+
+    private JSONArray getAllDescendants(List<DBObject> ls_versions, JSONObject keyObj, JSONArray discoveredDescendants){
+        JSONArray nextIDarr = new JSONArray();
+        //var helperArr = [];
+        System.out.println("What is end scenario for getting desc on "+keyObj.getString("@id")+"?");
+        System.out.println(keyObj.getJSONObject("__rerum").getJSONObject("history").getJSONArray("next"));
+        if(keyObj.getJSONObject("__rerum").getJSONObject("history").getJSONArray("next").size() > 0){
+            //essentially, do nothing.  This branch is done.
+            System.out.println("END SCENARIO!");
+        }
+        else{
+            //The provided object has nexts, get them to add them to known descendants then check their descendants.
+            nextIDarr = keyObj.getJSONObject("__rerum").getJSONObject("history").getJSONArray("next");
+        }
+        System.out.println("Nexts: "+nextIDarr);
+        for(int m=0; m<nextIDarr.size(); m++){ //For each id in the array
+            String nextID = nextIDarr.getString(m);
+            //System.out.println("2");
+            for(int n=0; n<ls_versions.size(); n++){ //Check if obj[@id] is equal to the id from the array
+                DBObject thisVersion = ls_versions.get(n);
+                JSONObject thisObject = JSONObject.fromObject(thisVersion);
+                System.out.println("Main does "+thisObject.getString("@id")+" == "+nextID);
+                if(thisObject.getString("@id") == nextID){ //If it is equal, add it to the known descendants
+                    //System.out.println("Push "+nextID+" into discovered arr.");
+                    System.out.println("Push this object into discovered array "+thisObject.getString("@id"));
+                    //helperArr.concat(thisVersion["next"]);
+                    discoveredDescendants.add(thisObject);
+                    System.out.println("Now recurse on "+thisObject.getString("@id"));
+                    getAllDescendants(ls_versions, thisObject, discoveredDescendants);
+                }
+            }
+        }
+        return discoveredDescendants;
     }
     
     /**
-     * Loads all derivative versions from the `prime` object. Used for filtering
+     * Loads all derivative versions from the `prime` object. Used to resolve the history tree to memory for reads from memory.
+     * This means we don't make O(n) calls to the database for objects, we do it to a List.  
      * in other methods. May be replaced later with more optimized logic.
      * @param  http_request Servlet request for relatives
      * @return All versions from the store of the object in the request
