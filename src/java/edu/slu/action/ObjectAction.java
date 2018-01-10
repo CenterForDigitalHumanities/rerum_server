@@ -849,13 +849,13 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         }
     }
     
-    private JSONObject setVal(JSONObject obj){
+    private JSONObject setKey(JSONObject obj){
         JSONObject newObjectState = new JSONObject();
         
         return newObjectState;
     }
     
-    private JSONObject unsetVal(JSONObject obj){
+    private JSONObject unsetKey(JSONObject obj){
         JSONObject newObjectState = new JSONObject();
         
         return newObjectState;
