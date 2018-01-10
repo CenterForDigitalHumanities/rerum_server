@@ -33,7 +33,7 @@
         <!-- INTERCEPTOR -->
         <interceptors>
             <interceptor name="requestServerAuthenticationFilter" class="edu.slu.filter.RequestServerAuthenticationFilter">
-                <param name="includeMethods">saveNewObject, batchSaveFromCopy, updateObject, deleteObject </param>
+                <param name="includeMethods">saveNewObject, batchSaveFromCopy, patchUpdateObject, putUpdateObject, patchSetObject, deleteObject </param>
             </interceptor>
             <interceptor name="getRequestClientInfoRecorder" class="edu.slu.filter.GetRequestClientInfoRecorder">
                 <param name="includeMethods">getbyProperties, getByID, getAllAncestors, getAllDescendants, getAllVersions</param>
@@ -59,7 +59,11 @@
         <action name="getAllAncestors" class="objectAction" method="getAllAncestors"></action>
         <action name="getAllDescendents" class="objectAction" method="getAllDescendents"></action>
         <action name="create" class="objectAction" method="saveNewObject"></action>
-        <action name="update" class="objectAction" method="updateObject"></action>
+        <!--@cubap @theHabes rewrite API to accomodate this change -->
+        <action name="patch_update" class="objectAction" method="patchUpdateObject"></action>
+        <action name="put_update" class="objectAction" method="putUpdateObject"></action>
+        <action name="set_update" class="objectAction" method="setUpdateObject"></action>
+        <!-- -->
         <action name="delete" class="objectAction" method="deleteObject"></action>
     </package>
     
