@@ -242,7 +242,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     
     /**
      * Internal helper method to update the history.next property of an object.  This will occur because updateObject will create a new object from a given object, and that
- given object will have a new next value of the new object.  Watch out for missing __rerum or malformed __rerum.history
+       given object will have a new next value of the new object.  Watch out for missing __rerum or malformed __rerum.history
      * 
      * @param idForUpdate the @id of the object whose history.next needs to be updated
      * @param newNextID the @id of the newly created object to be placed in the history.next array.
@@ -262,7 +262,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 mongoDBService.update(Constant.COLLECTION_ANNOTATION, myAnno, myAnnoWithHistoryUpdate); //update in mongo
                 altered = true;
             }
-            catch(Exception e){ //__rerum array does not exist or history object malformed.  What should I do?
+            catch(Exception e){ 
+                //@cubap @theHabes #44.  What if obj does not have __rerum or __rerum.history
                 writeErrorResponse("This object does not contain the proper history property.  It may not be from RERUM, the update failed.", HttpServletResponse.SC_CONFLICT);
             }
         }
@@ -565,7 +566,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     private JSONArray getAllAncestors(List<DBObject> ls_versions, JSONObject keyObj, JSONArray discoveredAncestors) {
         String previousID = keyObj.getJSONObject("__rerum").getJSONObject("history").getString("previous"); //The first previous to look for
         String rootCheck = keyObj.getJSONObject("__rerum").getJSONObject("history").getString("prime"); //Make sure the keyObj is not root.
-        //@cubap what should I do if I find malformed objects here?  Do we need a try-catch?
+        //@cubap @theHabes #44.  What if obj does not have __rerum or __rerum.history
         for (DBObject thisVersion : ls_versions) {
             JSONObject thisObject = JSONObject.fromObject(thisVersion);      
             if("root".equals(rootCheck)){
@@ -576,7 +577,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 //If this object's @id is equal to the previous from the last object we found, its the one we want.  Look to its previous to keep building the ancestors Array.   
                 previousID = thisObject.getJSONObject("__rerum").getJSONObject("history").getString("previous");
                 rootCheck = thisObject.getJSONObject("__rerum").getJSONObject("history").getString("prime");
-                //@cubap what should I do if I find malformed objects here?  Do we need a try-catch?
                 if("".equals(previousID) && !"root".equals(rootCheck)){
                     //previous is blank and this object is not the root.  This is gunna trip it up.  
                     //@cubap Yikes this is a problem.  This branch on the tree is broken...what should we tell the user?  How should we handle?
@@ -631,14 +631,14 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
 
     private JSONArray getAllDescendants(List<DBObject> ls_versions, JSONObject keyObj, JSONArray discoveredDescendants){
         JSONArray nextIDarr = new JSONArray();
+        //@cubap @theHabes #44.  What if obj does not have __rerum or __rerum.history
         if(keyObj.getJSONObject("__rerum").getJSONObject("history").getJSONArray("next").size() > 0){
             //essentially, do nothing.  This branch is done.
         }
         else{
             //The provided object has nexts, get them to add them to known descendants then check their descendants.
             nextIDarr = keyObj.getJSONObject("__rerum").getJSONObject("history").getJSONArray("next");
-        }
-        //@cubap what should I do if I find malformed objects here?  Do we need a try-catch?
+        }      
         for(int m=0; m<nextIDarr.size(); m++){ //For each id in the array
             String nextID = nextIDarr.getString(m);
             for (DBObject thisVersion : ls_versions) {
@@ -668,7 +668,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         BasicDBObject query = new BasicDBObject();
         BasicDBObject queryForRoot = new BasicDBObject();  
         String primeID;
-        //@cubap what should I do if I find malformed objects here?  Do we need a try-catch?
+        //@cubap @theHabes #44.  What if obj does not have __rerum or __rerum.history
         if(obj.getJSONObject("__rerum").getJSONObject("history").getString("prime").equals("root")){
             primeID = obj.getString("@id");
             //Get all objects whose prime is this things @id
@@ -939,6 +939,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      */
     private boolean checkIfReleased(JSONObject obj){
         boolean released = false;
+        //@cubap @theHabes #44.  What if obj does not have __rerum
         if(!obj.getJSONObject("__rerum").getString("isReleased").equals("")){
             released = true;
         }
@@ -1046,7 +1047,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             next_ids = obj.getJSONObject("__rerum").getJSONObject("history").getJSONArray("next");
          }
          catch(Exception e){
-             //@cubap @theHabes FIXME this should probably be handled separately and gracefully and have its own writeErrorReponse() that doesn't stack with deleteObject().  @see treeHealed
+            //@cubap @theHabes #44.  What if obj does not have __rerum or __rerum.history            
             previous_id = ""; //This ensures detectedPrevious is false
             prime_id = ""; //This ensures isRoot is false
             next_ids = new JSONArray(); //This ensures the loop below does not run.
