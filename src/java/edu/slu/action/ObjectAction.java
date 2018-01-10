@@ -849,12 +849,41 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         }
     }
     
-    public void setVal(){
+    private JSONObject setVal(JSONObject obj){
+        JSONObject newObjectState = new JSONObject();
+        
+        return newObjectState;
+    }
+    
+    private JSONObject unsetVal(JSONObject obj){
+        JSONObject newObjectState = new JSONObject();
+        
+        return newObjectState;
         
     }
     
-    public void unsetVal(){
-        
+    /**
+     * Public facing servlet to PATCH set or unset values of an existing RERUM object.
+     * @param  http_request The HTTP request made for the API
+     * @return JSONArray to the response out for parsing by the client application.
+     */
+    public void set(HttpServletRequest http_request)throws IOException, ServletException, Exception{
+        //TODO fix methodApproval to separate PUT and PATCH, route set and patch_update to PATCH.
+        if(null != processRequestBody(request, true) && methodApproval(request, "set")){
+            
+        }
+    }
+    
+    /**
+     * Public facing servlet to PATCH set or unset values of an existing RERUM object.
+     * @param  http_request The HTTP request made for the API
+     * @return JSONArray to the response out for parsing by the client application.
+     */
+    public void putUpdateObject(HttpServletRequest http_request)throws IOException, ServletException, Exception{
+        //TODO fix methodApproval to separate PUT and PATCH, route set and patch_update to PATCH.
+        if(null != processRequestBody(request, true) && methodApproval(request, "put_update")){
+            
+        }
     }
     
     /**
@@ -862,19 +891,15 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * This is one place new branches of an annotation may be created
      * when the `annotation.objectID` resolves to an object that has
      * an entry in .__rerum.history.next already.
-     * @param annotation.objectID
-     * @param all annotation properties include updated properties. 
-     * @ignore the following keys (they will never be updated)
-     *      @id
-     *      objectID
+     * @param http_request
      */
-    public void updateObject() throws IOException, ServletException, Exception{
+    public void patchUpdateObject(HttpServletRequest http_request) throws ServletException, Exception{
         //The client should use the If-Match header with a value of the ETag it received from the server before the editing process began, 
         //to avoid collisions of multiple users modifying the same Annotation at the same time
         //cubap: I'm not sold we have to do this. Our versioning would allow multiple changes. 
         //The application might want to throttle internally, but it can.
         Boolean historyNextUpdatePassed = false;
-        if(null!= processRequestBody(request, false) && methodApproval(request, "update")){
+        if(null!= processRequestBody(request, false) && methodApproval(request, "patch_update")){
             BasicDBObject query = new BasicDBObject();
             JSONObject received = JSONObject.fromObject(content); 
             String updateHistoryNextID = received.getString("@id");
