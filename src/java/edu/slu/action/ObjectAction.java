@@ -160,7 +160,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     }
     
     /**
-     * Add the __rerum properties object to a given JSONObject. If __rerum already exists you need to update certain values.  See below.
+     * Add the __rerum properties object to a given JSONObject. If __rerum already exists, it will be overwritten because this method is only called on new objects.
      * Properties for consideration are:
      *   APIversion        —1.0.0
      *   history.prime     —if it has an @id, import from that, else "root"
@@ -221,7 +221,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         else{
             if(update){
              //Hitting this means we are updating an object that did not have __rerum history.  This is weird.  What should I do?
-                //FIXME 
+                //FIXME @cubap @theHabes
             }
             else{
              //Hitting this means we are are saving an object that did not have __rerum history.  This is normal   
@@ -252,9 +252,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     
     /**
      * Internal helper method to update the history.next property of an object.  This will occur because updateObject will create a new object from a given object, and that
-       given object will have a new next value of the new object.  Watch out for missing __rerum or malformed __rerum.history
-       * 
-       * 
+     * given object will have a new next value of the new object.  Watch out for missing __rerum or malformed __rerum.history
      * 
      * @param idForUpdate the @id of the object whose history.next needs to be updated
      * @param newNextID the @id of the newly created object to be placed in the history.next array.
