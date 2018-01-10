@@ -6,7 +6,9 @@
 
 /**
  * REST notes
- * 
+ * https://spring.io/understanding/REST
+ * https://user-images.githubusercontent.com/3287006/32914301-b2fbf798-cada-11e7-9541-a2bee8454c2c.png
+ 
  * POST
     * HTTP.POST can be used when the client is sending data to the server and the server
     * will decide the URI for the newly created resource. The POST method is used 
@@ -35,6 +37,7 @@
     * Submits a partial modification to a resource. If you only need to update one
     * field for the resource, you may want to use the PATCH method.
  * 
+ 
  */
 
 /**
@@ -99,6 +102,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     /**
      * Check if the proposed object is a container type.
      * Related to Web Annotation compliance.  
+     * @FIXME  We need to rethink what update.action does and how to separate and handle PUT vs PATCH gracefully and compliantly.
      * @param jo  the JSON or JSON-LD object
      * @see getAnnotationByObjectID(),saveNewObject(),updateObject() 
      * @return containerType Boolean representing if RERUM knows whether it is a container type or not.  
@@ -754,50 +758,44 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      */
     public void saveNewObject() throws IOException, ServletException, Exception{
         if(null != processRequestBody(request, false) && methodApproval(request, "create")){
-            boolean intendedToHaveNewID = true;
             JSONObject received = JSONObject.fromObject(content);
-            JSONObject iiif_validation_response = checkIIIFCompliance(received, true); //This boolean should be provided by the user somehow.  It is a intended-to-be-iiif flag
-            configureRerumOptions(received, false);
-            DBObject dbo = (DBObject) JSON.parse(received.toString());
-            if(null!=request.getHeader("Slug")){
-                // Slug is the user suggested ID for the annotation. This could be a cool RERUM thing.
-                // cubap: if we want, we can just copy the Slug to @id, warning
-                // if there was some mismatch, since versions are fine with that.
+            if(received.containsKey("@id")){
+                writeErrorResponse("Object already contains an @id "+received.containsKey("@id")+".  Either remove this property for saving or if it is a REERUM object update instead.", HttpServletResponse.SC_BAD_REQUEST);
             }
-            String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
-            //set @id from _id and update the annotation
-            BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
-            String uid = "http://devstore.rerum.io/rerumserver/id/"+newObjectID;
-            if(dboWithObjectID.containsKey("@id")){
-                //Someone tried to create an object that already had an @id.  How do we want to handle this?
-                if(intendedToHaveNewID){
-                    dboWithObjectID.remove("@id");
-                    dboWithObjectID.append("@id", uid);
+            else{
+                JSONObject iiif_validation_response = checkIIIFCompliance(received, true); //This boolean should be provided by the user somehow.  It is a intended-to-be-iiif flag
+                configureRerumOptions(received, false);
+                DBObject dbo = (DBObject) JSON.parse(received.toString());
+                if(null!=request.getHeader("Slug")){
+                    // Slug is the user suggested ID for the annotation. This could be a cool RERUM thing.
+                    // cubap: if we want, we can just copy the Slug to @id, warning
+                    // if there was some mismatch, since versions are fine with that.
                 }
-                else{
-                    //If we want this to be an a stopping error or warning, we will have to handle this method differently so we don't continue on here. 
-                }
-            }
-            dboWithObjectID.append("@id", uid);
-            mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
-            JSONObject jo = new JSONObject();
-            JSONObject newObjWithID = JSONObject.fromObject(dboWithObjectID);
-            jo.element("code", HttpServletResponse.SC_CREATED);
-            jo.element("@id", uid);
-            jo.element("iiif_validation", iiif_validation_response);
-            try {
-                response.addHeader("Access-Control-Allow-Origin", "*");
-                addWebAnnotationHeaders(newObjectID, isContainerType(received), isLD(received));
-                addLocationHeader(newObjWithID);
-                response.setStatus(HttpServletResponse.SC_CREATED);
-                out = response.getWriter();
-                out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
-            } 
-            catch (IOException ex) {
-                Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }
+                String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
+                //set @id from _id and update the annotation
+                BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
+                String uid = "http://devstore.rerum.io/rerumserver/id/"+newObjectID;
 
+                dboWithObjectID.append("@id", uid);
+                mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
+                JSONObject jo = new JSONObject();
+                JSONObject newObjWithID = JSONObject.fromObject(dboWithObjectID);
+                jo.element("code", HttpServletResponse.SC_CREATED);
+                jo.element("@id", uid);
+                jo.element("iiif_validation", iiif_validation_response);
+                try {
+                    response.addHeader("Access-Control-Allow-Origin", "*");
+                    addWebAnnotationHeaders(newObjectID, isContainerType(received), isLD(received));
+                    addLocationHeader(newObjWithID);
+                    response.setStatus(HttpServletResponse.SC_CREATED);
+                    out = response.getWriter();
+                    out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
+                } 
+                catch (IOException ex) {
+                    Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }          
+        }
     }
     
     public void setVal(){
@@ -883,6 +881,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     }
                 }
                 else{
+                    //This could mean it was an external object, so we can save it as a new object (new object is root) and refer to this @id in previous.
                     writeErrorResponse("Object "+received.getString("@id")+" not found in RERUM, could not update.", HttpServletResponse.SC_BAD_REQUEST);
                 }
             }
