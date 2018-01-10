@@ -1027,6 +1027,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             //processRequestBody will always return a stringified JSON object here, even if the ID provided was a string in the body.
             JSONObject received = JSONObject.fromObject(content);
             JSONObject safe_received;
+            JSONObject updatedWithFlag = new JSONObject();
+            BasicDBObject updatedObjectWithDeletedFlag;
             if(received.containsKey("@id")){
                 query.append("@id", received.getString("@id"));
                 BasicDBObject mongo_obj = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query);
@@ -1057,14 +1059,13 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     originalObject = (BasicDBObject) JSON.parse(safe_received.toString()); //The original object out of mongo for persistance
                     //Found the @id in the object, but does it exist in RERUM?
                     if(null != originalObject){
-                        String preserveID = updatedWithFlag.getString("@id");
+                        String preserveID = safe_received.getString("@id");
                         JSONObject deletedFlag = new JSONObject(); //The __deleted flag is a JSONObject
                         deletedFlag.element("object", originalObject);
                         deletedFlag.element("deletor", "TODO"); //@cubap I assume this will be an API key?
                         deletedFlag.element("time", System.currentTimeMillis());
-                        updatedWithFlag.clear(); //We want everything wrapped in deleted except the @id.
                         updatedWithFlag.element("@id", preserveID);
-                        updatedWithFlag.element("__deleted", deletedFlag);
+                        updatedWithFlag.element("__deleted", deletedFlag); //We want everything wrapped in deleted except the @id.
                         Object forMongo = JSON.parse(updatedWithFlag.toString()); //JSONObject cannot be converted to BasicDBObject
                         updatedObjectWithDeletedFlag = (BasicDBObject) forMongo;
                         boolean treeHealed = greenThumb(JSONObject.fromObject(originalObject));
