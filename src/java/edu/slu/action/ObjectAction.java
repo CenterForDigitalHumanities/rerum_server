@@ -391,7 +391,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 if(supportStringID){
                     //We do not allow arrays of ID's for DELETE, so if it failed JSONObject parsing then this is a hard fail for DELETE.
                     //They attempted to provide a JSON object for DELETE but it was not valid JSON
-                    writeErrorResponse("The data passed was not valid JSON.  Could not get @id for DELETE: \n"+requestBody, HttpServletResponse.SC_BAD_REQUEST);
+                    writeErrorResponse("The data passed was not valid JSON.  Could not get @id: "+requestBody, HttpServletResponse.SC_BAD_REQUEST);
                     requestBody = null;
                 }
                 else{
@@ -422,7 +422,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         requestBody = test.getString("@id");
                         if("".equals(requestBody)){
                         //No ID provided
-                            writeErrorResponse("Must provide an id or a JSON object containing @id of object to delete.", HttpServletResponse.SC_BAD_REQUEST);
+                            writeErrorResponse("Must provide an id or a JSON object containing @id of object to perform this action.", HttpServletResponse.SC_BAD_REQUEST);
                             requestBody = null;
                         }
                         else{
@@ -967,7 +967,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 if(null != originalObject){
                     JSONObject newObject = JSONObject.fromObject(updatedObject);//The edited original object meant to be saved as a new object (versioning)
                     newObject = configureRerumOptions(newObject, true); //__rerum for the new object being created because of the update action
-                    //WHAT WILL THIS DO IF __rerum IS ALREADY ON THIS OBJECT?  RECREATE IT IS WHAT WE WANT.
                     newObject.remove("@id"); //This is being saved as a new object, so remove this @id for the new one to be set.
                     //Since we ignore changes to __rerum for existing objects, we do no configureRerumOptions(updatedObject);
                     DBObject dbo = (DBObject) JSON.parse(newObject.toString());
