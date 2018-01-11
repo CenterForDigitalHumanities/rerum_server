@@ -21,12 +21,27 @@
     
     <rule>
         <note>
-            Redirect find annotation by object id.
+            Redirect find annotation by provided object id.
         </note>
         <from>^/id/([a-z0-9]+)$</from>
         <to type="forward">/id/getByID.action?oid=$1</to>
     </rule>
-
+    
+    <rule>
+        <note>
+            Redirect find descendant branch from provided object id.
+        </note>
+        <from>^/since/([a-z0-9]+)$</from>
+        <to type="forward">/since/getAllDescendents.action?oid=$1</to>
+    </rule>
+    
+    <rule>
+        <note>
+            Redirect find ancestoral branch from provided object id.
+        </note>
+        <from>^/history/([a-z0-9]+)$</from>
+        <to type="forward">/history/getAllAncestors.action?oid=$1</to>
+    </rule>
 
     <outbound-rule>
         <note>

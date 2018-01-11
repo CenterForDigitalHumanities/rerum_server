@@ -24,8 +24,35 @@
             </interceptor-stack>
         </interceptors>
         <default-interceptor-ref name="myDefault" />
-        
         <action name="getByID" class="objectAction" method="getByID"></action>
+    </package>
+    
+    <!-- This package is open to public -->
+    <package name="getAncestors" extends="default" namespace="/history">
+        <!-- INTERCEPTOR -->
+        <interceptors>
+            <interceptor name="responseEncoding" class="edu.slu.filter.ResponseEncoding"></interceptor>
+            <interceptor-stack name="myDefault">
+                <interceptor-ref name="responseEncoding" />
+                <interceptor-ref name="defaultStack" />
+            </interceptor-stack>
+        </interceptors>
+        <default-interceptor-ref name="myDefault" />
+        <action name="getAllAncestors" class="objectAction" method="getAllAncestors"></action>
+    </package>
+    
+    <!-- This package is open to public -->
+    <package name="getDescendents" extends="default" namespace="/since">
+        <!-- INTERCEPTOR -->
+        <interceptors>
+            <interceptor name="responseEncoding" class="edu.slu.filter.ResponseEncoding"></interceptor>
+            <interceptor-stack name="myDefault">
+                <interceptor-ref name="responseEncoding" />
+                <interceptor-ref name="defaultStack" />
+            </interceptor-stack>
+        </interceptors>
+        <default-interceptor-ref name="myDefault" />
+        <action name="getAllDescendents" class="objectAction" method="getAllDescendents"></action>
     </package>
     
     <!-- OBJECTS -->
@@ -36,7 +63,7 @@
                 <param name="includeMethods">saveNewObject, batchSaveFromCopy, patchUpdateObject, putUpdateObject, patchSetObject, deleteObject </param>
             </interceptor>
             <interceptor name="getRequestClientInfoRecorder" class="edu.slu.filter.GetRequestClientInfoRecorder">
-                <param name="includeMethods">getbyProperties, getByID, getAllAncestors, getAllDescendants, getAllVersions</param>
+                <param name="includeMethods">getByProperties, getByID, getAllAncestors, getAllDescendents, getAllVersions</param>
             </interceptor>
             <!--<interceptor name="responseEncoding" class="edu.slu.filter.ResponseEncoding"></interceptor>-->
             <interceptor name="inSessionFilter" class="edu.slu.filter.InSessionFilter"></interceptor>
@@ -59,7 +86,7 @@
         <action name="getAllAncestors" class="objectAction" method="getAllAncestors"></action>
         <action name="getAllDescendents" class="objectAction" method="getAllDescendents"></action>
         <action name="create" class="objectAction" method="saveNewObject"></action>
-        <!--@cubap @theHabes rewrite API to accomodate this change -->
+        <!--@cubap @theHabes rewrite API doc to accomodate this change -->
         <action name="patch_update" class="objectAction" method="patchUpdateObject"></action>
         <action name="put_update" class="objectAction" method="putUpdateObject"></action>
         <action name="set_update" class="objectAction" method="setUpdateObject"></action>
