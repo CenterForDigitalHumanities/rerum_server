@@ -316,7 +316,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     writeErrorResponse("Improper request method for updating, please use PATCH to alter this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
                 }
             break;
-            case "set":
+            case "patch_set":
                 if(requestMethod.equals("PATCH")){
                     restful = true;
                 }
@@ -884,10 +884,11 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
 
     /**
      * Public facing servlet to PATCH set or unset values of an existing RERUM object.
-     * @param  http_request The HTTP request made for the API
      * @return JSONArray to the response out for parsing by the client application.
+     * @throws java.io.IOException
+     * @throws javax.servlet.ServletException
      */
-    public void patchSetObject(HttpServletRequest http_request)throws IOException, ServletException, Exception{
+    public void patchSetUpdate()throws IOException, ServletException, Exception{
         //TODO fix methodApproval to separate PUT and PATCH, route set and patch_update to PATCH.
         Boolean historyNextUpdatePassed = false;
         if(null!= processRequestBody(request, true) && methodApproval(request, "patch_set")){
@@ -903,49 +904,179 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             }
             else{
                 if(null != originalObject){
+                    boolean setExistingKey = false;
+                    boolean unsetNonExistingKey = false;
                     Set<String> update_anno_keys = received.keySet();
+                    int updateCount = 0;
+                    //If the object already in the database contains the key found from the object recieved from the user, error out this is not a set. 
+                    for(String key : update_anno_keys){
+                        if(originalObject.containsKey(key)){
+                            if(key.equals("@id") || key.equals("__rerum") || key.equals("objectID") ){
+                                // Ignore these in a PATCH.  DO NOT update, DO NOT count as an attempt to update
+                            }
+                            else{
+                                if(null != received.get(key)){ //Found matching keys and value is not null
+                                    setExistingKey = true;
+                                    writeErrorResponse("Attempted to set '"+key+"' on the object, but '"+key+"' already existed.", HttpServletResponse.SC_BAD_REQUEST);
+                                    break;
+                                }  
+                                else{ //Found matching keys and value is null, this is a remove
+                                    updatedObject.remove(key);
+                                    updateCount +=1;
+                                }
+                            }
+                        }
+                        else{ //keys did not match, this is a set. 
+                            if(null == received.get(key)){
+                                //Tried to set key:null
+                                unsetNonExistingKey = true;
+                                writeErrorResponse("Attempted to unset '"+key+"' from the object, but '"+key+"' was not in the object.", HttpServletResponse.SC_BAD_REQUEST);
+                                break;
+                            }
+                            else{
+                                updatedObject.append(key, received.get(key));
+                                updateCount += 1;
+                            }
+                        }
+                    }
+                    if(!setExistingKey && !unsetNonExistingKey){
+                        if(updateCount > 0){
+                            JSONObject newObject = JSONObject.fromObject(updatedObject);//The edited original object meant to be saved as a new object (versioning)
+                            newObject = configureRerumOptions(newObject, true); //__rerum for the new object being created because of the update action
+                            newObject.remove("@id"); //This is being saved as a new object, so remove this @id for the new one to be set.
+                            //Since we ignore changes to __rerum for existing objects, we do no configureRerumOptions(updatedObject);
+                            DBObject dbo = (DBObject) JSON.parse(newObject.toString());
+                            String newNextID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
+                            String newNextAtID = "http://devstore.rerum.io/rerumserver/id/"+newNextID;
+                            BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
+                            dboWithObjectID.append("@id", newNextAtID);
+                            newObject.element("@id", newNextAtID);
+                            mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
+                            historyNextUpdatePassed = alterHistoryNext(updateHistoryNextID, newNextAtID); //update history.next or original object to include the newObject @id
+                            if(historyNextUpdatePassed){
+                                JSONObject jo = new JSONObject();
+                                JSONObject iiif_validation_response = checkIIIFCompliance(newNextAtID, "2.1");
+                                jo.element("code", HttpServletResponse.SC_OK);
+                                jo.element("original_object_id", updateHistoryNextID);
+                                jo.element("new_obj_state", newObject); //FIXME: @webanno standards say this should be the response.
+                                jo.element("iiif_validation", iiif_validation_response);
+                                try {
+                                    addWebAnnotationHeaders(newNextID, isContainerType(newObject), isLD(newObject));
+                                    response.addHeader("Access-Control-Allow-Origin", "*");
+                                    response.setStatus(HttpServletResponse.SC_OK);
+                                    out = response.getWriter();
+                                    out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
+                                } 
+                                catch (IOException ex) {
+                                    Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
+                                }
+                            }
+                            else{
+                                //The error is already written to response.out, do nothing.
+                            }
+                        }
+                        else{
+                            // Nothing could be patched
+                            addLocationHeader(received);
+                            writeErrorResponse("Nothing could be PATCHed", HttpServletResponse.SC_NO_CONTENT);
+                        }
+                    }
+                }
+                else{
+                    //This could mean it was an external object, so we can save it as a new object (new object is root) and refer to this @id in previous.
+                    //TODO FIXME @cubap @theHabes #41
+                    writeErrorResponse("Object "+received.getString("@id")+" not found in RERUM, could not update.", HttpServletResponse.SC_BAD_REQUEST);
+                }
+            }
+        }
+    }
+    
+    /**
+     * Update a given annotation. PUT that does not set or unset only.
+     * This is one place new branches of an annotation may be created
+     * when the `annotation.objectID` resolves to an object that has
+     * an entry in .__rerum.history.next already.
+     * @param http_request
+     */
+    public void patchUpdateObject() throws ServletException, Exception{
+        //The client should use the If-Match header with a value of the ETag it received from the server before the editing process began, 
+        //to avoid collisions of multiple users modifying the same Annotation at the same time
+        //cubap: I'm not sold we have to do this. Our versioning would allow multiple changes. 
+        //The application might want to throttle internally, but it can.
+        Boolean historyNextUpdatePassed = false;
+        if(null!= processRequestBody(request, true) && methodApproval(request, "patch_update")){
+            BasicDBObject query = new BasicDBObject();
+            JSONObject received = JSONObject.fromObject(content); 
+            String updateHistoryNextID = received.getString("@id");
+            query.append("@id", updateHistoryNextID);
+            BasicDBObject originalObject = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The originalObject DB object
+            BasicDBObject updatedObject = (BasicDBObject) originalObject.copy(); //A copy of the original, this will be saved as a new object.  Make all edits to this variable.
+            boolean alreadyDeleted = checkIfDeleted(JSONObject.fromObject(originalObject));
+            if(alreadyDeleted){
+                writeErrorResponse("The object you are trying to update is deleted.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+            }
+            else{
+                if(null != originalObject){
+                    Set<String> update_anno_keys = received.keySet();
+                    boolean triedToSet = false;
+                    int updateCount = 0;
                     //If the object already in the database contains the key found from the object recieved from the user, update it barring a few special keys
                     //Users cannot update the __rerum property, so we ignore any update action to that particular field.  
                     for(String key : update_anno_keys){
-                        if(originalObject.containsKey(key) && (!key.equals("@id") || !key.equals("__rerum")) || !key.equals("objectID")){
-                            updatedObject.remove(key);
-                            if(null != received.get(key)){
+                        if(originalObject.containsKey(key) ){
+                            //Skip keys we want to ignore and keys that match but have matching values
+                            if(!(key.equals("@id") || key.equals("__rerum") || key.equals("objectID")) && received.get(key) != originalObject.get(key)){
+                                updatedObject.remove(key);
                                 updatedObject.append(key, received.get(key));
-                            }  
+                                updateCount +=1 ;
+                            }
+                        }
+                        else{
+                            triedToSet = true;
+                            break;
                         }
                     }
-                    JSONObject newObject = JSONObject.fromObject(updatedObject);//The edited original object meant to be saved as a new object (versioning)
-                    newObject = configureRerumOptions(newObject, true); //__rerum for the new object being created because of the update action
-                    newObject.remove("@id"); //This is being saved as a new object, so remove this @id for the new one to be set.
-                    //Since we ignore changes to __rerum for existing objects, we do no configureRerumOptions(updatedObject);
-                    DBObject dbo = (DBObject) JSON.parse(newObject.toString());
-                    String newNextID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
-                    String newNextAtID = "http://devstore.rerum.io/rerumserver/id/"+newNextID;
-                    BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
-                    dboWithObjectID.append("@id", newNextAtID);
-                    newObject.element("@id", newNextAtID);
-                    mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
-                    historyNextUpdatePassed = alterHistoryNext(updateHistoryNextID, newNextAtID); //update history.next or original object to include the newObject @id
-                    if(historyNextUpdatePassed){
-                        JSONObject jo = new JSONObject();
-                        JSONObject iiif_validation_response = checkIIIFCompliance(newNextAtID, "2.1");
-                        jo.element("code", HttpServletResponse.SC_OK);
-                        jo.element("original_object_id", updateHistoryNextID);
-                        jo.element("new_obj_state", newObject); //FIXME: @webanno standards say this should be the response.
-                        jo.element("iiif_validation", iiif_validation_response);
-                        try {
-                            addWebAnnotationHeaders(newNextID, isContainerType(newObject), isLD(newObject));
-                            response.addHeader("Access-Control-Allow-Origin", "*");
-                            response.setStatus(HttpServletResponse.SC_OK);
-                            out = response.getWriter();
-                            out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
-                        } 
-                        catch (IOException ex) {
-                            Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
-                        }
+                    if(triedToSet){
+                        writeErrorResponse("A key you are trying to update does not exist on the object.  You can set with the patch_set or put_update action.", HttpServletResponse.SC_BAD_REQUEST);
+                    }
+                    else if(updateCount == 0){
+                        addLocationHeader(received);
+                        writeErrorResponse("Nothing could be PATCHed", HttpServletResponse.SC_NO_CONTENT);
                     }
                     else{
-                        //The error is already written to response.out, do nothing.
+                        JSONObject newObject = JSONObject.fromObject(updatedObject);//The edited original object meant to be saved as a new object (versioning)
+                        newObject = configureRerumOptions(newObject, true); //__rerum for the new object being created because of the update action
+                        newObject.remove("@id"); //This is being saved as a new object, so remove this @id for the new one to be set.
+                        //Since we ignore changes to __rerum for existing objects, we do no configureRerumOptions(updatedObject);
+                        DBObject dbo = (DBObject) JSON.parse(newObject.toString());
+                        String newNextID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
+                        String newNextAtID = "http://devstore.rerum.io/rerumserver/id/"+newNextID;
+                        BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
+                        dboWithObjectID.append("@id", newNextAtID);
+                        newObject.element("@id", newNextAtID);
+                        mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
+                        historyNextUpdatePassed = alterHistoryNext(updateHistoryNextID, newNextAtID); //update history.next or original object to include the newObject @id
+                        if(historyNextUpdatePassed){
+                            JSONObject jo = new JSONObject();
+                            JSONObject iiif_validation_response = checkIIIFCompliance(newNextAtID, "2.1");
+                            jo.element("code", HttpServletResponse.SC_OK);
+                            jo.element("original_object_id", updateHistoryNextID);
+                            jo.element("new_obj_state", newObject); //FIXME: @webanno standards say this should be the response.
+                            jo.element("iiif_validation", iiif_validation_response);
+                            try {
+                                addWebAnnotationHeaders(newNextID, isContainerType(newObject), isLD(newObject));
+                                response.addHeader("Access-Control-Allow-Origin", "*");
+                                response.setStatus(HttpServletResponse.SC_OK);
+                                out = response.getWriter();
+                                out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
+                            } 
+                            catch (IOException ex) {
+                                Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
+                            }
+                        }
+                        else{
+                            //The error is already written to response.out, do nothing.
+                        }
                     }
                 }
                 else{
@@ -1008,84 +1139,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                             out = response.getWriter();
                             out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
                         }
-                        catch (IOException ex) {
-                            Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
-                        }
-                    }
-                    else{
-                        //The error is already written to response.out, do nothing.
-                    }
-                }
-                else{
-                    //This could mean it was an external object, so we can save it as a new object (new object is root) and refer to this @id in previous.
-                    //TODO FIXME @cubap @theHabes #41
-                    writeErrorResponse("Object "+received.getString("@id")+" not found in RERUM, could not update.", HttpServletResponse.SC_BAD_REQUEST);
-                }
-            }
-        }
-    }
-    
-    /**
-     * Update a given annotation. PUT that does not set or unset only.
-     * This is one place new branches of an annotation may be created
-     * when the `annotation.objectID` resolves to an object that has
-     * an entry in .__rerum.history.next already.
-     * @param http_request
-     */
-    public void patchUpdateObject() throws ServletException, Exception{
-        //The client should use the If-Match header with a value of the ETag it received from the server before the editing process began, 
-        //to avoid collisions of multiple users modifying the same Annotation at the same time
-        //cubap: I'm not sold we have to do this. Our versioning would allow multiple changes. 
-        //The application might want to throttle internally, but it can.
-        Boolean historyNextUpdatePassed = false;
-        if(null!= processRequestBody(request, true) && methodApproval(request, "patch_update")){
-            BasicDBObject query = new BasicDBObject();
-            JSONObject received = JSONObject.fromObject(content); 
-            String updateHistoryNextID = received.getString("@id");
-            query.append("@id", updateHistoryNextID);
-            BasicDBObject originalObject = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The originalObject DB object
-            BasicDBObject updatedObject = (BasicDBObject) originalObject.copy(); //A copy of the original, this will be saved as a new object.  Make all edits to this variable.
-            boolean alreadyDeleted = checkIfDeleted(JSONObject.fromObject(originalObject));
-            if(alreadyDeleted){
-                writeErrorResponse("The object you are trying to update is deleted.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-            }
-            else{
-                if(null != originalObject){
-                    Set<String> update_anno_keys = received.keySet();
-                    //If the object already in the database contains the key found from the object recieved from the user, update it barring a few special keys
-                    //Users cannot update the __rerum property, so we ignore any update action to that particular field.  
-                    for(String key : update_anno_keys){
-                        if(originalObject.containsKey(key) && (!key.equals("@id") || !key.equals("__rerum")) || !key.equals("objectID")){
-                            updatedObject.remove(key);
-                            updatedObject.append(key, received.get(key));
-                        }
-                    }
-                    JSONObject newObject = JSONObject.fromObject(updatedObject);//The edited original object meant to be saved as a new object (versioning)
-                    newObject = configureRerumOptions(newObject, true); //__rerum for the new object being created because of the update action
-                    newObject.remove("@id"); //This is being saved as a new object, so remove this @id for the new one to be set.
-                    //Since we ignore changes to __rerum for existing objects, we do no configureRerumOptions(updatedObject);
-                    DBObject dbo = (DBObject) JSON.parse(newObject.toString());
-                    String newNextID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
-                    String newNextAtID = "http://devstore.rerum.io/rerumserver/id/"+newNextID;
-                    BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
-                    dboWithObjectID.append("@id", newNextAtID);
-                    newObject.element("@id", newNextAtID);
-                    mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
-                    historyNextUpdatePassed = alterHistoryNext(updateHistoryNextID, newNextAtID); //update history.next or original object to include the newObject @id
-                    if(historyNextUpdatePassed){
-                        JSONObject jo = new JSONObject();
-                        JSONObject iiif_validation_response = checkIIIFCompliance(newNextAtID, "2.1");
-                        jo.element("code", HttpServletResponse.SC_OK);
-                        jo.element("original_object_id", updateHistoryNextID);
-                        jo.element("new_obj_state", newObject); //FIXME: @webanno standards say this should be the response.
-                        jo.element("iiif_validation", iiif_validation_response);
-                        try {
-                            addWebAnnotationHeaders(newNextID, isContainerType(newObject), isLD(newObject));
-                            response.addHeader("Access-Control-Allow-Origin", "*");
-                            response.setStatus(HttpServletResponse.SC_OK);
-                            out = response.getWriter();
-                            out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
-                        } 
                         catch (IOException ex) {
                             Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
                         }
