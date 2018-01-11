@@ -259,7 +259,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @return Boolean altered true on success, false on fail
      */
     private boolean alterHistoryNext (String idForUpdate, String newNextID){
-        //TODO @theHabes As long as we trust the objects we send to this, we can take up the lookup
+        //TODO @theHabes As long as we trust the objects we send to this, we can take out the lookup and pass in objects as parameters
         Boolean altered = false;
         BasicDBObject query = new BasicDBObject();
         query.append("@id", idForUpdate);
@@ -361,6 +361,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * and pretty format it. Returns pretty stringified JSON or fail to null.
      * Methods that call this should handle requestBody==null as unexpected.
      * @param http_request Incoming request to check.
+     * @param supportStringID The request may be allowed to pass the @id as the body.
      * @return String of anticipated JSON format.
      * @throws java.io.IOException
      * @throws javax.servlet.ServletException
@@ -578,8 +579,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     /**
      * Public facing servlet action to find all upstream versions of an object.  This is the action the user hits with the API.
      * If this object is `prime`, it will be the only object in the array.
-     * @param  http_request Servlet request for relatives
-     * @return JSONArray to the response out for parsing by the client application.
+     * @param oid variable assigned by urlrewrite rule for /id in urlrewrite.xml
+     * @respond JSONArray to the response out for parsing by the client application.
      * @throws Exception 
      */
     public void getAllAncestors() throws Exception{
@@ -653,8 +654,9 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     
     /**
      * Public facing servlet to gather for all versions downstream from a provided `key object`.
-     * @param  http_request The HTTP request made for the API
-     * @return JSONArray to the response out for parsing by the client application.
+     * @param oid variable assigned by urlrewrite rule for /id in urlrewrite.xml
+     * @throws java.lang.Exception
+     * @respond JSONArray to the response out for parsing by the client application.
      */
     public void getAllDescendents() throws Exception {
        if(null != oid && methodApproval(request, "get")){
@@ -757,8 +759,10 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         
     /**
      * Get annotation by objectiD.  Strip all unnecessary key:value pairs before returning.
-     * @param objectID (oid)
-     * @return annotation object
+     * @param oid variable assigned by urlrewrite rule for /id in urlrewrite.xml
+     * @rspond with the new annotation ID in the Location header and the new object created in the body.
+     * @throws java.io.IOException
+     * @throws javax.servlet.ServletException
      */
     public void getByID() throws IOException, ServletException, Exception{
         if(null != oid && methodApproval(request, "get")){
@@ -837,8 +841,10 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     }
     
     /**
-     * Save a new annotation. 
-     * @param all annotation properties.
+     * Save a new annotation provided by the user. 
+     * @throws java.io.IOException
+     * @throws javax.servlet.ServletException
+     * @respond with new @id in Location header and the new annotation in the body.
      */
     public void saveNewObject() throws IOException, ServletException, Exception{
         if(null != processRequestBody(request, false) && methodApproval(request, "create")){
@@ -884,12 +890,11 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
 
     /**
      * Public facing servlet to PATCH set or unset values of an existing RERUM object.
-     * @return JSONArray to the response out for parsing by the client application.
+     * @respond with state of new object in the body
      * @throws java.io.IOException
      * @throws javax.servlet.ServletException
      */
     public void patchSetUpdate()throws IOException, ServletException, Exception{
-        //TODO fix methodApproval to separate PUT and PATCH, route set and patch_update to PATCH.
         Boolean historyNextUpdatePassed = false;
         if(null!= processRequestBody(request, true) && methodApproval(request, "patch_set")){
             BasicDBObject query = new BasicDBObject();
@@ -992,17 +997,10 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     }
     
     /**
-     * Update a given annotation. PUT that does not set or unset only.
-     * This is one place new branches of an annotation may be created
-     * when the `annotation.objectID` resolves to an object that has
-     * an entry in .__rerum.history.next already.
-     * @param http_request
+     * Update a given annotation. Cannot set or unset keys.  
+     * @respond with state of new object in the body
      */
     public void patchUpdateObject() throws ServletException, Exception{
-        //The client should use the If-Match header with a value of the ETag it received from the server before the editing process began, 
-        //to avoid collisions of multiple users modifying the same Annotation at the same time
-        //cubap: I'm not sold we have to do this. Our versioning would allow multiple changes. 
-        //The application might want to throttle internally, but it can.
         Boolean historyNextUpdatePassed = false;
         if(null!= processRequestBody(request, true) && methodApproval(request, "patch_update")){
             BasicDBObject query = new BasicDBObject();
@@ -1089,12 +1087,15 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     }
     
     /**
-     * Public facing servlet to PATCH set or unset values of an existing RERUM object.
-     * @param  http_request The HTTP request made for the API
-     * @return JSONArray to the response out for parsing by the client application.
+     * Public facing servlet to PUT replace an existing object.  Can set and unset keys.
+     * @respond with new state of the object in the body.
+     * @throws java.io.IOException
+     * @throws javax.servlet.ServletException
      */
     public void putUpdateObject()throws IOException, ServletException, Exception{
-        //TODO fix methodApproval to separate PUT and PATCH, route set and patch_update to PATCH.
+        //@webanno The client should use the If-Match header with a value of the ETag it received from the server before the editing process began, 
+        //to avoid collisions of multiple users modifying the same Annotation at the same time
+        //cubap: I'm not sold we have to do this. Our versioning would allow multiple changes. 
         //The application might want to throttle internally, but it can.
         Boolean historyNextUpdatePassed = false;
         if(null!= processRequestBody(request, true) && methodApproval(request, "put_update")){
