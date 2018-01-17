@@ -36,7 +36,7 @@ you do), the base URL is `http://rerum.io/rerumserver`.
 | ---     | ---     | ---
 | `/id/_id` | `empty` | 200: JSON \[obj]
 
-- **`@id`**—the @id of the object in RERUM.
+- **`_id`**—the id of the object in RERUM.
 - Call over HTTP can be made through GET request to their
 unique URL Ex. http://rerum.io/rerumserver/id/aee33434bbc333444ff
 
@@ -60,7 +60,7 @@ a history tree.  You can ask for all child versions of a given object.
 | ---     | ---     | ---
 | `/since/_id` | `empty` | 200: `[{JSON}]`
 
-- **`@id`**—the id of the object in RERUM.
+- **`_id`**—the id of the object in RERUM.
 - Call over HTTP can be made through GET request to their
 unique URL Ex. http://rerum.io/rerumserver/since/aee33434bbc333444ff
 
