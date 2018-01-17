@@ -1,9 +1,8 @@
-# API (0.0.1)
+# API (0.9)
 
 - [API](#api)
     - [GET](#get)
         - [GET by ID](#single-object-by-id)
-            - [Collection Aliases (case insensitive)](#collection-aliases-case-insensitive)
         - [GET by custom query](#get-by-custom-query)
     - [POST](#post)
         - [Queries](#queries)
@@ -15,7 +14,8 @@
     - [PATCH](#patch)
       - [Update](#patch-update)
       - [Set/Unset](#patch-set)
-    - [DELETE](#delete)
+    - [DELETE]
+        -Delete(#delete)
     - [Smart objects](#smart-objects)
     - [__rerum](#__rerum)
     - [REST](#rest)
