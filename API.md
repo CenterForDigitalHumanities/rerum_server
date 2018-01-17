@@ -34,7 +34,7 @@ you do), the base URL is `http://rerum.io/rerumserver`.
 ### Single object by id
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/id/@id` | `empty` | 200: JSON \[obj]
+| `/id/_id` | `empty` | 200: JSON \[obj]
 
 - **`@id`**—the @id of the object in RERUM.
 - Call over HTTP can be made through GET request to their
@@ -235,14 +235,33 @@ to be dropped otherwise an warning is returned to the user
 
 ## DELETE
 
-Mark an object as deleted. Deleted objects are not included
-in query results.
+Requests can be made by the string @id or a JSON object containsing the {@id:id}.  
+RERUM DELETE will not remove anything from the server. Deleted objects are only marked as deleted.
+Objects marked as deleted do not return in query results.
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
 | `/v1/delete.action` | `String id` or `{JSON}` | 204
 
-There is no batch `DELETE` planned.
+There is no batch `DELETE` planned. 
+
+A deleted object looks like
+~~~ (json)
+{
+  "@id" : "http://devstore.rerum.io/rerumserver/id/5a57a30fe4b09163a80a0a67",
+  "__deleted" : {
+    "object" : {
+      "@id" : "http://devstore.rerum.io/rerumserver/id/5a57a30fe4b09163a80a0a67",
+      .
+      .
+      .
+    },
+    "deletor" : "TODO",
+    "time" : 1516213216852
+  }
+}
+~~~
+Note: The object as it existed at the time of deletion exists in __deleted.object
 
 ## Smart objects
 
@@ -277,7 +296,7 @@ The intention of the API is to follow RESTful practices.  To learn more about wh
 
 RERUM fully supports the IIIF standard and makes third party calls to the IIIF validation API http://iiif.io/api/presentation/validator/service/.  A piece of the response if the validation response of this API so the user knows whether or not their data is following this standard.  Objects that fail IIIF validation are still saved.  
 
-# Web Annotation
+## Web Annotation
 
 RERUM follows the W3C Annotation protocol.  To learn more about Web Annotation see https://www.w3.org/TR/annotation-protocol/
 
