@@ -34,7 +34,6 @@ you do), the base URL is `http://rerum.io/rerumserver`.
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
 | `/id/@id` | `empty` | 200: JSON \[obj]
-| | `[{JSON}]` | 404: "Does not exist in RERUM"
 
 - **`@id`**—the @id of the object in RERUM.
 - Call over HTTP can be made through GET request to their
@@ -73,7 +72,6 @@ in the future, but should serve the basic needs as it is.
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
 | `/v1/getByProperties.action` | `{JSON}` | 200: JSON [obj]
-| | `[{JSON}]` | 404: "No records exist in RERUM"
 
 All responses are in a JSON Array, even if only a single
 record is returned. Submissions must be queries in the form of JSON. 
