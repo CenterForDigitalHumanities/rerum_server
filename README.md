@@ -1,6 +1,7 @@
 # rerum_server
 Java web service for a RERUM compliant digital object repository.
 Visit [rerum.io](http://rerum.io) for more general information.
+Want to use the API?  Learn how at the [API page](https://github.com/CenterForDigitalHumanities/rerum_server/blob/master/API.md).
 
 Stores important bits of knowledge in structured JSON-LD objects:
 
