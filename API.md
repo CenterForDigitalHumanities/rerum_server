@@ -154,7 +154,7 @@ version will maintain its place in the history of that object.
 ~~~ (json)
 {
   "code" : 200,
-  "original_object_id" : "http://devstore.rerum.io/rerumserver/id/5a57a30fe4b09163a80a0a67",
+  "original_object_id" : "http://rerum.io/rerumserver/id/5a57a30fe4b09163a80a0a67",
   "new_obj_state" : {
     @id: newID
     .
@@ -219,7 +219,7 @@ to be dropped otherwise an warning is returned to the user
 ~~~ (json)
 {
   "code" : 200,
-  "original_object_id" : "http://devstore.rerum.io/rerumserver/id/5a57a30fe4b09163a80a0a67",
+  "original_object_id" : "http://rerum.io/rerumserver/id/5a57a30fe4b09163a80a0a67",
   "new_obj_state" : {
     @id: newID
     .
@@ -249,10 +249,10 @@ There is no batch `DELETE` planned.
 A deleted object looks like
 ~~~ (json)
 {
-  "@id" : "http://devstore.rerum.io/rerumserver/id/5a57a30fe4b09163a80a0a67",
+  "@id" : "http://rerum.io/rerumserver/id/5a57a30fe4b09163a80a0a67",
   "__deleted" : {
     "object" : {
-      "@id" : "http://devstore.rerum.io/rerumserver/id/5a57a30fe4b09163a80a0a67",
+      "@id" : "http://rerum.io/rerumserver/id/5a57a30fe4b09163a80a0a67",
       .
       .
       .
