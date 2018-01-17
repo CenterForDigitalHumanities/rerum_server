@@ -33,7 +33,7 @@
 All the following interactions will take place between
 the server running RERUM and the application server. If
 you prefer to use the public RERUM server (which I hope
-you do), the base URL is `http://rerum.io/rerumserver`. 
+you do), the base ready fo is `http://rerum.io/rerumserver`. 
 
 ## GET
 
@@ -46,7 +46,7 @@ you do), the base URL is `http://rerum.io/rerumserver`.
 - **`_id`**—the id of the object in RERUM.
 
 Call over HTTP can be made through GET request to their
-unique URL Ex. http://rerum.io/rerumserver/id/aee33434bbc333444ff
+unique URI Ex. http://rerum.io/rerumserver/id/aee33434bbc333444ff
 
 ### History tree before ID
 
@@ -60,7 +60,7 @@ unique URL Ex. http://rerum.io/rerumserver/id/aee33434bbc333444ff
 As objects in RERUM are altered, their previous state is saved through
 a history tree.  Users can ask for all parent versions of a given object.
 Call over HTTP can be made through GET request to their
-unique URL Ex. http://rerum.io/rerumserver/history/aee33434bbc333444ff
+unique URI Ex. http://rerum.io/rerumserver/history/aee33434bbc333444ff
 
 ### History tree since ID
 
@@ -74,7 +74,7 @@ unique URL Ex. http://rerum.io/rerumserver/history/aee33434bbc333444ff
 As objects in RERUM are altered, their previous state is saved through
 a history tree.  You can ask for all child versions of a given object.
 Call over HTTP can be made through GET request to their
-unique URL Ex. http://rerum.io/rerumserver/since/aee33434bbc333444ff
+unique URI Ex. http://rerum.io/rerumserver/since/aee33434bbc333444ff
 
 ### By custom query
 
