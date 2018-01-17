@@ -174,6 +174,7 @@ version will maintain its place in the history of that object.
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
 | `/v1/batch_update.action` | `[{JSON}]` | 200: "[header.Location]" New state `[{JSON}]`
+
 The array of JSON objects passed in will be updated in the
 order submitted and the response will have the URI of the
 resource or an error message in the body as an array in the
