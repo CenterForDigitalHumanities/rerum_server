@@ -115,12 +115,6 @@ so `{ "@type" : "sc:Canvas", "label" : "page 46" }` will match
 - **`{JSON}`**—The object to create
 - **`{JSON}`**—Containing various bits of information about the create.  The object looks like
 
-Add a completely new object to RERUM and receive the location
-in response.  Accepts only single JSON objects for RERUM storage. 
-Mints a new URI and returns the object's location as a header. 
-If the object already contains an `@id` that matches an object in RERUM,
-the API will direct the user to use [update](#update) instead.
-
 ~~~ (json)
 {
   "code" : 201,
@@ -133,6 +127,12 @@ the API will direct the user to use [update](#update) instead.
 }
 
 ~~~
+
+Add a completely new object to RERUM and receive the location
+in response.  Accepts only single JSON objects for RERUM storage. 
+Mints a new URI and returns the object's location as a header. 
+If the object already contains an `@id` that matches an object in RERUM,
+the API will direct the user to use [update](#update) instead.
 
 ### Batch Create
 
@@ -160,13 +160,6 @@ will attempt to continue for all submitted items.
 - **`{JSON}`**—The requested new state for the object.
 - **`{JSON}`**—Containing various bits of information about the PUT update.  The object looks like
 
-Replace an existing record through reference to its internal
-RERUM id.  This will have the effects of set and unset actions.  
-New keys will be created and keys not present in the request will be dropped.  
-When an object is updated, the `@id` will be changed, as the previous
-version will maintain its place in the history of that object.
- __rerum, @id and ObjectID updates are ignored.
-
 ~~~ (json)
 {
   "code" : 200,
@@ -184,6 +177,15 @@ version will maintain its place in the history of that object.
   }
 }
 ~~~
+
+Replace an existing record through reference to its internal
+RERUM id.  This will have the effects of set and unset actions.  
+New keys will be created and keys not present in the request will be dropped.  
+When an object is updated, the `@id` will be changed, as the previous
+version will maintain its place in the history of that object.
+ __rerum, @id and ObjectID updates are ignored.
+
+
 
 ### Batch Update
 
@@ -294,6 +296,7 @@ Objects marked as deleted do not return in query results except queries by @id.
 There is no batch `DELETE` planned. 
 
 A deleted object looks like
+
 ~~~ (json)
 {
   "@id" : "http://rerum.io/rerumserver/id/5a57a30fe4b09163a80a0a67",
