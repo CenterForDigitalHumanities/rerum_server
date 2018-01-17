@@ -205,6 +205,25 @@ public class ServerAction extends ActionSupport implements ServletRequestAware, 
             }
         }
     }
+    
+    private String createAgent(){
+        String uri = "";
+        
+        String atContext = "http://store.rerum.io/v1/context.json";
+        String atType = "foaf:Agent";
+        // read agent bits from registration request
+        String mbox = "email";
+        String label = "Application Name";
+        String homepage = "Web site";
+        
+        // reserve a new id in the store and update uri
+        // uri = NEW;
+        
+        // Save new agent to Object store
+        BasicDBObject query = new BasicDBObject();
+        
+        return uri;
+    }
 
     /**
      * @return the acceptedServer
