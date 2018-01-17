@@ -231,7 +231,7 @@ payload. If a property submitted in the payload does not exist, an error will be
 `key:null` is submitted, the key will not be removed.  Instead, the value will be null. 
 Properties not submitted in the payload object will go unaltered.  If a new key is submitted, the set action will not
 be performed.  Instead, an error will be returned as this method only updates existing keys. 
-__rerum, @id and ObjectID updates are ignored.
+ __rerum, @id and ObjectID updates are ignored.
 
 ### Add Properties
 
@@ -244,7 +244,7 @@ __rerum, @id and ObjectID updates are ignored.
 
 A single object is updated by adding all properties in the JSON
 payload. If a property already exists, a warning is returned to the user. 
-__rerum, @id and ObjectID updates are ignored.
+ __rerum, @id and ObjectID updates are ignored.
 
 ### Remove Properties
 
@@ -256,8 +256,8 @@ __rerum, @id and ObjectID updates are ignored.
 - **`{JSON}`**—Containing various bits of information about the PATCH update.
 
 A single object is updated by dropping all properties
-in the JSON payload list like `key:null`. If a value is included, it must match
-to be dropped otherwise an warning is returned to the user
+in the JSON payload list like `key:null`. Keys must match
+to be dropped otherwise a warning is returned to the user
 . __rerum, @id and ObjectID updates are ignored.
 
 - **`{JSON}`**—Containing various bits of information about any PATCH update action.  The object looks like:
@@ -379,3 +379,4 @@ RERUM follows the W3C Annotation protocol.  To learn more about Web Annotation s
 RERUM follows REST, IIIF and Web Annotation standards to form its responses to users.  For more information about why RERUM chose a certain HTTP status code see the graph below.
 ![httpdd](https://user-images.githubusercontent.com/3287006/32914301-b2fbf798-cada-11e7-9541-a2bee8454c2c.png)
 If you are confused as to what type of requests give what reponse, review the [Web Annotation](#web-annotation) and [RESTful](#rest) standards.
+**Listing of responses is under development at this time.**
