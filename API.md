@@ -19,6 +19,7 @@
         - [Delete](#delete)
     - [Smart objects](#smart-objects)
     - [__rerum](#__rerum)
+    - [RERUM @context](#rerum-context)
     - [REST](#rest)
     - [IIIF](#iiif)
     - [Web Annotation](#web-annotation)
@@ -279,7 +280,7 @@ object about the record retreived, such as it exists at the time.
 | history.previous | String    | The URI of the immediately previous version of this object.
 | generatedBy      | String    | Reference to the application whose key was used to commit the object.
 | createdAt        | timestamp | Though the object may also assert this about itself, RERUM controls this value.
-| isOverwritten    | timestamp | Written when `?overwrite=true` is used. Does not expose the delta, just the update.
+| isOverwritten    | timestamp | Written when PUT update is used. Does not expose the delta, just the update.
 | isReleased       | boolean   | Simple reference for queries of the RERUM releasing motivations.
 | releases.previous| String    | URI of the released version most recent anscestor in the chain.
 | releases.next    | [String]  | Array of URIs for the first `released` decendant in the downstream branches
@@ -288,13 +289,16 @@ In the future, this may be encoded as an annotation on the object, using
 existing vocabularies, but for now the applications accessing RERUM will
 need to interpret these data if it is relevant.
 
+## RERUM context
+Objects in RERUM should be JSON-LD, which means they should have an @context provided when they are created.  However, Ordinary JSON documents can be created in the store.  These JSON documents can be interpreted as JSON-LD by referencing a JSON-LD context document in an HTTP Link Header as described here https://www.w3.org/TR/json-ld/#h3_interpreting-json-as-json-ld.  RERUM provides this @context in the Link header and also provides an @context for the __rerum terms mentioned above.  
+
 ## REST
 
-The intention of the API is to follow RESTful practices.  To learn more about what it means to be RESTful see http://www.restapitutorial.com/resources.html
+The intention of the API is to follow RESTful practices.  These practices drive what requests we accept and what responses we have to the various scenarios around those requests.  To learn more about what it means to be RESTful see http://www.restapitutorial.com/resources.html
 
 ## IIIF
 
-RERUM fully supports the IIIF standard and makes third party calls to the IIIF validation API http://iiif.io/api/presentation/validator/service/.  A piece of the response if the validation response of this API so the user knows whether or not their data is following this standard.  Objects that fail IIIF validation are still saved.  
+RERUM fully supports the IIIF standard and makes third party calls to the IIIF validation API http://iiif.io/api/presentation/validator/service/.  A piece of the RERUM response is the validation response of this API so the user knows whether or not their data is following this standard.  Objects that fail IIIF validation are still saved.  
 
 ## Web Annotation
 
