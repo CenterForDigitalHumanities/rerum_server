@@ -12,7 +12,7 @@
     - [PUT](#put)
         - [Update](#update)
         - [Batch Update](#batch-update)
-    - [PATCH]
+    - [PATCH](#patch)
       - [Update](#patch-update)
       - [Set/Unset](#patch-set)
     - [DELETE](#delete)
@@ -98,7 +98,6 @@ the API will direct the user to use [update](#update) instead.
 
 ~~~
 
-
 ### Batch Create
 
 | Patterns | Payloads | Responses
@@ -117,33 +116,35 @@ will attempt to continue for all submitted items.
 
 ### Update
 
-Update an existing record through reference to its internal
-RERUM id.
+Replace an existing record through reference to its internal
+RERUM id.  This will have the effect of set and unset actions.  
+New keys will be created and keys notpresent in the request will be dropped.  
+When an object is updated, the `@id` will be changed, as the previous
+version will maintain its place in the history of that object.
+ __rerum, @id and ObjectID updates are ignored.
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/res/:id` | `{JSON}` | 202: `header.Location` "Updated `[@id]`
-| | | 400: "Unknown property."
-| | | 404: "No record found."
+| `/put_update.action` | `{JSON}` | 200: `header.Location` "New state `{JSON}`"
 
-A single object is updated with all properties in the
-JSON payload. Unnamed properties are not affected. Unknown
-properties throw 400 (use [set](#add-properties)). `@type` will not be normalized
-in storage and `@context` for [known types](#collection-aliases)
-are filled upon delivery and may be omitted.
+### Batch Update
 
-When an object is updated, the `@id` will be changed, as the previous
-version will maintain its place in the history of that object. To overwrite
-the same object, instead of creating a new version, include `?overwrite=true`
-in the request. See [Friendly Practices](practices.md) for the rare times when
-creating a new entry in the history is not wanted and [Versioning](version.md)
-for an explanation of how each object's history is maintained in RERUM.
+| Patterns | Payloads | Responses
+| ---     | ---     | ---
+| `/batch_update.action` | `[{JSON}]` | 200: "[header.Location]" "New state `[{JSON}]`"
+
+The array of JSON objects passed in will be updated in the
+order submitted and the response will have the URI of the
+resource or an error message in the body as an array in the
+same order. 
+
+## PATCH
 
 ### Add Properties
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/set/:id` | `{JSON}` | 202: `header.Location` "Updated `[@id]`
+| `/patch_set.action` | `{JSON}` | 200: `header.Location` "Updated `[@id]`
 | | | 404: "No record found."
 
 A single object is updated by adding all properties in the JSON
@@ -154,31 +155,14 @@ feedback.
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/unset/:id` | `{JSON}` | 202: `header.Location` "Updated `[@id]`
+| `/patch_set.action` | `{JSON}` | 202: `header.Location` "Updated `[@id]`
 | | | 404: "No record found."
 
 A single object is updated by dropping all properties
 in the JSON payload. If a value is included, it must match
 to be dropped.
 
-### Batch Update
 
-| Patterns | Payloads | Responses
-| ---     | ---     | ---
-| `/[res,set,unset]/:id` | `[{JSON}]` | 202: "`[@id]`"
-
-The array of JSON objects passed in will be updated in the
-order submitted and the response will have the URI of the
-resource or an error message in the body as an array in the
-same order. [Smart objects](#smart-objects) will be handled a
-little differently. Batch updating has no equivalent `overwrite`
-parameter.
-
-The request path will indicate the action and possible errors.
-The response body will include status and errors as above for
-201, 202, 400, etc., but the detail will be much less than a
-single request. When errors are encountered, the batch process
-will attempt to continue for all submitted items.
 
 ## DELETE
 
