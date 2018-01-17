@@ -282,7 +282,7 @@ to be dropped otherwise a warning is returned to the user
 
 ## DELETE
 
-Requests can be made by the string @id or a JSON object containsing the {@id:id}.  
+Requests can be made by the string @id or a JSON object containing the @id.  
 RERUM DELETE will not remove anything from the server. Deleted objects are only marked as deleted.
 Objects marked as deleted do not return in query results except queries by @id.
 
