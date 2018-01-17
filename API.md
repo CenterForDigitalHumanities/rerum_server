@@ -1,25 +1,27 @@
 # API (0.9)
-
 - [API](#api)
     - [GET](#get)
-        - [GET by ID](#single-object-by-id)
-        - [GET by custom query](#get-by-custom-query)
+        - [by ID](#single-object-by-id)
+        - [by custom query](#by-custom-query)
+        - [history parents](#history-tree-before-id)
+        - [history children](#history-tree-since-id)
     - [POST](#post)
         - [Create](#create)
         - [Batch Create](#batch-create)
     - [PUT](#put)
-        - [Update](#update)
+        - [Update](#put-update)
         - [Batch Update](#batch-update)
     - [PATCH](#patch)
         - [Update](#patch-update)
-        - [Set/Unset](#patch-set)
+        - [Set](#add-properties)
+        - [Unset](#remove-properties)
     - [DELETE](#delete)
         - [Delete](#delete)
     - [Smart objects](#smart-objects)
     - [__rerum](#__rerum)
     - [REST](#rest)
     - [IIIF](#iiif)
-    - [Web Annotation](#web-annotatio)
+    - [Web Annotation](#web-annotation)
     - [Error Responses](#rerum-responses)
 
 All the following interactions will take place between
@@ -30,7 +32,6 @@ you do), the base URL is `http://rerum.io/rerumserver`.
 ## GET
 
 ### Single object by id
-
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
 | `/id/@id` | `empty` | 200: JSON \[obj]
@@ -38,18 +39,6 @@ you do), the base URL is `http://rerum.io/rerumserver`.
 - **`@id`**—the @id of the object in RERUM.
 - Call over HTTP can be made through GET request to their
 unique URL Ex. http://rerum.io/rerumserver/id/aee33434bbc333444ff
-
-### History tree since ID
-As objects in RERUM are altered, their previous state is saved through
-a history tree.  You can ask for all child versions of a given object.
-
-| Patterns | Payloads | Responses
-| ---     | ---     | ---
-| `/since/_id` | `empty` | 200: `[{JSON}]`
-
-- **`@id`**—the id of the object in RERUM.
-- Call over HTTP can be made through GET request to their
-unique URL Ex. http://rerum.io/rerumserver/since/aee33434bbc333444ff
 
 ### History tree before ID
 As objects in RERUM are altered, their previous state is saved through
@@ -63,8 +52,19 @@ a history tree.  You can ask for all parent versions of a given object.
 - Call over HTTP can be made through GET request to their
 unique URL Ex. http://rerum.io/rerumserver/history/aee33434bbc333444ff
 
-#### By custom query
+### History tree since ID
+As objects in RERUM are altered, their previous state is saved through
+a history tree.  You can ask for all child versions of a given object.
 
+| Patterns | Payloads | Responses
+| ---     | ---     | ---
+| `/since/_id` | `empty` | 200: `[{JSON}]`
+
+- **`@id`**—the id of the object in RERUM.
+- Call over HTTP can be made through GET request to their
+unique URL Ex. http://rerum.io/rerumserver/since/aee33434bbc333444ff
+
+### By custom query
 The bulk of any application's interactions with RERUM will be
 in the queries. This simple format will be made more complex
 in the future, but should serve the basic needs as it is.
@@ -136,7 +136,7 @@ will attempt to continue for all submitted items.
 
 ## PUT
 
-### Update
+### PUT Update
 
 Replace an existing record through reference to its internal
 RERUM id.  This will have the effect of set and unset actions.  
@@ -173,7 +173,6 @@ version will maintain its place in the history of that object.
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
 | `/v1/batch_update.action` | `[{JSON}]` | 200: "[header.Location]" New state `[{JSON}]`
-
 The array of JSON objects passed in will be updated in the
 order submitted and the response will have the URI of the
 resource or an error message in the body as an array in the
@@ -181,12 +180,24 @@ same order. __rerum, @id and ObjectID updates are ignored.
 
 ## PATCH
 
+### Patch Update
+
+| Patterns | Payloads | Responses
+| ---     | ---     | ---
+| `/v1/patch_update.action` | `{JSON}` | 200: `header.Location` New state `[{JSON}]`
+
+A single object is updated by altering the set or subset of properties in the JSON
+payload. If a property submitted in the payload does not exist, an error will be returned to the user. If
+`key:null` is submitted, the key will not be removed.  Instead, the value will be null. 
+Properties not submitted in the payload object will go unaltered.  If a new key is submitted, the set action will not
+be performed.  Instead, an error will be returned as this method only updates existing keys. 
+__rerum, @id and ObjectID updates are ignored.
+
 ### Add Properties
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
 | `/v1/patch_set.action` | `{JSON}` | 200: `header.Location` New state `[{JSON}]`
-| | | 404: "Object not in RERUM."
 
 A single object is updated by adding all properties in the JSON
 payload. If a property already exists, a warning is returned to the user. 
@@ -259,15 +270,19 @@ existing vocabularies, but for now the applications accessing RERUM will
 need to interpret these data if it is relevant.
 
 ## REST
+
 The intention of the API is to follow RESTful practices.  To learn more about what it means to be RESTful see http://www.restapitutorial.com/resources.html
 
 ## IIIF
+
 RERUM fully supports the IIIF standard and makes third party calls to the IIIF validation API http://iiif.io/api/presentation/validator/service/.  A piece of the response if the validation response of this API so the user knows whether or not their data is following this standard.  Objects that fail IIIF validation are still saved.  
 
 # Web Annotation
+
 RERUM follows the W3C Annotation protocol.  To learn more about Web Annotation see https://www.w3.org/TR/annotation-protocol/
 
 ## RERUM Responses
+
 RERUM follows REST, IIIF and Web Annotation standards to form its responses to users.  For more information about why RERUM chose a certain HTTP status code see the graph below.
 ![httpdd](https://user-images.githubusercontent.com/3287006/32914301-b2fbf798-cada-11e7-9541-a2bee8454c2c.png)
 If you are confused as to what type of requests give what reponse, review the [Web Annotation](#web-annotation) and [RESTful](#rest) standards.
