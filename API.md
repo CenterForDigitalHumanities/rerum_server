@@ -34,7 +34,7 @@ you do), the base URL is `http://rerum.io/rerumserver`.
 ### Single object by id
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/id/_id` | `empty` | 200: JSON \[obj]
+| `/id/_id` | `empty` | 200: `{JSON}`
 
 - **`_id`**—the id of the object in RERUM.
 - Call over HTTP can be made through GET request to their
@@ -71,7 +71,7 @@ in the future, but should serve the basic needs as it is.
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/v1/getByProperties.action` | `{JSON}` | 200: JSON [obj]
+| `/v1/getByProperties.action` | `{JSON}` | 200: `[{JSON}]`
 
 All responses are in a JSON Array, even if only a single
 record is returned. Submissions must be queries in the form of JSON. 
@@ -98,14 +98,14 @@ in response.
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/v1/create.action` | `{JSON}` | 201: `header.Location` "Created @ `[@id]` `[{JSON}]`
+| `/v1/create.action` | `{JSON}` | 201: `header.Location` "Created @ `[@id]` `{JSON}`
 
 Accepts only single JSON objects for RERUM storage. Mints a
 new URI and returns the object's location as a header. If the
 object already contains an `@id` that matches an object in RERUM,
 the API will direct the user to use [update](#update) instead.
 
-- **`[{JSON}]`**—Containing various bits of information about the create.  The object looks like
+- **`{JSON}`**—Containing various bits of information about the create.  The object looks like
 ~~~ (json)
 {
   "code" : 201,
@@ -123,7 +123,7 @@ the API will direct the user to use [update](#update) instead.
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/v1/batchCreate.action` | `[{JSON}]` | 200: "`[@id]`" 
+| `/v1/batchCreate.action` | `[{JSON}]` | 200: `[@id]`
 
 The array of JSON objects passed in will be created in the
 order submitted and the response will have the URI of the new
@@ -147,9 +147,9 @@ version will maintain its place in the history of that object.
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/v1/put_update.action` | `{JSON}` | 200: `header.Location` New state `[{JSON}]`
+| `/v1/put_update.action` | `{JSON}` | 200: `header.Location` New state `{JSON}`
 
-- **`[{JSON}]`**—Containing various bits of information about the PUT update.  The object looks like
+- **`{JSON}`**—Containing various bits of information about the PUT update.  The object looks like
 ~~~ (json)
 {
   "code" : 200,
@@ -184,7 +184,7 @@ same order. __rerum, @id and ObjectID updates are ignored.
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/v1/patch_update.action` | `{JSON}` | 200: `header.Location` New state `[{JSON}]`
+| `/v1/patch_update.action` | `{JSON}` | 200: `header.Location` New state `{JSON}`
 
 A single object is updated by altering the set or subset of properties in the JSON
 payload. If a property submitted in the payload does not exist, an error will be returned to the user. If
@@ -197,7 +197,7 @@ __rerum, @id and ObjectID updates are ignored.
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/v1/patch_set.action` | `{JSON}` | 200: `header.Location` New state `[{JSON}]`
+| `/v1/patch_set.action` | `{JSON}` | 200: `header.Location` New state `{JSON}`
 
 A single object is updated by adding all properties in the JSON
 payload. If a property already exists, a warning is returned to the user. 
@@ -207,14 +207,14 @@ __rerum, @id and ObjectID updates are ignored.
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/patch_set.action` | `{JSON}` | 202: `header.Location` New state `[{JSON}]`
+| `/patch_set.action` | `{JSON}` | 202: `header.Location` New state `{JSON}`
 
 A single object is updated by dropping all properties
 in the JSON payload list like `key:null`. If a value is included, it must match
 to be dropped otherwise an warning is returned to the user
 . __rerum, @id and ObjectID updates are ignored.
 
-- **`[{JSON}]`**—Containing various bits of information about the PATCH update.  The object looks like
+- **`{JSON}`**—Containing various bits of information about the PATCH action.  The object looks like
 ~~~ (json)
 {
   "code" : 200,
