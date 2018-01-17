@@ -239,7 +239,7 @@ be performed.  Instead, an error will be returned as this method only updates ex
 | ---     | ---     | ---
 | `/v1/patch_set.action` | `{JSON}` | 200: `header.Location` New state `{JSON}`
 
-- **`{JSON}`**—The requested new state for the object. MUST contain the @id
+- **`{JSON}`**—The requested new state for the object MUST contain the @id
 - **`{JSON}`**—Containing various bits of information about the PATCH update.
 
 A single object is updated by adding all properties in the JSON
