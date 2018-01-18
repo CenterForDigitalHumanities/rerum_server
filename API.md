@@ -381,7 +381,9 @@ RERUM follows the W3C Annotation protocol.  To learn more about Web Annotation s
 
 RERUM follows REST, IIIF and Web Annotation standards to form its responses to users.  For more information about why RERUM chose a certain HTTP status code see the graph below.
 
-![Status Graph](http://user-images.githubusercontent.com/3287006/32914301-b2fbf798-cada-11e7-9541-a2bee8454c2c.png)
+![alt text][logo]
+
+[logo]: https://user-images.githubusercontent.com/3287006/32914301-b2fbf798-cada-11e7-9541-a2bee8454c2c.png
 
 If you are confused as to what type of requests give what reponse, review the [Web Annotation](#web-annotation) and [RESTful](#rest) standards.
 **Listing of responses is undergoing development at this time.**
