@@ -737,8 +737,13 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             //Get all objects whose prime is this things @id
             query.append("__rerum.history.prime", primeID);
             ls_versions = mongoDBService.findByExample(Constant.COLLECTION_ANNOTATION, query);
-            //@theHabes FIXME This result's objects contain _id
+            for(int i=0 ; i<ls_versions.size(); i++){
+                BasicDBObject version = (BasicDBObject)ls_versions.get(i);
+                version.remove("_id");
+                ls_versions.set(i, version);
+            }
             rootObj = (BasicDBObject) JSON.parse(obj.toString()); 
+            rootObj.remove("_id");
             //Prepend the rootObj we know about
             ls_versions.add(0, rootObj);
         }
@@ -747,10 +752,15 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             //Get all objects whose prime is equal to this ID
             query.append("__rerum.history.prime", primeID);
             ls_versions = mongoDBService.findByExample(Constant.COLLECTION_ANNOTATION, query);
-            //@theHabes FIXME This result's objects contain _id
+            for(int i=0 ; i<ls_versions.size(); i++){
+                BasicDBObject version = (BasicDBObject)ls_versions.get(i);
+                version.remove("_id");
+                ls_versions.set(i, version);
+            }
             queryForRoot.append("@id", primeID);
             rootObj = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, queryForRoot);
             //Prepend the rootObj whose ID we knew and we queried for
+            rootObj.remove("_id");
             ls_versions.add(0, rootObj);
         }
         return ls_versions;
@@ -916,7 +926,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     //If the object already in the database contains the key found from the object recieved from the user, error out this is not a set. 
                     for(String key : update_anno_keys){
                         if(originalObject.containsKey(key)){
-                            if(key.equals("@id") || key.equals("__rerum") || key.equals("objectID") ){
+                            if(key.equals("@id") || key.equals("__rerum") || key.equals("objectID") || key.equals("_id") ){
                                 // Ignore these in a PATCH.  DO NOT update, DO NOT count as an attempt to update
                             }
                             else{
@@ -956,6 +966,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                             BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
                             dboWithObjectID.append("@id", newNextAtID);
                             newObject.element("@id", newNextAtID);
+                            newObject.remove("_id");
                             mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
                             historyNextUpdatePassed = alterHistoryNext(updateHistoryNextID, newNextAtID); //update history.next or original object to include the newObject @id
                             if(historyNextUpdatePassed){
@@ -1023,7 +1034,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     for(String key : update_anno_keys){
                         if(originalObject.containsKey(key) ){
                             //Skip keys we want to ignore and keys that match but have matching values
-                            if(!(key.equals("@id") || key.equals("__rerum") || key.equals("objectID")) && received.get(key) != originalObject.get(key)){
+                            if(!(key.equals("@id") || key.equals("__rerum") || key.equals("objectID") || key.equals("_id")) && received.get(key) != originalObject.get(key)){
                                 updatedObject.remove(key);
                                 updatedObject.append(key, received.get(key));
                                 updateCount +=1 ;
@@ -1098,7 +1109,9 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         //cubap: I'm not sold we have to do this. Our versioning would allow multiple changes. 
         //The application might want to throttle internally, but it can.
         Boolean historyNextUpdatePassed = false;
+        System.out.println("PUT update");
         if(null!= processRequestBody(request, true) && methodApproval(request, "put_update")){
+            System.out.println("PUT update 2");
             BasicDBObject query = new BasicDBObject();
             JSONObject received = JSONObject.fromObject(content); 
             String updateHistoryNextID = received.getString("@id");
@@ -1107,11 +1120,14 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             BasicDBObject updatedObject = (BasicDBObject) JSON.parse(received.toString()); //A copy of the original, this will be saved as a new object.  Make all edits to this variable.
             JSONObject originalJSONObj = JSONObject.fromObject(originalObject);
             boolean alreadyDeleted = checkIfDeleted(JSONObject.fromObject(originalObject));
+            System.out.println("1");
             if(alreadyDeleted){
                 writeErrorResponse("The object you are trying to update is deleted.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
             }
             else{
+                System.out.println("2");
                 if(null != originalObject){
+                    System.out.println("3");
                     JSONObject newObject = JSONObject.fromObject(updatedObject);//The edited original object meant to be saved as a new object (versioning)
                     JSONObject originalProperties = originalJSONObj.getJSONObject("__rerum");
                     newObject.element("__rerum", originalProperties);
@@ -1120,12 +1136,14 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     newObject.remove("@id"); //This is being saved as a new object, so remove this @id for the new one to be set.
                     DBObject dbo = (DBObject) JSON.parse(newObject.toString());
                     String newNextID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
+                    System.out.println("4");
                     String newNextAtID = "http://devstore.rerum.io/rerumserver/id/"+newNextID;
                     BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
                     dboWithObjectID.append("@id", newNextAtID);
                     newObject.element("@id", newNextAtID);
                     mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
                     historyNextUpdatePassed = alterHistoryNext(updateHistoryNextID, newNextAtID); //update history.next or original object to include the newObject @id
+                    System.out.println("5");
                     if(historyNextUpdatePassed){
                         JSONObject jo = new JSONObject();
                         JSONObject iiif_validation_response = checkIIIFCompliance(newNextAtID, "2.1");
@@ -1177,9 +1195,13 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     public boolean checkIfDeleted(String obj_id){
         BasicDBObject query = new BasicDBObject();
         BasicDBObject dbObj;
+        JSONObject checkThis = new JSONObject();
         query.append("@id", obj_id);
         dbObj = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); 
-        JSONObject checkThis = JSONObject.fromObject(dbObj);
+        if(null != dbObj){
+            checkThis = JSONObject.fromObject(dbObj);
+        }
+        
         return checkIfDeleted(checkThis);
 
     }
@@ -1214,8 +1236,13 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      */
     private boolean checkIfReleased(JSONObject obj){
         boolean released = false;
+        System.out.println("Object for delete is");
+        System.out.println(obj);
         //@cubap @theHabes #44.  What if obj does not have __rerum
-        if(!obj.getJSONObject("__rerum").getString("isReleased").equals("")){
+        if(!obj.containsKey("__rerum") || !obj.getJSONObject("__rerum").containsKey("isReleased")){
+            released = false;
+        }
+        else if(!obj.getJSONObject("__rerum").getString("isReleased").equals("")){
             released = true;
         }
         return released;
@@ -1229,9 +1256,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     public boolean checkIfReleased(String obj_id){
         BasicDBObject query = new BasicDBObject();
         BasicDBObject dbObj;
+        JSONObject checkThis = new JSONObject();
         query.append("@id", obj_id);
         dbObj = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); 
-        JSONObject checkThis = JSONObject.fromObject(dbObj);
+        if(null != dbObj){
+            checkThis = JSONObject.fromObject(dbObj);
+        }
         return checkIfReleased(checkThis);
     }
        
@@ -1247,10 +1277,14 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             JSONObject safe_received;
             JSONObject updatedWithFlag = new JSONObject();
             BasicDBObject updatedObjectWithDeletedFlag;
+            System.out.println("Delete this recieved");
+            System.out.println(received);
             if(received.containsKey("@id")){
                 query.append("@id", received.getString("@id"));
                 BasicDBObject mongo_obj = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query);
                 safe_received = JSONObject.fromObject(mongo_obj); //We can trust this is the object as it exists in mongo
+                System.out.println("Safe received obj is ");
+                System.out.println(safe_received);
                 boolean alreadyDeleted = checkIfDeleted(safe_received);
                 boolean permission = false;
                 boolean isReleased = false;
