@@ -1139,7 +1139,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                                 treeHealed  = healReleasesTree(originalJSONObj);
                             }
                             else{ //The release tree has not been established and the root is being released.
-                                treeHealed = establishReleaseTree(originalJSONObj);
+                                treeHealed = establishReleasesTree(originalJSONObj);
                             }
                         }
                         if(treeHealed){
@@ -1189,7 +1189,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      */
     private boolean healReleasesTree (JSONObject obj) throws Exception{
         Boolean altered = true;
-        BasicDBObject query = new BasicDBObject();
         List<DBObject> ls_versions = getAllVersions(obj);
         JSONArray descendents = getAllDescendents(ls_versions, obj, new JSONArray());
         JSONArray anscestors = getAllAncestors(ls_versions, obj, new JSONArray());
@@ -1231,7 +1230,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      */
     private boolean healReleasesTree (JSONObject obj, String lastPrevID) throws Exception{
         Boolean altered = true;
-        BasicDBObject query = new BasicDBObject();
         List<DBObject> ls_versions = getAllVersions(obj);
         JSONArray descendents = getAllDescendents(ls_versions, obj, new JSONArray());
         JSONArray anscestors = getAllAncestors(ls_versions, obj, new JSONArray());
@@ -1244,6 +1242,28 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 DBObject descToUpdate = (DBObject) JSON.parse(desc.toString());
                 mongoDBService.update(Constant.COLLECTION_ANNOTATION, origDesc, descToUpdate);
             }
+        }
+        for(int a=0; a<anscestors.size(); a++){
+            JSONObject ans = anscestors.getJSONObject(a);
+            DBObject origAns = (DBObject) JSON.parse(ans.toString());
+            ans.getJSONObject("__rerum").getJSONObject("releases").getJSONArray("next").add(obj.getString("@id"));
+            DBObject ansToUpdate = (DBObject) JSON.parse(ans.toString());
+            mongoDBService.update(Constant.COLLECTION_ANNOTATION, origAns, ansToUpdate);
+        }
+        return altered;
+    }
+    
+    private boolean establishReleasesTree (JSONObject obj) throws Exception{
+        Boolean altered = true;
+        List<DBObject> ls_versions = getAllVersions(obj);
+        JSONArray descendents = getAllDescendents(ls_versions, obj, new JSONArray());
+        JSONArray anscestors = getAllAncestors(ls_versions, obj, new JSONArray());
+        for(int d=0; d<descendents.size(); d++){
+            JSONObject desc = descendents.getJSONObject(d);
+            DBObject origDesc = (DBObject) JSON.parse(desc.toString());
+            desc = desc.getJSONObject("__rerum").getJSONObject("releases").element("previous", obj.getString("@id"));
+            DBObject descToUpdate = (DBObject) JSON.parse(desc.toString());
+            mongoDBService.update(Constant.COLLECTION_ANNOTATION, origDesc, descToUpdate);
         }
         for(int a=0; a<anscestors.size(); a++){
             JSONObject ans = anscestors.getJSONObject(a);
