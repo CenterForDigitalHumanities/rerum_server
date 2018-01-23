@@ -1102,6 +1102,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      /**
      * Public facing servlet to release an existing RERUM object.  This will not perform history tree updates, but rather releases tree updates.
      * (AKA a new node in the history tree is NOT CREATED here.)
+     * 
      * @respond with new state of the object in the body.
      * @throws java.io.IOException
      * @throws javax.servlet.ServletException
@@ -1144,11 +1145,13 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         }
                         if(treeHealed){ //If the tree was established/healed
                             //perform the update to isReleased of the object being released. The object being released needs to changes to releases.previous or releases.next[]
+                            //updates to the ancestors' and descendents' previous/next are already done.
                             mongoDBService.update(Constant.COLLECTION_ANNOTATION, originalObject, releasedObject);
                             JSONObject jo = new JSONObject();
                             jo.element("code", HttpServletResponse.SC_OK);
                             jo.element("new_obj_state", releasedObject); //FIXME: @webanno standards say this should be the response.
-                            jo.element("previously_released_id", previousReleasedID); //FIXME: @webanno standards say this should be the response.
+                            jo.element("previously_released_id", previousReleasedID); 
+                            jo.element("next_releases_ids", nextReleases);
                             try {
                                 addWebAnnotationHeaders(updateToReleasedID, isContainerType(originalJSONObj), isLD(originalJSONObj));
                                 response.addHeader("Access-Control-Allow-Origin", "*");
@@ -1180,8 +1183,10 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * Internal helper method to update the releases tree from a given object that is being released.  
      * https://www.geeksforgeeks.org/find-whether-an-array-is-subset-of-another-array-set-1/
      * 
+     * This method only receives reliable objects from mongo.
+     * 
      * @param obj the RERUM object being released
-     * @return Boolean altered true on success, false on fail
+     * @return Boolean success or some kind of Exception
      */
     private boolean healReleasesTree (JSONObject obj) throws Exception{
         Boolean success = true;
@@ -1227,12 +1232,13 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     
     /**
      * Internal helper method to establish the releases tree from a given object that is being released.  
-     * This can probably be collapsed into healReleasesTree.
+     * This can probably be collapsed into healReleasesTree.  It contains no checks, it is brute force update ancestors and descendents.
+     * It is significantly cleaner and slightly faster than healReleaseTree() which is why I think we should keep them separate. 
      *  
      * This method only receives reliable objects from mongo.
      * 
      * @param obj the RERUM object being released
-     * @return Boolean altered true on success, false on fail
+     * @return Boolean sucess or some kind of Exception
      */
     private boolean establishReleasesTree (JSONObject obj) throws Exception{
         Boolean success = true;
