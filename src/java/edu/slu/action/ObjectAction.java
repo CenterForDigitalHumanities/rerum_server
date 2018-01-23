@@ -326,6 +326,14 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     writeErrorResponse("Improper request method for updating, PATCH to add or remove keys from this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
                 }
             break;
+            case "release":
+            if(requestMethod.equals("PATCH")){
+                restful = true;
+            }
+            else{
+                writeErrorResponse("Improper request method for updating, please use PATCH to alter this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+            }
+            break;
             case "create":
                 if(requestMethod.equals("POST")){
                     restful = true;
@@ -1107,24 +1115,23 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @throws java.io.IOException
      * @throws javax.servlet.ServletException
      */
-    public void release() throws IOException, ServletException, Exception{
+    public void releaseObject() throws IOException, ServletException, Exception{
         boolean treeHealed = false;
-        System.out.println("releasing");
+        System.out.println("releasing...");
         if(null!= processRequestBody(request, true) && methodApproval(request, "release")){
             BasicDBObject query = new BasicDBObject();
-            BasicDBObject queryPreviousReleased = new BasicDBObject();
             JSONObject received = JSONObject.fromObject(content);
+            System.out.println(received);
             if(received.containsKey("@id")){
                 System.out.println("Found the @id");
                 String updateToReleasedID = received.getString("@id");
                 query.append("@id", updateToReleasedID);
-                String previousReleasedID = received.getJSONObject("__rerum").getJSONObject("releases").getString("previous");
-                JSONArray nextReleases = received.getJSONObject("__rerum").getJSONObject("releases").getJSONArray("next");
-                BasicDBObject previousRelease;
                 BasicDBObject originalObject = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The original DB object
                 BasicDBObject releasedObject = (BasicDBObject) originalObject.copy(); //A copy of the original.  Make all edits to this variable.
-                JSONObject originalJSONObj = JSONObject.fromObject(originalObject); //The original object represented as a JSON object.  Safe for edits. 
-                boolean alreadyReleased = checkIfReleased(originalJSONObj);
+                JSONObject safe_original = JSONObject.fromObject(originalObject); //The original object represented as a JSON object.  Safe for edits. 
+                String previousReleasedID = safe_original.getJSONObject("__rerum").getJSONObject("releases").getString("previous");
+                JSONArray nextReleases = safe_original.getJSONObject("__rerum").getJSONObject("releases").getJSONArray("next");
+                boolean alreadyReleased = checkIfReleased(safe_original);
                 if(alreadyReleased){
                     System.out.println("already released!");
                     writeErrorResponse("This object is already released.  You must fork this annotation as one of your own to release it.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
@@ -1132,22 +1139,20 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 else{
                     if(null != originalObject){
                         System.out.println("It is a RERUM object");
-                        originalJSONObj = originalJSONObj.getJSONObject("__rerum").element("isReleased", System.currentTimeMillis());
-                        releasedObject = (BasicDBObject) JSON.parse(originalJSONObj.toString());
+                        safe_original.getJSONObject("__rerum").element("isReleased", System.currentTimeMillis()+"");
+                        releasedObject = (BasicDBObject) JSON.parse(safe_original.toString());
                         if(!"".equals(previousReleasedID)){// A releases tree exists and an acestral object is being released.  
                             System.out.println("A releases tree exists and an acestral object is being released.  ");
-                            queryPreviousReleased.append("@id", previousReleasedID);
-                            previousRelease = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, queryPreviousReleased); //The previous release in the tree.
-                            treeHealed  = healReleasesTree(originalJSONObj); 
+                            treeHealed  = healReleasesTree(safe_original); 
                         }
                         else{ //There was no releases previous value. 
                             if(nextReleases.size() > 0){ //The release tree has been established and a descendent object is now being released.
                                 System.out.println("The release tree has been established and a descendent object is now being released.");
-                                treeHealed  = healReleasesTree(originalJSONObj);
+                                treeHealed  = healReleasesTree(safe_original);
                             }
                             else{ //The release tree has not been established
                                 System.out.println("The release tree has not been established");
-                                treeHealed = establishReleasesTree(originalJSONObj);
+                                treeHealed = establishReleasesTree(safe_original);
                             }
                         }
                         if(treeHealed){ //If the tree was established/healed
@@ -1162,7 +1167,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                             System.out.println("BYE!");
                             System.out.println(jo);
                             try {
-                                addWebAnnotationHeaders(updateToReleasedID, isContainerType(originalJSONObj), isLD(originalJSONObj));
+                                addWebAnnotationHeaders(updateToReleasedID, isContainerType(safe_original), isLD(safe_original));
                                 response.addHeader("Access-Control-Allow-Origin", "*");
                                 response.setStatus(HttpServletResponse.SC_OK);
                                 out = response.getWriter();
@@ -1204,7 +1209,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         List<DBObject> ls_versions = getAllVersions(releasingNode);
         JSONArray descendents = getAllDescendents(ls_versions, releasingNode, new JSONArray());
         JSONArray anscestors = getAllAncestors(ls_versions, releasingNode, new JSONArray());
-        System.out.println("Got all ancestors and descedents");
+        System.out.println("Got "+anscestors.size()+" ancestors and "+descendents.size()+" descedents");
         for(int d=0; d<descendents.size(); d++){ //For each descendent
             JSONObject desc = descendents.getJSONObject(d);
             boolean prevMatchCheck = desc.getJSONObject("__rerum").getJSONObject("releases").getString("previous").equals(releasingNode.getJSONObject("__rerum").getJSONObject("releases").getString("previous"));
@@ -1214,35 +1219,67 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 System.out.println("the descendant's previous matches the node I am releasing's releases.previous");
                 //If the descendant's previous matches the node I am releasing's releases.previous, replace descendant releses.previous with node I am releasing's @id. 
                 desc.getJSONObject("__rerum").getJSONObject("releases").element("previous", releasingNode.getString("@id"));
-                desc.getJSONObject("__rerum").getJSONObject("releases").element("replaces", releasingNode.getString("@id"));
+                if(!desc.getJSONObject("__rerum").getString("isReleased").equals("")){ 
+                    System.out.println("Found a replaces situation.  An descendent of an object I am releasing is released.");
+                    //If this descendent is released, it replaces our node being released
+                    desc.getJSONObject("__rerum").getJSONObject("releases").element("replaces", releasingNode.getString("@id")); 
+                }
                 DBObject descToUpdate = (DBObject) JSON.parse(desc.toString());
                 mongoDBService.update(Constant.COLLECTION_ANNOTATION, origDesc, descToUpdate);
             }
         }
-        
+        JSONArray origNextArray = releasingNode.getJSONObject("__rerum").getJSONObject("releases").getJSONArray("next");
         for(int a=0; a<anscestors.size(); a++){ //For each ancestor
-            JSONArray origNextArray = releasingNode.getJSONObject("__rerum").getJSONObject("releases").getJSONArray("next");
             JSONArray ancestorNextArray = anscestors.getJSONObject(a).getJSONObject("__rerum").getJSONObject("releases").getJSONArray("next");
             JSONObject ans = anscestors.getJSONObject(a);
             DBObject origAns = (DBObject) JSON.parse(ans.toString());
-            //JSONArray does not do subset or subarray of any kind, we have to do the check ourselves. 
-            for (int i=0; i<origNextArray.size(); i++){ //For each id in the next array of the object I am releasing.
-                String compareOrigNextID = origNextArray.getString(i);
-                for(int j=0; j<ancestorNextArray.size(); j++){ //For each id in the ancestor's releases.next array
-                    String compareAncestorID = ancestorNextArray.getString(j);
-                    if (compareOrigNextID.equals(compareAncestorID)){ //If the id is in the next array of the object I am releasing and in the releases.next array of the ancestor
-                        System.out.println(compareOrigNextID +" equals "+compareAncestorID);
-                        System.out.println("the id is in the next array of the object I am releasing and in the releases.next array of the ancestor. remove that id");
-                        ancestorNextArray.remove(j); //remove that id.
-                    }
-                    if(j == ancestorNextArray.size()-1){ //Once I have checked against all id's in the ancestor node releases.next[] and removed the ones I needed to
-                        System.out.println("I have checked against all id's in the ancestor node releases.next[] and removed the ones I needed to");
-                        System.out.println("Add the id of the node I am releasing into the ancestor's releases.next array.");
-                        System.out.println("Add "+releasingNode.getString("@id")+" to "+ancestorNextArray);
-                        ancestorNextArray.add(releasingNode.getString("@id")); //Add the id of the node I am releasing into the ancestor's releases.next array.
-                    }
+            if(origNextArray.size() == 0){ //The releases.next on the node I am releasing is empty.  All ancestors who are empty should have the releasing node's @id added to them.
+                if(ancestorNextArray.size() == 0){
+                    ancestorNextArray.add(releasingNode.getString("@id")); //Add the id of the node I am releasing into the ancestor's releases.next array.
                 }
-            } 
+                System.out.println("Is ancestor released?  "+ans.getJSONObject("__rerum").getString("isReleased"));
+                if(!ans.getJSONObject("__rerum").getString("isReleased").equals("")){ 
+                    System.out.println("Found a replaces situation.  An ancestor of an object I am releasing is released 1");
+                    //If this ancestor is released, our node being released replaces it
+                    DBObject origReleaseNode = (DBObject) JSON.parse(releasingNode.toString());
+                    releasingNode.getJSONObject("__rerum").getJSONObject("releases").element("replaces", ans.getString("@id"));
+                    DBObject releaseNodeWithReplaces = (DBObject) JSON.parse(releasingNode.toString());
+                    //Since this is an edit to the node being released, we have to update it in the store.  It will also be updated when this calls back to replaceObject(), but
+                    //this function is not intended to return an object so we should update here instead of returning the object and updating there.  
+                    mongoDBService.update(Constant.COLLECTION_ANNOTATION, origReleaseNode, releaseNodeWithReplaces);
+                }
+            }
+            else{
+                for (int i=0; i<origNextArray.size(); i++){ //For each id in the next array of the object I am releasing (it could be []).
+                    String compareOrigNextID = origNextArray.getString(i);
+                    for(int j=0; j<ancestorNextArray.size(); j++){ //For each id in the ancestor's releases.next array
+                        String compareAncestorID = ancestorNextArray.getString(j);
+                        if (compareOrigNextID.equals(compareAncestorID)){ //If the id is in the next array of the object I am releasing and in the releases.next array of the ancestor
+                            System.out.println(compareOrigNextID +" equals "+compareAncestorID);
+                            System.out.println("the id is in the next array of the object I am releasing and in the releases.next array of the ancestor. remove that id from the ancestor next array.");
+                            ancestorNextArray.remove(j); //remove that id.
+                        }
+                        System.out.println("Is ancestor released?  "+ans.getJSONObject("__rerum").getString("isReleased"));
+                        if(!ans.getJSONObject("__rerum").getString("isReleased").equals("")){ 
+                            System.out.println("Found a replaces situation.  An ancestor of an object I am releasing is released 2");
+                            //If this ancestor is released, our node being released replaces it
+                            DBObject origReleaseNode = (DBObject) JSON.parse(releasingNode.toString());
+                            releasingNode.getJSONObject("__rerum").getJSONObject("releases").element("replaces", ans.getString("@id"));
+                            DBObject releaseNodeWithReplaces = (DBObject) JSON.parse(releasingNode.toString());
+                            //Since this is an edit to the node being released, we have to update it in the store.  It will also be updated when this calls back to replaceObject(), but
+                            //this function is not intended to return an object so we should update here instead of returning the object and updating there.  
+                            mongoDBService.update(Constant.COLLECTION_ANNOTATION, origReleaseNode, releaseNodeWithReplaces);
+                        }
+                        if(j == ancestorNextArray.size()-1 ||ancestorNextArray.size() == 0 ){ //Once I have checked against all id's in the ancestor node releases.next[] and removed the ones I needed to
+                            System.out.println("I have checked against all id's in the ancestor node releases.next[] and removed the ones I needed to");
+                            System.out.println("Add the id of the node I am releasing into the ancestor's releases.next array.");
+                            System.out.println("Add "+releasingNode.getString("@id")+" to "+ancestorNextArray);
+                            ancestorNextArray.add(releasingNode.getString("@id")); //Add the id of the node I am releasing into the ancestor's releases.next array.
+                        }
+                    }
+                } 
+            }
+
             System.out.println("Update ancestral node releases.next to the new array ");
             System.out.println(ancestorNextArray);
             ans.getJSONObject("__rerum").getJSONObject("releases").element("next", ancestorNextArray);
@@ -1272,7 +1309,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         for(int d=0; d<descendents.size(); d++){
             JSONObject desc = descendents.getJSONObject(d);
             DBObject origDesc = (DBObject) JSON.parse(desc.toString());
-            desc = desc.getJSONObject("__rerum").getJSONObject("releases").element("previous", obj.getString("@id"));
+            desc.getJSONObject("__rerum").getJSONObject("releases").element("previous", obj.getString("@id"));
             DBObject descToUpdate = (DBObject) JSON.parse(desc.toString());
             mongoDBService.update(Constant.COLLECTION_ANNOTATION, origDesc, descToUpdate);
         }
@@ -1426,7 +1463,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      */
     private boolean checkIfReleased(JSONObject obj){
         boolean released = false;
-        System.out.println("Object for delete is");
+        System.out.println("Object to check released is ");
         System.out.println(obj);
         //@cubap @theHabes #44.  What if obj does not have __rerum
         if(!obj.containsKey("__rerum") || !obj.getJSONObject("__rerum").containsKey("isReleased")){
