@@ -192,6 +192,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         String history_prime = "";
         String history_previous = "";
         String releases_previous = "";
+        String releases_replaces = releases_previous;
         String[] emptyArray = new String[0];
         rerumOptions.element("APIversion", "1.0.0");
         rerumOptions.element("createdAt", System.currentTimeMillis());
@@ -241,6 +242,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         history.element("previous", history_previous);
         history.element("prime", history_prime);
         releases.element("previous", releases_previous);
+        releases.element("replaces", releases_replaces);
         rerumOptions.element("history", history);
         rerumOptions.element("releases", releases);      
         //The access token is in the header  "Authorization: Bearer {YOUR_ACCESS_TOKEN}"
@@ -1097,8 +1099,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         }
     }
     
-      /**
-     * Public facing servlet release an existing RERUM object.  This will not perform versioning tree updates, but rather releases tree updates.
+     /**
+     * Public facing servlet to release an existing RERUM object.  This will not perform history tree updates, but rather releases tree updates.
      * (AKA a new node in the history tree is NOT CREATED here.)
      * @respond with new state of the object in the body.
      * @throws java.io.IOException
@@ -1106,7 +1108,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      */
     public void release() throws IOException, ServletException, Exception{
         boolean treeHealed = false;
-        boolean root = false;
         if(null!= processRequestBody(request, true) && methodApproval(request, "release")){
             BasicDBObject query = new BasicDBObject();
             BasicDBObject queryPreviousReleased = new BasicDBObject();
@@ -1128,21 +1129,21 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     if(null != originalObject){
                         originalJSONObj = originalJSONObj.getJSONObject("__rerum").element("isReleased", System.currentTimeMillis());
                         releasedObject = (BasicDBObject) JSON.parse(originalJSONObj.toString());
-                        if(!"".equals(previousReleasedID)){// A releases tree exists.  
+                        if(!"".equals(previousReleasedID)){// A releases tree exists and an acestral object is being released.  
                             queryPreviousReleased.append("@id", previousReleasedID);
                             previousRelease = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, queryPreviousReleased); //The previous release in the tree.
-                            treeHealed  = healReleasesTree(originalJSONObj, previousReleasedID); 
+                            treeHealed  = healReleasesTree(originalJSONObj); 
                         }
-                        else{ //There was no releases previous value.  Root will never have a previous value. 
+                        else{ //There was no releases previous value. 
                             if(nextReleases.size() > 0){ //The release tree has been established and a descendent object is now being released.
-                                // the next descendent must have this as previous.  This must have the next descendent's id in  next[].
                                 treeHealed  = healReleasesTree(originalJSONObj);
                             }
-                            else{ //The release tree has not been established and the root is being released.
+                            else{ //The release tree has not been established
                                 treeHealed = establishReleasesTree(originalJSONObj);
                             }
                         }
-                        if(treeHealed){
+                        if(treeHealed){ //If the tree was established/healed
+                            //perform the update to isReleased of the object being released. The object being released needs to changes to releases.previous or releases.next[]
                             mongoDBService.update(Constant.COLLECTION_ANNOTATION, originalObject, releasedObject);
                             JSONObject jo = new JSONObject();
                             jo.element("code", HttpServletResponse.SC_OK);
@@ -1176,85 +1177,65 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     }
     
     /**
-     * Internal helper method to update the releases tree from a given object.  We did not find a releases.previous in the node we are releasing but we did find
-     * releases.next[] values.  This let's me know a couple things
-     *    - A history tree has already been established
-     *    - I am releasing an ancestral node from a released node further down the history tree (which could mean root)
-     *      - There could be potential nodes between the node I am releasing up to and including next released node(s) who do not have a releases.previous value.  These nodes need their previous
-     *          updated to the @id of the new released node.  
-     *      - All nodes in the history tree that are an ancestor to this node must add this node's id in to their next array.
+     * Internal helper method to update the releases tree from a given object that is being released.  
+     * https://www.geeksforgeeks.org/find-whether-an-array-is-subset-of-another-array-set-1/
      * 
      * @param obj the RERUM object being released
      * @return Boolean altered true on success, false on fail
      */
     private boolean healReleasesTree (JSONObject obj) throws Exception{
-        Boolean altered = true;
+        Boolean success = true;
         List<DBObject> ls_versions = getAllVersions(obj);
         JSONArray descendents = getAllDescendents(ls_versions, obj, new JSONArray());
         JSONArray anscestors = getAllAncestors(ls_versions, obj, new JSONArray());
-        for(int d=0; d<descendents.size(); d++){
+        for(int d=0; d<descendents.size(); d++){ //For each descendant
             JSONObject desc = descendents.getJSONObject(d);
-            boolean prevCheck = desc.getJSONObject("__rerum").getJSONObject("releases").getString("previous").equals("");
+            boolean prevMatchCheck = desc.getJSONObject("__rerum").getJSONObject("releases").getString("previous").equals(obj.getJSONObject("__rerum").getJSONObject("releases").getString("previous"));
             DBObject origDesc = (DBObject) JSON.parse(desc.toString());
-            if(prevCheck){ //previous was blank meaning its a node between this release and the next one.  Its previous can take on the release id. 
-                desc = desc.getJSONObject("__rerum").getJSONObject("releases").element("previous", obj.getString("@id"));
+            if(prevMatchCheck){ 
+                //If the descendant's previous matches the node I am releasing's previous, replace descendant previous with nodes I am releasing's @id. 
+                desc.getJSONObject("__rerum").getJSONObject("releases").element("previous", obj.getString("@id"));
+                desc.getJSONObject("__rerum").getJSONObject("releases").element("replaces", obj.getString("@id"));
                 DBObject descToUpdate = (DBObject) JSON.parse(desc.toString());
                 mongoDBService.update(Constant.COLLECTION_ANNOTATION, origDesc, descToUpdate);
             }
         }
         for(int a=0; a<anscestors.size(); a++){
+            JSONArray origNextArray = obj.getJSONObject("__rerum").getJSONObject("releases").getJSONArray("next");
+            JSONArray ancestorNextArray = anscestors.getJSONObject(a).getJSONObject("__rerum").getJSONObject("releases").getJSONArray("next");
             JSONObject ans = anscestors.getJSONObject(a);
             DBObject origAns = (DBObject) JSON.parse(ans.toString());
-            ans.getJSONObject("__rerum").getJSONObject("releases").getJSONArray("next").add(obj.getString("@id"));
+            //JSONArray does not do subset or subarray of any kind, we have to do the check ourselves. 
+            for (int i=0; i<origNextArray.size(); i++){ //For each id in the next array of the object I am releasing.
+                String compareOrigNextID = origNextArray.getString(i);
+                for(int j=0; j<ancestorNextArray.size(); j++){ //For each id in the ancestor's next array
+                    String compareAncestorID = ancestorNextArray.getString(j);
+                    if (compareOrigNextID.equals(compareAncestorID)){ //If the id is in the next array of the object I am releasing and in the next array of the ancestor
+                        ancestorNextArray.remove(j); //remove that id.
+                    }
+                    if(j == ancestorNextArray.size()-1){ //Once I have checked against all id's in the ancestor node next[] and removed the ones I needed to
+                        ancestorNextArray.add(obj.getString("@id")); //Add the id of the node I am releasing into the ancestor's next array.
+                    }
+                }
+            } 
+            ans.getJSONObject("__rerum").getJSONObject("releases").element("next", ancestorNextArray);
             DBObject ansToUpdate = (DBObject) JSON.parse(ans.toString());
             mongoDBService.update(Constant.COLLECTION_ANNOTATION, origAns, ansToUpdate);
         }
-        return altered;
-    }
+        return success;
+    } 
     
     /**
-     * Internal helper method to update the releases tree from a given object.  I found there was a releases.previous, so we know a couple things:
-     *   - We are not dealing with the root object
-     *   - A history tree has already been established
-     *   - All nodes in the history tree that are an ancestor to this node must add this node's id in to their next array.  I am otherwise not concerned with
-     *     nodes between this released node and the previously released node.
-     *   - There are potential nodes after the node I am releasing up to a later release that could have a previous of the last released node.  These nodes need their releases.previous
-     *     updated to the newly released node. 
-     *   - I am not concerned about the nodes after the next release.  
+     * Internal helper method to establish the releases tree from a given object that is being released.  
+     * This can probably be collapsed into healReleasesTree.
      *  
      * This method only receives reliable objects from mongo.
      * 
      * @param obj the RERUM object being released
-     * @param lastPrevID the @id of the previously released object in the history tree.  
      * @return Boolean altered true on success, false on fail
      */
-    private boolean healReleasesTree (JSONObject obj, String lastPrevID) throws Exception{
-        Boolean altered = true;
-        List<DBObject> ls_versions = getAllVersions(obj);
-        JSONArray descendents = getAllDescendents(ls_versions, obj, new JSONArray());
-        JSONArray anscestors = getAllAncestors(ls_versions, obj, new JSONArray());
-        for(int d=0; d<descendents.size(); d++){
-            JSONObject desc = descendents.getJSONObject(d);
-            boolean prevCheck = desc.getJSONObject("__rerum").getJSONObject("releases").getString("previous").equals(lastPrevID);
-            DBObject origDesc = (DBObject) JSON.parse(desc.toString());
-            if(prevCheck){ // releases.previous was id of the last released node.  It should be the id of the newly released node.  
-                desc = desc.getJSONObject("__rerum").getJSONObject("releases").element("previous", obj.getString("@id"));
-                DBObject descToUpdate = (DBObject) JSON.parse(desc.toString());
-                mongoDBService.update(Constant.COLLECTION_ANNOTATION, origDesc, descToUpdate);
-            }
-        }
-        for(int a=0; a<anscestors.size(); a++){
-            JSONObject ans = anscestors.getJSONObject(a);
-            DBObject origAns = (DBObject) JSON.parse(ans.toString());
-            ans.getJSONObject("__rerum").getJSONObject("releases").getJSONArray("next").add(obj.getString("@id"));
-            DBObject ansToUpdate = (DBObject) JSON.parse(ans.toString());
-            mongoDBService.update(Constant.COLLECTION_ANNOTATION, origAns, ansToUpdate);
-        }
-        return altered;
-    }
-    
     private boolean establishReleasesTree (JSONObject obj) throws Exception{
-        Boolean altered = true;
+        Boolean success = true;
         List<DBObject> ls_versions = getAllVersions(obj);
         JSONArray descendents = getAllDescendents(ls_versions, obj, new JSONArray());
         JSONArray anscestors = getAllAncestors(ls_versions, obj, new JSONArray());
@@ -1272,7 +1253,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             DBObject ansToUpdate = (DBObject) JSON.parse(ans.toString());
             mongoDBService.update(Constant.COLLECTION_ANNOTATION, origAns, ansToUpdate);
         }
-        return altered;
+        return success;
     }
     
     /**
@@ -1498,7 +1479,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         updatedWithFlag.element("__deleted", deletedFlag); //We want everything wrapped in deleted except the @id.
                         Object forMongo = JSON.parse(updatedWithFlag.toString()); //JSONObject cannot be converted to BasicDBObject
                         updatedObjectWithDeletedFlag = (BasicDBObject) forMongo;
-                        boolean treeHealed = greenThumb(JSONObject.fromObject(originalObject));
+                        boolean treeHealed = healHistoryTree(JSONObject.fromObject(originalObject));
                         if(treeHealed){
                             mongoDBService.update(Constant.COLLECTION_ANNOTATION, originalObject, updatedObjectWithDeletedFlag);
                             response.setStatus(HttpServletResponse.SC_NO_CONTENT);
@@ -1526,7 +1507,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @param obj A JSONObject of the object being deleted.
      * @return A boolean representing whether or not this function succeeded. 
      */
-     private boolean greenThumb(JSONObject obj){
+     private boolean healHistoryTree(JSONObject obj){
          boolean success = true;
          String previous_id = "";
          String prime_id = "";
