@@ -1247,7 +1247,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                             ancestorNextArray.remove(j); //remove that id.
                         }
                         //Whether or not the ancestral node replaces the node I am releasing or not happens in releaseObject() when I make the node I am releasing isReleased because I can use the releases.previous there.  
-                        if(j == ancestorNextArray.size()-1 ||ancestorNextArray.size() == 0 ){ //Once I have checked against all id's in the ancestor node releases.next[] and removed the ones I needed to
+                        if(j == ancestorNextArray.size()-1){ //Once I have checked against all id's in the ancestor node releases.next[] and removed the ones I needed to
                             ancestorNextArray.add(releasingNode.getString("@id")); //Add the id of the node I am releasing into the ancestor's releases.next array.
                         }
                     }
