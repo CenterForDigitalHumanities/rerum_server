@@ -1131,7 +1131,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             BasicDBObject query = new BasicDBObject();
             JSONObject received = JSONObject.fromObject(content);
             if(received.containsKey("@id")){
-                System.out.println("Found the @id");
                 String updateToReleasedID = received.getString("@id");
                 query.append("@id", updateToReleasedID);
                 BasicDBObject originalObject = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The original DB object
@@ -1153,7 +1152,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         }
                         else{ //There was no releases previous value. 
                             if(nextReleases.size() > 0){ //The release tree has been established and a descendent object is now being released.
-                                System.out.println("The release tree has been established and a descendent object is now being released.");
                                 treeHealed  = healReleasesTree(safe_original);
                             }
                             else{ //The release tree has not been established
@@ -1273,12 +1271,10 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @return Boolean sucess or some kind of Exception
      */
     private boolean establishReleasesTree (JSONObject obj) throws Exception{
-        System.out.println("Establish Tree Helper!");
         Boolean success = true;
         List<DBObject> ls_versions = getAllVersions(obj);
         JSONArray descendents = getAllDescendents(ls_versions, obj, new JSONArray());
         JSONArray anscestors = getAllAncestors(ls_versions, obj, new JSONArray());
-        System.out.println("Got ancestors and descendents.");
         for(int d=0; d<descendents.size(); d++){
             JSONObject desc = descendents.getJSONObject(d);
             DBObject origDesc = (DBObject) JSON.parse(desc.toString());
@@ -1293,7 +1289,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             DBObject ansToUpdate = (DBObject) JSON.parse(ans.toString());
             mongoDBService.update(Constant.COLLECTION_ANNOTATION, origAns, ansToUpdate);
         }
-        System.out.println("Established the tree for "+anscestors.size()+" ancestors and "+descendents.size()+" descendents");
         return success;
     }
     
