@@ -183,11 +183,15 @@ RERUM id.  This will have the effects of set and unset actions.
 New keys will be created and keys not present in the request will be dropped.  
 When an object is updated, the `@id` will be changed, as the previous
 version will maintain its place in the history of that object.
- __rerum, @id and ObjectID updates are ignored.
+
+ __rerum, @id and ObjectID updates are ignored. Updates to released or deleted
+ objects return an error.
 
 
 
 ### Batch Update
+
+**Undergoing Development**
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
@@ -199,23 +203,23 @@ version will maintain its place in the history of that object.
 The array of JSON objects passed in will be updated in the
 order submitted and the response will have the URI of the
 resource or an error message in the body as an array in the
-same order. __rerum, @id and ObjectID updates are ignored.
+same order. 
+
+__rerum, @id and ObjectID updates are ignored. Updates to released or deleted
+ objects return an error.
 
 ## PATCH
 
 ### RERUM released
 
-**Undergoing Development**
-
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
 | `/v1/release.action` | `String @id` or `{JSON}` | 200: `header.Location` New state `{JSON}`
-| `/v1/retract.action` | `String @id` or `{JSON}` | 200: `header.Location` New state `{JSON}`
 
 - **`String @id`**—The @id of the object.
 - **`{JSON}`**—The object.  Must contain @id. 
 
-RERUM allows for an object to move back and forth between a released and unreleased state.  Objects in released states are locked such that any action that may change the object is refused.  Calling any update or delete action on a released object will result in an error response. The release and retract actions will perform an update to the __rerum.isReleased and __rerum.releases properties of the object.
+RERUM allows for an object to reach a `released` state.  Objects in released states are locked such that any action that may change the object is refused.  Calling any update or delete action on a released object will result in an error response. The release action will perform an update to the __rerum.isReleased and __rerum.releases properties of the object.
 
 ### Patch Update
 
@@ -231,7 +235,9 @@ payload. If a property submitted in the payload does not exist, an error will be
 `key:null` is submitted, the key will not be removed.  Instead, the value will be null. 
 Properties not submitted in the payload object will go unaltered.  If a new key is submitted, the set action will not
 be performed.  Instead, an error will be returned as this method only updates existing keys. 
- __rerum, @id and ObjectID updates are ignored.
+ 
+ __rerum, @id and ObjectID updates are ignored. Updates to released or deleted
+ objects return an error.
 
 ### Add Properties
 
@@ -244,7 +250,9 @@ be performed.  Instead, an error will be returned as this method only updates ex
 
 A single object is updated by adding all properties in the JSON
 payload. If a property already exists, a warning is returned to the user. 
- __rerum, @id and ObjectID updates are ignored.
+ 
+ __rerum, @id and ObjectID updates are ignored. Updates to released or deleted
+ objects return an error.
 
 ### Remove Properties
 
@@ -257,8 +265,10 @@ payload. If a property already exists, a warning is returned to the user.
 
 A single object is updated by dropping all properties
 in the JSON payload list like `key:null`. Keys must match
-to be dropped otherwise a warning is returned to the user
-. __rerum, @id and ObjectID updates are ignored.
+to be dropped otherwise a warning is returned to the user.
+
+__rerum, @id and ObjectID updates are ignored. Updates to released or deleted
+ objects return an error.
 
 - **`{JSON}`**—Containing various bits of information about any PATCH update action.  The object looks like:
 
@@ -314,6 +324,8 @@ A deleted object looks like
 ~~~
 Note: The object as it existed at the time of deletion exists in __deleted.object, which includes the history.
 
+Delete requests on deleted or released objects return an error.
+
 ## Smart objects
 
 **Undergoing Development**
@@ -332,8 +344,9 @@ object about the record retreived, such as it exists at the time.
 | createdAt        | timestamp | Though the object may also assert this about itself, RERUM controls this value.
 | isOverwritten    | timestamp | Written when PUT update is used. Does not expose the delta, just the update.
 | isReleased       | boolean   | Simple reference for queries of the RERUM releasing motivations.
-| releases.previous| String    | URI of the released version most recent anscestor in the chain.
+| releases.previous| String    | URI of the released version most recent anscestor in the chain.  If replaces exists, it will be this value.
 | releases.next    | [String]  | Array of URIs for the first `released` decendant in the downstream branches
+| releases.replaces| String    | A String representing the next ancestral release this node is motivated to replace.
 
 In the future, this may be encoded as an annotation on the object, using 
 existing vocabularies, but for now the applications accessing RERUM will
