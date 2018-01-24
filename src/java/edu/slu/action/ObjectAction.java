@@ -495,6 +495,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         else{
             response.addHeader("Link", "<http://www.w3.org/ns/ldp#Resource>; rel=\"type\""); 
         }
+        response.addHeader("Link", "<http://devstore.rerum.io/contexts/rerum.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
         response.addHeader("Allow", "GET,OPTIONS,HEAD,PUT,PATCH,DELETE,POST"); 
         if(!"".equals(etag)){
             response.addHeader("Etag", etag);
@@ -593,6 +594,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 List<DBObject> ls_versions = getAllVersions(safe_received);
                 JSONArray ancestors = getAllAncestors(ls_versions, safe_received, new JSONArray());
                 try {
+                    //@cubap @theHabes TODO how can we make this Web Annotation compliant?
+                    //addWebAnnotationHeaders(oid, isContainerType(ancestors), isLD(ancestors));
                     response.addHeader("Access-Control-Allow-Origin", "*");
                     response.setStatus(HttpServletResponse.SC_OK);
                     out = response.getWriter();
@@ -668,6 +671,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 List<DBObject> ls_versions = getAllVersions(safe_received);
                 JSONArray descendants = getAllDescendents(ls_versions, safe_received, new JSONArray());
                 try {
+                    //@cubap @theHabes TODO how can we make this Web Annotation compliant?
+                    //addWebAnnotationHeaders(oid, isContainerType(descendents), isLD(descendents));
                     response.addHeader("Access-Control-Allow-Origin", "*");
                     response.setStatus(HttpServletResponse.SC_OK);
                     out = response.getWriter();
