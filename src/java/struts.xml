@@ -60,7 +60,7 @@
         <!-- INTERCEPTOR -->
         <interceptors>
             <interceptor name="requestServerAuthenticationFilter" class="edu.slu.filter.RequestServerAuthenticationFilter">
-                <param name="includeMethods">saveNewObject, batchSaveFromCopy, patchUpdateObject, putUpdateObject, patchSetUpdate, deleteObject </param>
+                <param name="includeMethods">saveNewObject, batchSaveFromCopy, patchUpdateObject, putUpdateObject, patchSetUpdate, deleteObject, releaseObject </param>
             </interceptor>
             <interceptor name="getRequestClientInfoRecorder" class="edu.slu.filter.GetRequestClientInfoRecorder">
                 <param name="includeMethods">getByProperties, getByID, getAllAncestors, getAllDescendents, getAllVersions</param>
@@ -86,11 +86,11 @@
         <action name="getAllAncestors" class="objectAction" method="getAllAncestors"></action>
         <action name="getAllDescendents" class="objectAction" method="getAllDescendents"></action>
         <action name="create" class="objectAction" method="saveNewObject"></action>
-        <!--@cubap @theHabes rewrite API doc to accomodate this change -->
-        <action name="patch_update" class="objectAction" method="patchUpdateObject"></action>
-        <action name="put_update" class="objectAction" method="putUpdateObject"></action>
-        <action name="set_update" class="objectAction" method="patchSetUpdate"></action>
-        <!-- -->
+        <action name="release" class="objectAction" method="releaseObject"></action>
+        <action name="patch" class="objectAction" method="patchUpdateObject"></action>
+        <action name="update" class="objectAction" method="putUpdateObject"></action>
+        <action name="set" class="objectAction" method="patchSetUpdate"></action>
+<!--        TODO: UNSET?-->
         <action name="delete" class="objectAction" method="deleteObject"></action>
     </package>
     

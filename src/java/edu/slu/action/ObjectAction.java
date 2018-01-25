@@ -192,6 +192,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         String history_prime = "";
         String history_previous = "";
         String releases_previous = "";
+        String releases_replaces = releases_previous;
         String[] emptyArray = new String[0];
         rerumOptions.element("APIversion", "1.0.0");
         rerumOptions.element("createdAt", System.currentTimeMillis());
@@ -241,6 +242,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         history.element("previous", history_previous);
         history.element("prime", history_prime);
         releases.element("previous", releases_previous);
+        releases.element("replaces", releases_replaces);
         rerumOptions.element("history", history);
         rerumOptions.element("releases", releases);      
         //The access token is in the header  "Authorization: Bearer {YOUR_ACCESS_TOKEN}"
@@ -248,6 +250,40 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         rerumOptions.element("generatedBy",""); //TODO get the @id of the public agent of the API key
         configuredObject.element("__rerum", rerumOptions); //.element will replace the __rerum that is there OR create a new one
         return configuredObject; //The mongo save/update has not been called yet.  The object returned here will go into mongo.save or mongo.update
+    }
+    
+    /**
+     * Internal helper method to update the history.next property of an object.  This will occur because updateObject will create a new object from a given object, and that
+     * given object will have a new next value of the new object.  Watch out for missing __rerum or malformed __rerum.history
+     * 
+     * @param idForUpdate the @id of the object whose history.next needs to be updated
+     * @param newNextID the @id of the newly created object to be placed in the history.next array.
+     * @return Boolean altered true on success, false on fail
+     */
+    private boolean alterHistoryNext (String idForUpdate, String newNextID){
+        //TODO @theHabes As long as we trust the objects we send to this, we can take out the lookup and pass in objects as parameters
+        Boolean altered = false;
+        BasicDBObject query = new BasicDBObject();
+        query.append("@id", idForUpdate);
+        DBObject myAnno = mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query);
+        DBObject myAnnoWithHistoryUpdate;
+        JSONObject annoToUpdate = JSONObject.fromObject(myAnno);
+        if(null != myAnno){
+            try{
+                annoToUpdate.getJSONObject("__rerum").getJSONObject("history").getJSONArray("next").add(newNextID); //write back to the anno from mongo
+                myAnnoWithHistoryUpdate = (DBObject)JSON.parse(annoToUpdate.toString()); //make the JSONObject a DB object
+                mongoDBService.update(Constant.COLLECTION_ANNOTATION, myAnno, myAnnoWithHistoryUpdate); //update in mongo
+                altered = true;
+            }
+            catch(Exception e){ 
+                //@cubap @theHabes #44.  What if obj does not have __rerum or __rerum.history
+                writeErrorResponse("This object does not contain the proper history property.  It may not be from RERUM, the update failed.", HttpServletResponse.SC_CONFLICT);
+            }
+        }
+        else{ //THIS IS A 404
+            writeErrorResponse("Object for update not found...", HttpServletResponse.SC_NOT_FOUND);
+        }
+        return altered;
     }
     
     /**
@@ -289,6 +325,14 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 else{
                     writeErrorResponse("Improper request method for updating, PATCH to add or remove keys from this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
                 }
+            break;
+            case "release":
+            if(requestMethod.equals("PATCH")){
+                restful = true;
+            }
+            else{
+                writeErrorResponse("Improper request method for updating, please use PATCH to alter this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+            }
             break;
             case "create":
                 if(requestMethod.equals("POST")){
@@ -632,12 +676,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             if(null != mongo_obj){
                 JSONObject safe_received = JSONObject.fromObject(mongo_obj); //We can trust this is the object as it exists in mongo
                 List<DBObject> ls_versions = getAllVersions(safe_received);
-                JSONArray descendants = getAllDescendents(ls_versions, safe_received, new JSONArray());
+                JSONArray descendents = getAllDescendents(ls_versions, safe_received, new JSONArray());
                 try {
                     response.addHeader("Access-Control-Allow-Origin", "*");
                     response.setStatus(HttpServletResponse.SC_OK);
                     out = response.getWriter();
-                    out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(descendants));
+                    out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(descendents));
                 } 
                 catch (IOException ex) {
                     Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
@@ -654,8 +698,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * If this object is the last, the return will be an empty JSONArray.  The keyObj WILL NOT be a part of the array.  
      * @param  ls_versions All the given versions, including root, of a provided object.
      * @param  keyObj The provided object
-     * @param  discoveredDescendants The array storing the descendants objects discovered by the recursion.
-     * @return All the objects that were deemed descendants in a JSONArray
+     * @param  discoveredDescendants The array storing the descendents objects discovered by the recursion.
+     * @return All the objects that were deemed descendents in a JSONArray
      */
 
     private JSONArray getAllDescendents(List<DBObject> ls_versions, JSONObject keyObj, JSONArray discoveredDescendants){
@@ -665,14 +709,14 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             //essentially, do nothing.  This branch is done.
         }
         else{
-            //The provided object has nexts, get them to add them to known descendants then check their descendants.
+            //The provided object has nexts, get them to add them to known descendents then check their descendents.
             nextIDarr = keyObj.getJSONObject("__rerum").getJSONObject("history").getJSONArray("next");
         }      
         for(int m=0; m<nextIDarr.size(); m++){ //For each id in the array
             String nextID = nextIDarr.getString(m);
             for (DBObject thisVersion : ls_versions) {
                 JSONObject thisObject = JSONObject.fromObject(thisVersion);
-                if(thisObject.getString("@id").equals(nextID)){ //If it is equal, add it to the known descendants
+                if(thisObject.getString("@id").equals(nextID)){ //If it is equal, add it to the known descendents
                     discoveredDescendants.add(thisObject);
                     //Recurse with what you have discovered so far and this object as the new keyObj
                     getAllDescendents(ls_versions, thisObject, discoveredDescendants);
@@ -875,15 +919,18 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         if(null!= processRequestBody(request, true) && methodApproval(request, "patch_set")){
             BasicDBObject query = new BasicDBObject();
             JSONObject received = JSONObject.fromObject(content); 
-            String updateHistoryNextID = received.getString("@id");
             if(received.containsKey("@id")){
+                String updateHistoryNextID = received.getString("@id");
                 query.append("@id", updateHistoryNextID);
                 BasicDBObject originalObject = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The originalObject DB object
                 BasicDBObject updatedObject = (BasicDBObject) originalObject.copy(); //A copy of the original, this will be saved as a new object.  Make all edits to this variable.
-                JSONObject originalJSONObj = JSONObject.fromObject(originalObject);
-                boolean alreadyDeleted = checkIfDeleted(originalJSONObj);
+                boolean alreadyDeleted = checkIfDeleted(JSONObject.fromObject(originalObject));
+                boolean isReleased = checkIfReleased(JSONObject.fromObject(originalObject));
                 if(alreadyDeleted){
-                    writeErrorResponse("The object you are trying to update is deleted.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    writeErrorResponse("The object you are trying to update is deleted.", HttpServletResponse.SC_BAD_REQUEST);
+                }
+                else if(isReleased){
+                    writeErrorResponse("The object you are trying to update is released.  Fork to make changes.", HttpServletResponse.SC_BAD_REQUEST);
                 }
                 else{
                     if(null != originalObject){
@@ -936,7 +983,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                                 newObject.element("@id", newNextAtID);
                                 newObject.remove("_id");
                                 mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
-                                historyNextUpdatePassed = alterHistoryNext(originalJSONObj, newNextAtID); //update history.next or original object to include the newObject @id
+                                historyNextUpdatePassed = alterHistoryNext(updateHistoryNextID, newNextAtID); //update history.next or original object to include the newObject @id
                                 if(historyNextUpdatePassed){
                                     JSONObject jo = new JSONObject();
                                     JSONObject iiif_validation_response = checkIIIFCompliance(newNextAtID, "2.1");
@@ -967,9 +1014,11 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         }
                     }
                     else{
-                        //This could mean it was an external object, but PATCH fails on those
-                        writeErrorResponse("Object "+received.getString("@id")+" not found in RERUM.  Use /put_update.action to make the object a part of RERUM.", HttpServletResponse.SC_BAD_REQUEST);
+                        //This could mean it was an external object, so we can save it as a new object (new object is root) and refer to this @id in previous.
+                        //TODO FIXME @cubap @theHabes #41
+                        writeErrorResponse("Object "+received.getString("@id")+" not found in RERUM, could not update.", HttpServletResponse.SC_BAD_REQUEST);
                     }
+
                 }
             }
             else{
@@ -986,94 +1035,94 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         Boolean historyNextUpdatePassed = false;
         if(null!= processRequestBody(request, true) && methodApproval(request, "patch_update")){
             BasicDBObject query = new BasicDBObject();
-            JSONObject received = JSONObject.fromObject(content);
-            if(received.containsKey("@id")){
-                String updateHistoryNextID = received.getString("@id");
-                query.append("@id", updateHistoryNextID);
-                BasicDBObject originalObject = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The originalObject DB object
-                BasicDBObject updatedObject = (BasicDBObject) originalObject.copy(); //A copy of the original, this will be saved as a new object.  Make all edits to this variable.
-                JSONObject originalJSONObj = JSONObject.fromObject(originalObject);
-                boolean alreadyDeleted = checkIfDeleted(originalJSONObj);
-                if(alreadyDeleted){
-                    writeErrorResponse("The object you are trying to update is deleted.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-                }
-                else{
-                    if(null != originalObject){
-                        Set<String> update_anno_keys = received.keySet();
-                        boolean triedToSet = false;
-                        int updateCount = 0;
-                        //If the object already in the database contains the key found from the object recieved from the user, update it barring a few special keys
-                        //Users cannot update the __rerum property, so we ignore any update action to that particular field.  
-                        for(String key : update_anno_keys){
-                            if(originalObject.containsKey(key) ){
-                                //Skip keys we want to ignore and keys that match but have matching values
-                                if(!(key.equals("@id") || key.equals("__rerum") || key.equals("objectID") || key.equals("_id")) && received.get(key) != originalObject.get(key)){
-                                    updatedObject.remove(key);
-                                    updatedObject.append(key, received.get(key));
-                                    updateCount +=1 ;
-                                }
-                            }
-                            else{
-                                triedToSet = true;
-                                break;
-                            }
-                        }
-                        if(triedToSet){
-                            writeErrorResponse("A key you are trying to update does not exist on the object.  You can set with the patch_set or put_update action.", HttpServletResponse.SC_BAD_REQUEST);
-                        }
-                        else if(updateCount == 0){
-                            addLocationHeader(received);
-                            writeErrorResponse("Nothing could be PATCHed", HttpServletResponse.SC_NO_CONTENT);
-                        }
-                        else{
-                            JSONObject newObject = JSONObject.fromObject(updatedObject);//The edited original object meant to be saved as a new object (versioning)
-                            newObject = configureRerumOptions(newObject, true); //__rerum for the new object being created because of the update action
-                            newObject.remove("@id"); //This is being saved as a new object, so remove this @id for the new one to be set.
-                            //Since we ignore changes to __rerum for existing objects, we do no configureRerumOptions(updatedObject);
-                            DBObject dbo = (DBObject) JSON.parse(newObject.toString());
-                            String newNextID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
-                            String newNextAtID = "http://devstore.rerum.io/rerumserver/id/"+newNextID;
-                            BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
-                            dboWithObjectID.append("@id", newNextAtID);
-                            newObject.element("@id", newNextAtID);
-                            mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
-                            historyNextUpdatePassed = alterHistoryNext(originalJSONObj, newNextAtID); //update history.next or original object to include the newObject @id
-                            if(historyNextUpdatePassed){
-                                JSONObject jo = new JSONObject();
-                                JSONObject iiif_validation_response = checkIIIFCompliance(newNextAtID, "2.1");
-                                jo.element("code", HttpServletResponse.SC_OK);
-                                jo.element("original_object_id", updateHistoryNextID);
-                                jo.element("new_obj_state", newObject); //FIXME: @webanno standards say this should be the response.
-                                jo.element("iiif_validation", iiif_validation_response);
-                                try {
-                                    addWebAnnotationHeaders(newNextID, isContainerType(newObject), isLD(newObject));
-                                    response.addHeader("Access-Control-Allow-Origin", "*");
-                                    response.setStatus(HttpServletResponse.SC_OK);
-                                    out = response.getWriter();
-                                    out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
-                                } 
-                                catch (IOException ex) {
-                                    Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
-                                }
-                            }
-                            else{
-                                //The error is already written to response.out, do nothing.
-                            }
-                        }
-                    }
-                    else{
-                        //This could mean it was an external object, but PATCH fails on those.
-                        writeErrorResponse("Object "+received.getString("@id")+" not found in RERUM, could not update.", HttpServletResponse.SC_BAD_REQUEST);
-                    }
-                }    
+            JSONObject received = JSONObject.fromObject(content); 
+            String updateHistoryNextID = received.getString("@id");
+            query.append("@id", updateHistoryNextID);
+            BasicDBObject originalObject = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The originalObject DB object
+            BasicDBObject updatedObject = (BasicDBObject) originalObject.copy(); //A copy of the original, this will be saved as a new object.  Make all edits to this variable.
+            boolean alreadyDeleted = checkIfDeleted(JSONObject.fromObject(originalObject));
+            boolean isReleased = checkIfReleased(JSONObject.fromObject(originalObject));
+            System.out.println("1");
+            if(alreadyDeleted){
+                writeErrorResponse("The object you are trying to update is deleted.", HttpServletResponse.SC_BAD_REQUEST);
+            }
+            else if(isReleased){
+                writeErrorResponse("The object you are trying to update is released.  Fork to make changes.", HttpServletResponse.SC_BAD_REQUEST);
             }
             else{
-                writeErrorResponse("Object did not contains an @id.  Use /put_update.action to make the object a part of RERUM.", HttpServletResponse.SC_BAD_REQUEST);
+                if(null != originalObject){
+                    Set<String> update_anno_keys = received.keySet();
+                    boolean triedToSet = false;
+                    int updateCount = 0;
+                    //If the object already in the database contains the key found from the object recieved from the user, update it barring a few special keys
+                    //Users cannot update the __rerum property, so we ignore any update action to that particular field.  
+                    for(String key : update_anno_keys){
+                        if(originalObject.containsKey(key) ){
+                            //Skip keys we want to ignore and keys that match but have matching values
+                            if(!(key.equals("@id") || key.equals("__rerum") || key.equals("objectID") || key.equals("_id")) && received.get(key) != originalObject.get(key)){
+                                updatedObject.remove(key);
+                                updatedObject.append(key, received.get(key));
+                                updateCount +=1 ;
+                            }
+                        }
+                        else{
+                            triedToSet = true;
+                            break;
+                        }
+                    }
+                    if(triedToSet){
+                        writeErrorResponse("A key you are trying to update does not exist on the object.  You can set with the patch_set or put_update action.", HttpServletResponse.SC_BAD_REQUEST);
+                    }
+                    else if(updateCount == 0){
+                        addLocationHeader(received);
+                        writeErrorResponse("Nothing could be PATCHed", HttpServletResponse.SC_NO_CONTENT);
+                    }
+                    else{
+                        JSONObject newObject = JSONObject.fromObject(updatedObject);//The edited original object meant to be saved as a new object (versioning)
+                        newObject = configureRerumOptions(newObject, true); //__rerum for the new object being created because of the update action
+                        newObject.remove("@id"); //This is being saved as a new object, so remove this @id for the new one to be set.
+                        //Since we ignore changes to __rerum for existing objects, we do no configureRerumOptions(updatedObject);
+                        DBObject dbo = (DBObject) JSON.parse(newObject.toString());
+                        String newNextID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
+                        String newNextAtID = "http://devstore.rerum.io/rerumserver/id/"+newNextID;
+                        BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
+                        dboWithObjectID.append("@id", newNextAtID);
+                        newObject.element("@id", newNextAtID);
+                        mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
+                        historyNextUpdatePassed = alterHistoryNext(updateHistoryNextID, newNextAtID); //update history.next or original object to include the newObject @id
+                        if(historyNextUpdatePassed){
+                            JSONObject jo = new JSONObject();
+                            JSONObject iiif_validation_response = checkIIIFCompliance(newNextAtID, "2.1");
+                            jo.element("code", HttpServletResponse.SC_OK);
+                            jo.element("original_object_id", updateHistoryNextID);
+                            jo.element("new_obj_state", newObject); //FIXME: @webanno standards say this should be the response.
+                            jo.element("iiif_validation", iiif_validation_response);
+                            try {
+                                addWebAnnotationHeaders(newNextID, isContainerType(newObject), isLD(newObject));
+                                response.addHeader("Access-Control-Allow-Origin", "*");
+                                response.setStatus(HttpServletResponse.SC_OK);
+                                out = response.getWriter();
+                                out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
+                            } 
+                            catch (IOException ex) {
+                                Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
+                            }
+                        }
+                        else{
+                            //The error is already written to response.out, do nothing.
+                        }
+                    }
+                }
+                else{
+                    //This could mean it was an external object, so we can save it as a new object (new object is root) and refer to this @id in previous.
+                    //TODO FIXME @cubap @theHabes #41
+                    writeErrorResponse("Object "+received.getString("@id")+" not found in RERUM, could not update.", HttpServletResponse.SC_BAD_REQUEST);
+                }
             }
         }
     }
     
-    /**
+     /**
      * Public facing servlet to PUT replace an existing object.  Can set and unset keys.
      * @respond with new state of the object in the body.
      * @throws java.io.IOException
@@ -1085,7 +1134,9 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         //cubap: I'm not sold we have to do this. Our versioning would allow multiple changes. 
         //The application might want to throttle internally, but it can.
         Boolean historyNextUpdatePassed = false;
+        System.out.println("PUT update");
         if(null!= processRequestBody(request, true) && methodApproval(request, "put_update")){
+            System.out.println("PUT update 2");
             BasicDBObject query = new BasicDBObject();
             JSONObject received = JSONObject.fromObject(content); 
             if(received.containsKey("@id")){
@@ -1095,12 +1146,19 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 BasicDBObject updatedObject = (BasicDBObject) JSON.parse(received.toString()); //A copy of the original, this will be saved as a new object.  Make all edits to this variable.
                 JSONObject originalJSONObj = JSONObject.fromObject(originalObject);
                 boolean alreadyDeleted = checkIfDeleted(JSONObject.fromObject(originalObject));
+                boolean isReleased = checkIfReleased(JSONObject.fromObject(originalObject));
+                System.out.println("1");
                 if(alreadyDeleted){
-                    writeErrorResponse("The object you are trying to update is deleted.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    writeErrorResponse("The object you are trying to update is deleted.", HttpServletResponse.SC_BAD_REQUEST);
+                }
+                else if(isReleased){
+                    writeErrorResponse("The object you are trying to update is released.  Fork to make changes.", HttpServletResponse.SC_BAD_REQUEST);
                 }
                 else{
+                    System.out.println("2");
                     if(null != originalObject){
-                        JSONObject newObject = JSONObject.fromObject(updatedObject); //The edited original object meant to be saved as a new object (versioning)
+                        System.out.println("3");
+                        JSONObject newObject = JSONObject.fromObject(updatedObject);//The edited original object meant to be saved as a new object (versioning)
                         JSONObject originalProperties = originalJSONObj.getJSONObject("__rerum");
                         newObject.element("__rerum", originalProperties);
                         //Since this is a put update, it is possible __rerum is not in the object provided by the user.  We get a reliable copy oof the original out of mongo
@@ -1108,12 +1166,14 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         newObject.remove("@id"); //This is being saved as a new object, so remove this @id for the new one to be set.
                         DBObject dbo = (DBObject) JSON.parse(newObject.toString());
                         String newNextID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
+                        System.out.println("4");
                         String newNextAtID = "http://devstore.rerum.io/rerumserver/id/"+newNextID;
                         BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
                         dboWithObjectID.append("@id", newNextAtID);
                         newObject.element("@id", newNextAtID);
                         mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
-                        historyNextUpdatePassed = alterHistoryNext(originalJSONObj, newNextAtID); //update history.next or original object to include the newObject @id
+                        historyNextUpdatePassed = alterHistoryNext(updateHistoryNextID, newNextAtID); //update history.next or original object to include the newObject @id
+                        System.out.println("5");
                         if(historyNextUpdatePassed){
                             JSONObject jo = new JSONObject();
                             JSONObject iiif_validation_response = checkIIIFCompliance(newNextAtID, "2.1");
@@ -1137,10 +1197,11 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         }
                     }
                     else{
-                        //This could mean it was an external object and with PUT we can save it as a new object (new object is root) and refer to this @id in previous.
-                        updateExternalObject(received);
+                        //This could mean it was an external object, so we can save it as a new object (new object is root) and refer to this @id in previous.
+                        //TODO FIXME @cubap @theHabes #41
+                        writeErrorResponse("Object "+received.getString("@id")+" not found in RERUM, could not update.", HttpServletResponse.SC_BAD_REQUEST);
                     }
-                }    
+                }
             }
             else{
                 writeErrorResponse("Object did not contains an @id, could not update.", HttpServletResponse.SC_BAD_REQUEST);
@@ -1148,98 +1209,179 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         }
     }
     
-    /**
-     * Internal helper method to update the history.next property of an object.  This will occur because updateObject will create a new object from a given object, and that
-     * given object will have a new next value of the new object.  Watch out for missing __rerum or malformed __rerum.history
-     * This method only receives reliable objects from mongo.
+     /**
+     * Public facing servlet to release an existing RERUM object.  This will not perform history tree updates, but rather releases tree updates.
+     * (AKA a new node in the history tree is NOT CREATED here.)
      * 
-     * @param objForUpdate the RERUM object whose history.next needs to be updated
-     * @param newNextID the @id of the newly created object to be placed in the history.next array.
-     * @return Boolean altered true on success, false on fail
+     * @respond with new state of the object in the body.
+     * @throws java.io.IOException
+     * @throws javax.servlet.ServletException
      */
-    private boolean alterHistoryNext (JSONObject objForUpdate, String newNextID){
-        Boolean altered = false;
-        BasicDBObject query = new BasicDBObject();
-        query.append("@id", objForUpdate.getString("@id"));
-        DBObject myAnno = (DBObject) JSON.parse(objForUpdate.toString());
-        DBObject myAnnoWithHistoryUpdate;
-        JSONObject annoToUpdate = JSONObject.fromObject(myAnno);
-        if(null != myAnno){
-            try{
-                annoToUpdate.getJSONObject("__rerum").getJSONObject("history").getJSONArray("next").add(newNextID); //write back to the anno from mongo
-                myAnnoWithHistoryUpdate = (DBObject)JSON.parse(annoToUpdate.toString()); //make the JSONObject a DB object
-                mongoDBService.update(Constant.COLLECTION_ANNOTATION, myAnno, myAnnoWithHistoryUpdate); //update in mongo
-                altered = true;
+    public void releaseObject() throws IOException, ServletException, Exception{
+        boolean treeHealed = false;
+        if(null!= processRequestBody(request, true) && methodApproval(request, "release")){
+            BasicDBObject query = new BasicDBObject();
+            JSONObject received = JSONObject.fromObject(content);
+            if(received.containsKey("@id")){
+                String updateToReleasedID = received.getString("@id");
+                query.append("@id", updateToReleasedID);
+                BasicDBObject originalObject = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The original DB object
+                BasicDBObject releasedObject = (BasicDBObject) originalObject.copy(); //A copy of the original.  Make all edits to this variable.
+                JSONObject safe_original = JSONObject.fromObject(originalObject); //The original object represented as a JSON object.  Safe for edits. 
+                String previousReleasedID = safe_original.getJSONObject("__rerum").getJSONObject("releases").getString("previous");
+                JSONArray nextReleases = safe_original.getJSONObject("__rerum").getJSONObject("releases").getJSONArray("next");
+                boolean alreadyReleased = checkIfReleased(safe_original);
+                if(alreadyReleased){
+                    writeErrorResponse("This object is already released.  You must fork this annotation as one of your own to release it.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                }
+                else{
+                    if(null != originalObject){
+                        safe_original.getJSONObject("__rerum").element("isReleased", System.currentTimeMillis()+"");
+                        safe_original.getJSONObject("__rerum").getJSONObject("releases").element("replaces", previousReleasedID);
+                        releasedObject = (BasicDBObject) JSON.parse(safe_original.toString());
+                        if(!"".equals(previousReleasedID)){// A releases tree exists and an acestral object is being released.  
+                            treeHealed  = healReleasesTree(safe_original); 
+                        }
+                        else{ //There was no releases previous value. 
+                            if(nextReleases.size() > 0){ //The release tree has been established and a descendent object is now being released.
+                                treeHealed  = healReleasesTree(safe_original);
+                            }
+                            else{ //The release tree has not been established
+                                treeHealed = establishReleasesTree(safe_original);
+                            }
+                        }
+                        if(treeHealed){ //If the tree was established/healed
+                            //perform the update to isReleased of the object being released.  Its releases.next[] and releases.previous are already correct.
+                            mongoDBService.update(Constant.COLLECTION_ANNOTATION, originalObject, releasedObject);
+                            JSONObject jo = new JSONObject();
+                            jo.element("code", HttpServletResponse.SC_OK);
+                            jo.element("new_obj_state", releasedObject); //FIXME: @webanno standards say this should be the response.
+                            jo.element("previously_released_id", previousReleasedID); 
+                            jo.element("next_releases_ids", nextReleases);                           
+                            try {
+                                addWebAnnotationHeaders(updateToReleasedID, isContainerType(safe_original), isLD(safe_original));
+                                response.addHeader("Access-Control-Allow-Origin", "*");
+                                response.setStatus(HttpServletResponse.SC_OK);
+                                out = response.getWriter();
+                                out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
+                            } 
+                            catch (IOException ex) {
+                                Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
+                            }
+                        }
+                        else{
+                            //The error is already written to response.out, do nothing.
+                        }
+                    }
+                    else{
+                        //This could mean it was an external object, but the release action fails on those.
+                        writeErrorResponse("Object "+received.getString("@id")+" not found in RERUM, could not release.", HttpServletResponse.SC_BAD_REQUEST);
+                    }
+                }    
             }
-            catch(Exception e){ 
-                writeErrorResponse("This object does not contain the proper history property.  It may not be from RERUM, the update failed.", HttpServletResponse.SC_CONFLICT);
+            else{
+                writeErrorResponse("Object did not contains an @id, could not release.", HttpServletResponse.SC_BAD_REQUEST);
             }
         }
-        else{ //THIS IS A 404
-            writeErrorResponse("Object for update not found...", HttpServletResponse.SC_NOT_FOUND);
-        }
-        return altered;
     }
     
     /**
-     * Internal helper method to update the history.previous property of a root object.  This will occur because a new root object can be created
-     * by put_update.action on an external object.  It must mark itself as root and contain the original ID for the object in history.previous.
+     * Internal helper method to update the releases tree from a given object that is being released.  See code in method for further documentation.
+     * https://www.geeksforgeeks.org/find-whether-an-array-is-subset-of-another-array-set-1/
+     * 
      * This method only receives reliable objects from mongo.
      * 
-     * @param newRootObj the RERUM object whose history.previous needs to be updated
-     * @param externalObjID the @id of the external object to go into history.previous
-     * @return JSONObject of the provided object with the history.previous alteration
-     */   
-    private JSONObject alterHistoryPrevious (JSONObject newRootObj, String externalObjID){
-        DBObject myAnnoWithHistoryUpdate;
-        DBObject myAnno = (BasicDBObject) JSON.parse(newRootObj.toString());
-        try{
-            newRootObj.getJSONObject("__rerum").getJSONObject("history").element("previous", externalObjID); //write back to the anno from mongo
-            myAnnoWithHistoryUpdate = (DBObject)JSON.parse(newRootObj.toString()); //make the JSONObject a DB object
-            mongoDBService.update(Constant.COLLECTION_ANNOTATION, myAnno, myAnnoWithHistoryUpdate); //update in mongo
+     * @param obj the RERUM object being released
+     * @return Boolean success or some kind of Exception
+     */
+    private boolean healReleasesTree (JSONObject releasingNode) throws Exception{
+        Boolean success = true;
+        List<DBObject> ls_versions = getAllVersions(releasingNode);
+        JSONArray descendents = getAllDescendents(ls_versions, releasingNode, new JSONArray());
+        JSONArray anscestors = getAllAncestors(ls_versions, releasingNode, new JSONArray());
+        for(int d=0; d<descendents.size(); d++){ //For each descendent
+            JSONObject desc = descendents.getJSONObject(d);
+            boolean prevMatchCheck = desc.getJSONObject("__rerum").getJSONObject("releases").getString("previous").equals(releasingNode.getJSONObject("__rerum").getJSONObject("releases").getString("previous"));
+            DBObject origDesc = (DBObject) JSON.parse(desc.toString());
+            if(prevMatchCheck){ 
+                //If the descendent's previous matches the node I am releasing's releases.previous, swap the descendent releses.previous with node I am releasing's @id. 
+                desc.getJSONObject("__rerum").getJSONObject("releases").element("previous", releasingNode.getString("@id"));
+                if(!desc.getJSONObject("__rerum").getString("isReleased").equals("")){ 
+                    //If this descendent is released, it replaces thr node being released
+                    if(desc.getJSONObject("__rerum").getJSONObject("releases").getString("previous").equals(releasingNode.getString("@id"))){
+                        desc.getJSONObject("__rerum").getJSONObject("releases").element("replaces", releasingNode.getString("@id")); 
+                    }
+                }
+                DBObject descToUpdate = (DBObject) JSON.parse(desc.toString());
+                mongoDBService.update(Constant.COLLECTION_ANNOTATION, origDesc, descToUpdate);
+            }
         }
-        catch(Exception e){ 
-            writeErrorResponse("This object does not contain the proper history property.  It may not be from RERUM, the update failed.", HttpServletResponse.SC_CONFLICT);
+        JSONArray origNextArray = releasingNode.getJSONObject("__rerum").getJSONObject("releases").getJSONArray("next");
+        for(int a=0; a<anscestors.size(); a++){ //For each ancestor
+            JSONArray ancestorNextArray = anscestors.getJSONObject(a).getJSONObject("__rerum").getJSONObject("releases").getJSONArray("next");
+            JSONObject ans = anscestors.getJSONObject(a);
+            DBObject origAns = (DBObject) JSON.parse(ans.toString());
+            if(origNextArray.size() == 0){ 
+                //The releases.next on the node I am releasing is empty.  This means only other ancestors with empty releases.next[] are between me and the next ancenstral released node
+                if(ancestorNextArray.size() == 0){
+                    ancestorNextArray.add(releasingNode.getString("@id")); //Add the id of the node I am releasing into the ancestor's releases.next array.
+                }
+            }
+            else{
+                //The releases.next on the node I am releasing has 1 - infinity entries.  I need to check if any of the entries of that array exist in the releases.next of my ancestors and remove them before
+                //adding the @id of the released node into the acenstral releases.next array.  
+                for (int i=0; i<origNextArray.size(); i++){ //For each id in the next array of the object I am releasing (will not be []).
+                    String compareOrigNextID = origNextArray.getString(i);
+                    for(int j=0; j<ancestorNextArray.size(); j++){ //For each id in the ancestor's releases.next array
+                        String compareAncestorID = ancestorNextArray.getString(j);
+                        if (compareOrigNextID.equals(compareAncestorID)){ 
+                            //If the id is in the next array of the object I am releasing and in the releases.next array of the ancestor
+                            ancestorNextArray.remove(j); //remove that id.
+                        }
+                        //Whether or not the ancestral node replaces the node I am releasing or not happens in releaseObject() when I make the node I am releasing isReleased because I can use the releases.previous there.  
+                        if(j == ancestorNextArray.size()-1){ //Once I have checked against all id's in the ancestor node releases.next[] and removed the ones I needed to
+                            ancestorNextArray.add(releasingNode.getString("@id")); //Add the id of the node I am releasing into the ancestor's releases.next array.
+                        }
+                    }
+                } 
+            }
+            ans.getJSONObject("__rerum").getJSONObject("releases").element("next", ancestorNextArray);
+            DBObject ansToUpdate = (DBObject) JSON.parse(ans.toString());
+            mongoDBService.update(Constant.COLLECTION_ANNOTATION, origAns, ansToUpdate);
         }
-        return newRootObj;
-    }
+        return success;
+    } 
     
     /**
-     * Internal helper method to handle put_update.action on an external object.  The goal is to make a copy of object as denoted by the PUT request
-     * as a RERUM object (creating a new object) then have that new root object reference the @id of the external object in its history.previous. 
+     * Internal helper method to establish the releases tree from a given object that is being released.  
+     * This can probably be collapsed into healReleasesTree.  It contains no checks, it is brute force update ancestors and descendents.
+     * It is significantly cleaner and slightly faster than healReleaseTree() which is why I think we should keep them separate. 
+     *  
+     * This method only receives reliable objects from mongo.
      * 
-     * @param externalObj the external object as it existed in the PUT request to be saved.
+     * @param obj the RERUM object being released
+     * @return Boolean sucess or some kind of Exception
      */
-    private void updateExternalObject(JSONObject externalObj){
-        try {
-            JSONObject jo = new JSONObject();
-            JSONObject iiif_validation_response = checkIIIFCompliance(externalObj, true);
-            JSONObject newObjState = configureRerumOptions(externalObj, false);
-            DBObject dbo = (DBObject) JSON.parse(newObjState.toString());
-            String exernalObjID = newObjState.getString("@id");
-            String newRootID;
-            String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
-            //set @id from _id and update the annotation
-            BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
-            newRootID = "http://devstore.rerum.io/rerumserver/id/"+newObjectID;
-            dboWithObjectID.append("@id", newRootID);
-            newObjState.element("@id", newRootID);
-            mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
-            newObjState = configureRerumOptions(newObjState, false);
-            newObjState = alterHistoryPrevious(newObjState, exernalObjID); //update history.previous of the new object to contain the external object's @id.
-            jo.element("code", HttpServletResponse.SC_CREATED);
-            jo.element("original_object_id", exernalObjID);
-            jo.element("new_obj_state", newObjState); 
-            jo.element("iiif_validation", iiif_validation_response);
-            addWebAnnotationHeaders(newRootID, isContainerType(newObjState), isLD(newObjState));
-            response.addHeader("Access-Control-Allow-Origin", "*");
-            response.setStatus(HttpServletResponse.SC_OK);
-            out = response.getWriter();
-            out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
+    private boolean establishReleasesTree (JSONObject obj) throws Exception{
+        Boolean success = true;
+        List<DBObject> ls_versions = getAllVersions(obj);
+        JSONArray descendents = getAllDescendents(ls_versions, obj, new JSONArray());
+        JSONArray anscestors = getAllAncestors(ls_versions, obj, new JSONArray());
+        for(int d=0; d<descendents.size(); d++){
+            JSONObject desc = descendents.getJSONObject(d);
+            DBObject origDesc = (DBObject) JSON.parse(desc.toString());
+            desc.getJSONObject("__rerum").getJSONObject("releases").element("previous", obj.getString("@id"));
+            DBObject descToUpdate = (DBObject) JSON.parse(desc.toString());
+            mongoDBService.update(Constant.COLLECTION_ANNOTATION, origDesc, descToUpdate);
         }
-        catch (IOException ex) {
-            Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
+        for(int a=0; a<anscestors.size(); a++){
+            JSONObject ans = anscestors.getJSONObject(a);
+            DBObject origAns = (DBObject) JSON.parse(ans.toString());
+            ans.getJSONObject("__rerum").getJSONObject("releases").getJSONArray("next").add(obj.getString("@id"));
+            DBObject ansToUpdate = (DBObject) JSON.parse(ans.toString());
+            mongoDBService.update(Constant.COLLECTION_ANNOTATION, origAns, ansToUpdate);
         }
+        return success;
     }
     
     /**
@@ -1303,6 +1445,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      */
     private boolean checkIfReleased(JSONObject obj){
         boolean released = false;
+        System.out.println("Object to check released is ");
+        System.out.println(obj);
         //@cubap @theHabes #44.  What if obj does not have __rerum
         if(!obj.containsKey("__rerum") || !obj.getJSONObject("__rerum").containsKey("isReleased")){
             released = false;
@@ -1342,10 +1486,14 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             JSONObject safe_received;
             JSONObject updatedWithFlag = new JSONObject();
             BasicDBObject updatedObjectWithDeletedFlag;
+            System.out.println("Delete this recieved");
+            System.out.println(received);
             if(received.containsKey("@id")){
                 query.append("@id", received.getString("@id"));
                 BasicDBObject mongo_obj = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query);
                 safe_received = JSONObject.fromObject(mongo_obj); //We can trust this is the object as it exists in mongo
+                System.out.println("Safe received obj is ");
+                System.out.println(safe_received);
                 boolean alreadyDeleted = checkIfDeleted(safe_received);
                 boolean permission = false;
                 boolean isReleased = false;
@@ -1381,7 +1529,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         updatedWithFlag.element("__deleted", deletedFlag); //We want everything wrapped in deleted except the @id.
                         Object forMongo = JSON.parse(updatedWithFlag.toString()); //JSONObject cannot be converted to BasicDBObject
                         updatedObjectWithDeletedFlag = (BasicDBObject) forMongo;
-                        boolean treeHealed = greenThumb(JSONObject.fromObject(originalObject));
+                        boolean treeHealed = healHistoryTree(JSONObject.fromObject(originalObject));
                         if(treeHealed){
                             mongoDBService.update(Constant.COLLECTION_ANNOTATION, originalObject, updatedObjectWithDeletedFlag);
                             response.setStatus(HttpServletResponse.SC_NO_CONTENT);
@@ -1409,7 +1557,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @param obj A JSONObject of the object being deleted.
      * @return A boolean representing whether or not this function succeeded. 
      */
-     private boolean greenThumb(JSONObject obj){
+     private boolean healHistoryTree(JSONObject obj){
          boolean success = true;
          String previous_id = "";
          String prime_id = "";
@@ -1497,20 +1645,20 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      }
      
      /**
-     * An internal method to make all descendants of this JSONObject take on a new history.prime = this object's @id
+     * An internal method to make all descendents of this JSONObject take on a new history.prime = this object's @id
      * This should only be fed a reliable object from mongo
-     * @param obj A new prime object whose descendants must take on its id
+     * @param obj A new prime object whose descendents must take on its id
      */
      private boolean newTreePrime(JSONObject obj){
          boolean success = true;
          String primeID = obj.getString("@id");
-         JSONArray descendants = new JSONArray();
-         for(int n=0; n< descendants.size(); n++){
-             JSONObject descendantForUpdate = descendants.getJSONObject(n);
-             JSONObject originalDescendant = descendants.getJSONObject(n);
+         JSONArray descendents = new JSONArray();
+         for(int n=0; n< descendents.size(); n++){
+             JSONObject descendentForUpdate = descendents.getJSONObject(n);
+             JSONObject originalDescendant = descendents.getJSONObject(n);
              BasicDBObject objToUpdate = (BasicDBObject)JSON.parse(originalDescendant.toString());;
-             descendantForUpdate.getJSONObject("__rerum").getJSONObject("history").element("prime", primeID);
-             BasicDBObject objWithUpdate = (BasicDBObject)JSON.parse(descendantForUpdate.toString());
+             descendentForUpdate.getJSONObject("__rerum").getJSONObject("history").element("prime", primeID);
+             BasicDBObject objWithUpdate = (BasicDBObject)JSON.parse(descendentForUpdate.toString());
              mongoDBService.update(Constant.COLLECTION_ANNOTATION, objToUpdate, objWithUpdate);
          }
          return success;
