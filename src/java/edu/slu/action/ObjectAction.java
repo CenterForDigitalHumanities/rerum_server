@@ -1042,7 +1042,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             BasicDBObject updatedObject = (BasicDBObject) originalObject.copy(); //A copy of the original, this will be saved as a new object.  Make all edits to this variable.
             boolean alreadyDeleted = checkIfDeleted(JSONObject.fromObject(originalObject));
             boolean isReleased = checkIfReleased(JSONObject.fromObject(originalObject));
-            System.out.println("1");
             if(alreadyDeleted){
                 writeErrorResponse("The object you are trying to update is deleted.", HttpServletResponse.SC_BAD_REQUEST);
             }
@@ -1134,9 +1133,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         //cubap: I'm not sold we have to do this. Our versioning would allow multiple changes. 
         //The application might want to throttle internally, but it can.
         Boolean historyNextUpdatePassed = false;
-        System.out.println("PUT update");
         if(null!= processRequestBody(request, true) && methodApproval(request, "put_update")){
-            System.out.println("PUT update 2");
             BasicDBObject query = new BasicDBObject();
             JSONObject received = JSONObject.fromObject(content); 
             if(received.containsKey("@id")){
@@ -1147,7 +1144,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 JSONObject originalJSONObj = JSONObject.fromObject(originalObject);
                 boolean alreadyDeleted = checkIfDeleted(JSONObject.fromObject(originalObject));
                 boolean isReleased = checkIfReleased(JSONObject.fromObject(originalObject));
-                System.out.println("1");
                 if(alreadyDeleted){
                     writeErrorResponse("The object you are trying to update is deleted.", HttpServletResponse.SC_BAD_REQUEST);
                 }
@@ -1155,9 +1151,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     writeErrorResponse("The object you are trying to update is released.  Fork to make changes.", HttpServletResponse.SC_BAD_REQUEST);
                 }
                 else{
-                    System.out.println("2");
                     if(null != originalObject){
-                        System.out.println("3");
                         JSONObject newObject = JSONObject.fromObject(updatedObject);//The edited original object meant to be saved as a new object (versioning)
                         JSONObject originalProperties = originalJSONObj.getJSONObject("__rerum");
                         newObject.element("__rerum", originalProperties);
@@ -1166,14 +1160,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         newObject.remove("@id"); //This is being saved as a new object, so remove this @id for the new one to be set.
                         DBObject dbo = (DBObject) JSON.parse(newObject.toString());
                         String newNextID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
-                        System.out.println("4");
                         String newNextAtID = "http://devstore.rerum.io/rerumserver/id/"+newNextID;
                         BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
                         dboWithObjectID.append("@id", newNextAtID);
                         newObject.element("@id", newNextAtID);
                         mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
                         historyNextUpdatePassed = alterHistoryNext(updateHistoryNextID, newNextAtID); //update history.next or original object to include the newObject @id
-                        System.out.println("5");
                         if(historyNextUpdatePassed){
                             JSONObject jo = new JSONObject();
                             JSONObject iiif_validation_response = checkIIIFCompliance(newNextAtID, "2.1");
@@ -1445,8 +1437,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      */
     private boolean checkIfReleased(JSONObject obj){
         boolean released = false;
-        System.out.println("Object to check released is ");
-        System.out.println(obj);
         //@cubap @theHabes #44.  What if obj does not have __rerum
         if(!obj.containsKey("__rerum") || !obj.getJSONObject("__rerum").containsKey("isReleased")){
             released = false;
@@ -1486,14 +1476,10 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             JSONObject safe_received;
             JSONObject updatedWithFlag = new JSONObject();
             BasicDBObject updatedObjectWithDeletedFlag;
-            System.out.println("Delete this recieved");
-            System.out.println(received);
             if(received.containsKey("@id")){
                 query.append("@id", received.getString("@id"));
                 BasicDBObject mongo_obj = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query);
                 safe_received = JSONObject.fromObject(mongo_obj); //We can trust this is the object as it exists in mongo
-                System.out.println("Safe received obj is ");
-                System.out.println(safe_received);
                 boolean alreadyDeleted = checkIfDeleted(safe_received);
                 boolean permission = false;
                 boolean isReleased = false;
