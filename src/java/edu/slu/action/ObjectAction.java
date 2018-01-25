@@ -1330,7 +1330,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             else{
                 //The releases.next on the node I am releasing has 1 - infinity entries.  I need to check if any of the entries of that array exist in the releases.next of my ancestors and remove them before
                 //adding the @id of the released node into the acenstral releases.next array.  
-                for (int i=0; i<origNextArray.size(); i++){ //For each id in the next array of the object I am releasing (it could be []).
+                for (int i=0; i<origNextArray.size(); i++){ //For each id in the next array of the object I am releasing (will not be []).
                     String compareOrigNextID = origNextArray.getString(i);
                     for(int j=0; j<ancestorNextArray.size(); j++){ //For each id in the ancestor's releases.next array
                         String compareAncestorID = ancestorNextArray.getString(j);
@@ -1338,8 +1338,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                             //If the id is in the next array of the object I am releasing and in the releases.next array of the ancestor
                             ancestorNextArray.remove(j); //remove that id.
                         }
-                        //Whether or not the ancestral node replaces the node I am releasing or not happens in releaseObject() when I make the node I am releasing isReleased because I can just the releases.previous there.  
-                        if(j == ancestorNextArray.size()-1 ||ancestorNextArray.size() == 0 ){ //Once I have checked against all id's in the ancestor node releases.next[] and removed the ones I needed to
+                        //Whether or not the ancestral node replaces the node I am releasing or not happens in releaseObject() when I make the node I am releasing isReleased because I can use the releases.previous there.  
+                        if(j == ancestorNextArray.size()-1){ //Once I have checked against all id's in the ancestor node releases.next[] and removed the ones I needed to
                             ancestorNextArray.add(releasingNode.getString("@id")); //Add the id of the node I am releasing into the ancestor's releases.next array.
                         }
                     }
