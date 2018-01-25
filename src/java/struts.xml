@@ -90,7 +90,7 @@
         <action name="patch" class="objectAction" method="patchUpdateObject"></action>
         <action name="update" class="objectAction" method="putUpdateObject"></action>
         <action name="set" class="objectAction" method="patchSetUpdate"></action>
-<!--        TODO: UNSET?-->
+        <action name="unset" class="objectAction" method="patchUnsetUpdate"></action>
         <action name="delete" class="objectAction" method="deleteObject"></action>
     </package>
     
