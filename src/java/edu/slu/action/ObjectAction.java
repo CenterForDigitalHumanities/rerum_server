@@ -80,6 +80,24 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.JWTVerifier;
+import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.exceptions.JWTCreationException;
+import com.auth0.jwt.exceptions.JWTDecodeException;
+import com.auth0.jwt.exceptions.JWTVerificationException;
+import com.auth0.jwt.interfaces.DecodedJWT;
+import java.net.ProtocolException;
+import java.security.KeyFactory;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.X509EncodedKeySpec;
+import org.apache.tomcat.util.codec.binary.Base64;
+import org.apache.tomcat.util.codec.binary.StringUtils;
+
+
+
+
 
 /**
  * @author hanyan &&  bhaberbe
@@ -246,7 +264,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         rerumOptions.element("history", history);
         rerumOptions.element("releases", releases);      
         //The access token is in the header  "Authorization: Bearer {YOUR_ACCESS_TOKEN}"
-        //HttpResponse<String> response = Unirest.post("https://cubap.auth0.com/oauth/token") .header("content-type", "application/json") .body("{\"grant_type\":\"client_credentials\",\"client_id\": \"WSCfCWDNSZVRQrX09GUKnAX0QdItmCBI\",\"client_secret\": \"8Mk54OqMDqBzZgm7fJuR4rPA-4T8GGPsqLir2aP432NnmG6EAJBCDl_r_fxPJ4x5\",\"audience\": \"https://cubap.auth0.com/api/v2/\"}") .asString(); 
         rerumOptions.element("generatedBy",""); //TODO get the @id of the public agent of the API key
         configuredObject.element("__rerum", rerumOptions); //.element will replace the __rerum that is there OR create a new one
         return configuredObject; //The mongo save/update has not been called yet.  The object returned here will go into mongo.save or mongo.update
@@ -321,67 +338,106 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     */
     public Boolean methodApproval(HttpServletRequest http_request, String request_type) throws Exception{
         String requestMethod = http_request.getMethod();
+        String access_token = http_request.getHeader("Bearer");
+        boolean auth_verified = verifyAccessCode(access_token);
         boolean restful = false;
+
         // FIXME @webanno if you notice, OPTIONS is not supported here and MUST be 
         // for Web Annotation standards compliance.  
         switch(request_type){
             case "update":
-                if(requestMethod.equals("PUT")){
-                    restful = true;
+                if(auth_verified){
+                    if(requestMethod.equals("PUT")){
+                        restful = true;
+                    }
+                    else{
+                        writeErrorResponse("Improper request method for updating, please use PUT to replace this object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    }
                 }
                 else{
-                    writeErrorResponse("Improper request method for updating, please use PUT to replace this object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
                 }
             break;
             case "patch":
+                if(auth_verified){
+                    if(requestMethod.equals("PATCH")){
+                        restful = true;
+                    }
+                    else{
+                        writeErrorResponse("Improper request method for updating, please use PATCH to alter this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    }
+                }
+                else{
+                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                }
+            break;
+            case "set":
+                if(auth_verified){
+                    if(requestMethod.equals("PATCH")){
+                        restful = true;
+                    }
+                    else{
+                        writeErrorResponse("Improper request method for updating, PATCH to add keys to this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    }
+                }
+                else{
+                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                }
+            break;
+            case "unset":
+                if(auth_verified){
+                    if(requestMethod.equals("PATCH")){
+                        restful = true;
+                    }
+                    else{
+                        writeErrorResponse("Improper request method for updating, PATCH to remove keys from this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    }
+                }
+                else{
+                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                }
+            break;
+            case "release":
+            if(auth_verified){
                 if(requestMethod.equals("PATCH")){
                     restful = true;
                 }
                 else{
                     writeErrorResponse("Improper request method for updating, please use PATCH to alter this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
                 }
-            break;
-            case "set":
-                if(requestMethod.equals("PATCH")){
-                    restful = true;
-                }
-                else{
-                    writeErrorResponse("Improper request method for updating, PATCH to add keys to this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-                }
-            break;
-            case "unset":
-                if(requestMethod.equals("PATCH")){
-                    restful = true;
-                }
-                else{
-                    writeErrorResponse("Improper request method for updating, PATCH to remove keys from this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-                }
-            break;
-            case "release":
-            if(requestMethod.equals("PATCH")){
-                restful = true;
             }
             else{
-                writeErrorResponse("Improper request method for updating, please use PATCH to alter this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-            }
+                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                }
             break;
             case "create":
-                if(requestMethod.equals("POST")){
-                    restful = true;
+                if(auth_verified){
+                    if(requestMethod.equals("POST")){
+                        restful = true;
+                    }
+                    else{
+                        writeErrorResponse("Improper request method for creating, please use POST.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    }
                 }
                 else{
-                    writeErrorResponse("Improper request method for creating, please use POST.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
                 }
             break;
             case "delete":
-                if(requestMethod.equals("DELETE")){
-                    restful = true;
+                if(auth_verified){
+                    if(requestMethod.equals("DELETE")){
+                        restful = true;
+                    }
+                    else{
+                        writeErrorResponse("Improper request method for deleting, please use DELETE.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    }
                 }
                 else{
-                    writeErrorResponse("Improper request method for deleting, please use DELETE.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
                 }
             break;
             case "get":
+                auth_verified = true;
                 if(requestMethod.equals("GET") || requestMethod.equals("HEAD")){
                     restful = true;
                 }
@@ -391,7 +447,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             break;
             default:
                 writeErrorResponse("Improper request method for this type of request (unknown).", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-
             }  
         return restful;
     }
@@ -1870,6 +1925,80 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
         }
      }
+    
+    private JSONObject getJWKS() throws MalformedURLException, ProtocolException, IOException{
+        System.out.println("To verify a token I received, I need to get the cubap jwks.json document");
+        JSONObject jwksFile = new JSONObject();
+        String jwksLocation = "https://cubap.auth0.com/.well-known/jwks.json";
+        URL jwksURL = new URL(jwksLocation);
+        BufferedReader reader = null;
+        StringBuilder stringBuilder;
+        HttpURLConnection connection = (HttpURLConnection) jwksURL.openConnection();
+        connection.setRequestMethod("GET"); 
+        connection.setReadTimeout(15*1000);
+        connection.connect();
+        reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+        stringBuilder = new StringBuilder();
+        String line = null;
+        while ((line = reader.readLine()) != null)
+        {
+          stringBuilder.append(line);
+        }
+        connection.disconnect();
+        jwksFile = JSONObject.fromObject(stringBuilder.toString());
+        System.out.println("Got the jwks file, going back into verification process...");
+        return jwksFile;
+    }
+
+    /*
+    Verify the access code in the Bearer header of an action request.
+    */
+    private boolean verifyAccessCode(String access_token) throws IOException, ServletException, Exception{
+        /*
+        https://gist.github.com/destan/b708d11bd4f403506d6d5bb5fe6a82c5
+        https://developer.byu.edu/docs/consume-api/use-api/implement-openid-connect/jwks-public-key-documentation
+        
+        * We are using the auth0 java package.  Info here https://github.com/auth0/auth0-java
+         * We are using the JSON Web Token java package as well see https://github.com/auth0/java-jwt
+        */
+        System.out.println("verify a JWT access toekn");
+        //CreatedUser user = null;
+        boolean verified = false;
+        System.out.println("The token is");
+        System.out.println(access_token);
+        KeyFactory kf = KeyFactory.getInstance("RSA");
+        System.out.println("Retrieve jwks doc.  Moving out of verify for get it...");
+        JSONObject jwksDoc = getJWKS(); //the cubap jwk doc with the keys inside it
+        System.out.println("...back in verify with jwks doc");
+        String chain = jwksDoc.getString("x5c"); //The public key.  
+        System.out.println("Public Key Chain is");
+        System.out.println(chain);
+        byte[] chain_decoded = Base64.decodeBase64(chain); //The public key chain Bas64 decoded into bytes
+        System.out.println("The chain decoded is");
+        System.out.println(chain_decoded);
+        X509EncodedKeySpec keySpecX509 = new X509EncodedKeySpec(chain_decoded);
+        System.out.println("Encoded key spec");
+        System.out.println(keySpecX509);
+        RSAPublicKey pubKey = (RSAPublicKey) kf.generatePublic(keySpecX509);
+        System.out.println("RSA key is");
+        System.out.println(pubKey);
+        try {
+            Algorithm algorithm = Algorithm.RSA256(pubKey, null);
+            JWTVerifier verifier = JWT.require(algorithm)
+                .withIssuer("auth0")
+                .build(); //Reusable verifier instance
+            DecodedJWT jwt = verifier.verify(access_token);
+            System.out.println("We were able to verify it");
+            verified = true;
+        } catch (JWTVerificationException exception){
+            //Invalid signature/claims
+            System.out.println("Verification failed");
+            verified = false;
+        }
+        return verified;
+        
+    }
+    
 
     @Override
     public void setServletRequest(HttpServletRequest hsr) {
