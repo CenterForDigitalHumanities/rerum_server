@@ -49,6 +49,9 @@
 
 package edu.slu.action;
 
+import com.auth0.jwk.Jwk;
+import com.auth0.jwk.JwkProvider;
+import com.auth0.jwk.UrlJwkProvider;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
@@ -62,7 +65,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -73,30 +75,24 @@ import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.struts2.interceptor.ServletRequestAware;
 import org.apache.struts2.interceptor.ServletResponseAware;
-import org.bson.types.ObjectId;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 
+//import org.apache.commons.codec.*;
+//import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
+
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
-import com.auth0.jwt.exceptions.JWTCreationException;
-import com.auth0.jwt.exceptions.JWTDecodeException;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import com.auth0.jwt.interfaces.RSAKeyProvider;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.net.ProtocolException;
-import java.security.KeyFactory;
-import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
-import java.security.spec.X509EncodedKeySpec;
-import org.apache.tomcat.util.codec.binary.Base64;
-import org.apache.tomcat.util.codec.binary.StringUtils;
-
-
-
 
 
 /**
@@ -339,13 +335,15 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     public Boolean methodApproval(HttpServletRequest http_request, String request_type) throws Exception{
         String requestMethod = http_request.getMethod();
         String access_token = http_request.getHeader("Bearer");
-        boolean auth_verified = verifyAccessCode(access_token);
+        System.out.println("Verify with oauth and token "+access_token);
+        boolean auth_verified = false;
         boolean restful = false;
 
         // FIXME @webanno if you notice, OPTIONS is not supported here and MUST be 
         // for Web Annotation standards compliance.  
         switch(request_type){
             case "update":
+                auth_verified =  verifyAccessCode(access_token);
                 if(auth_verified){
                     if(requestMethod.equals("PUT")){
                         restful = true;
@@ -359,6 +357,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 }
             break;
             case "patch":
+                auth_verified =  verifyAccessCode(access_token);
                 if(auth_verified){
                     if(requestMethod.equals("PATCH")){
                         restful = true;
@@ -372,6 +371,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 }
             break;
             case "set":
+                auth_verified =  verifyAccessCode(access_token);
                 if(auth_verified){
                     if(requestMethod.equals("PATCH")){
                         restful = true;
@@ -385,6 +385,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 }
             break;
             case "unset":
+                auth_verified =  verifyAccessCode(access_token);
                 if(auth_verified){
                     if(requestMethod.equals("PATCH")){
                         restful = true;
@@ -398,15 +399,16 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 }
             break;
             case "release":
-            if(auth_verified){
-                if(requestMethod.equals("PATCH")){
-                    restful = true;
+                auth_verified =  verifyAccessCode(access_token);
+                if(auth_verified){
+                    if(requestMethod.equals("PATCH")){
+                        restful = true;
+                    }
+                    else{
+                        writeErrorResponse("Improper request method for updating, please use PATCH to alter this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    }
                 }
                 else{
-                    writeErrorResponse("Improper request method for updating, please use PATCH to alter this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-                }
-            }
-            else{
                     writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
                 }
             break;
@@ -958,6 +960,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @respond with new @id in Location header and the new annotation in the body.
      */
     public void saveNewObject() throws IOException, ServletException, Exception{
+        System.out.println("Save an object!");
         if(null != processRequestBody(request, false) && methodApproval(request, "create")){
             JSONObject received = JSONObject.fromObject(content);
             if(received.containsKey("@id")){
@@ -1946,7 +1949,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         }
         connection.disconnect();
         jwksFile = JSONObject.fromObject(stringBuilder.toString());
-        System.out.println("Got the jwks file, going back into verification process...");
+        System.out.println("Got the jwks file, going back into verification process with doc...");
+        System.out.println(jwksFile);
         return jwksFile;
     }
 
@@ -1960,34 +1964,39 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         
         * We are using the auth0 java package.  Info here https://github.com/auth0/auth0-java
          * We are using the JSON Web Token java package as well see https://github.com/auth0/java-jwt
+        
+        When using RSA or ECDSA algorithms and you just need to sign JWTs you can avoid specifying a Public Key by passing a null value. 
+        The same can be done with the Private Key when you just need to verify JWTs.
         */
         System.out.println("verify a JWT access toekn");
         //CreatedUser user = null;
         boolean verified = false;
         System.out.println("The token is");
         System.out.println(access_token);
-        KeyFactory kf = KeyFactory.getInstance("RSA");
-        System.out.println("Retrieve jwks doc.  Moving out of verify for get it...");
-        JSONObject jwksDoc = getJWKS(); //the cubap jwk doc with the keys inside it
-        System.out.println("...back in verify with jwks doc");
-        String chain = jwksDoc.getString("x5c"); //The public key.  
-        System.out.println("Public Key Chain is");
-        System.out.println(chain);
-        byte[] chain_decoded = Base64.decodeBase64(chain); //The public key chain Bas64 decoded into bytes
-        System.out.println("The chain decoded is");
-        System.out.println(chain_decoded);
-        X509EncodedKeySpec keySpecX509 = new X509EncodedKeySpec(chain_decoded);
-        System.out.println("Encoded key spec");
-        System.out.println(keySpecX509);
-        RSAPublicKey pubKey = (RSAPublicKey) kf.generatePublic(keySpecX509);
-        System.out.println("RSA key is");
-        System.out.println(pubKey);
+        System.out.println("I have to decode it");
+        DecodedJWT recievedToken = JWT.decode(access_token);
+        System.out.println("Decoded token is");
+        System.out.println(recievedToken);
+        System.out.println("Need kid out of received token.");
+        String KID = recievedToken.getKeyId();
+        System.out.println(KID);
+        System.out.println("Gather jwks.json doc into a JwkProvider");
+        JwkProvider provider = new UrlJwkProvider("https://cubap.auth0.com/.well-known/jwks.json");
+        System.out.println("Get JWK using KID");
+        Jwk jwk = provider.get(KID); //throws Exception when not found or can't get one
+        System.out.println("Get public key from JWK");
+        System.out.println(jwk.getPublicKey());
+        System.out.println("Convert found key in RSAPublicKey");
+        RSAPublicKey pubKey = (RSAPublicKey) jwk.getPublicKey();       
+        
+    
         try {
+            System.out.println("Try to verify the access_code JWT");
             Algorithm algorithm = Algorithm.RSA256(pubKey, null);
             JWTVerifier verifier = JWT.require(algorithm)
-                .withIssuer("auth0")
+                //.withIssuer("auth0")
                 .build(); //Reusable verifier instance
-            DecodedJWT jwt = verifier.verify(access_token);
+            DecodedJWT d_jwt = verifier.verify(access_token);
             System.out.println("We were able to verify it");
             verified = true;
         } catch (JWTVerificationException exception){

@@ -77,7 +77,7 @@
             <!-- <input class='btn btn-primary btn-large' type="button" id="submit_server_reg" value=" Submit " /> -->
             <input class='btn btn-primary btn-large' type="button" id="submit_auth_reg" value=" Authorize Auth0 To Use This App On Your Behalf" />
             <input class='btn btn-primary btn-large' type="button" id="login" value=" Log In To Auth0 " />
-            <input class='btn btn-primary btn-large' type="button" id="test_api" value=" Test RERUM API " />
+            <input class='btn btn-primary btn-large' type="button" onclick="testAPI()" id="test_api" value=" Test RERUM API " />
         </div>
     </body>
     <script type="text/javascript">
@@ -97,7 +97,7 @@
         if(myURL.indexOf("code=") > -1){ //User is logged in and consented to use RERUM.  They have an authorization code
            auth_code = getURLVariable("code");
            if(auth_code !== ""){
-               getAccessCode(auth_code);
+               getAccessToken(auth_code);
            }
            else{ //Bad authorization code, they need to go get it again. 
                $("#submit_auth_reg").show();
@@ -179,7 +179,7 @@
 
         });
         
-        function getAccessCode(authorization_code){
+        function getAccessToken(authorization_code){
             //Failing because of CORS https://auth0.com/docs/cross-origin-authentication
             var params = { 
                 "grant_type" : "authorization_code", 
@@ -191,13 +191,11 @@
             var postURL = "https://cubap.auth0.com/oauth/token"; 
             var xhr = new XMLHttpRequest();
             xhr.onreadystatechange = function() {
-                console.log("request state change to "+this.readyState);
-                console.log("request response is");
-                console.log(this.response);
                 if (this.readyState === XMLHttpRequest.DONE) {
                     if(this.response !== ""){
                         responseJSON = JSON.parse(this.response); //Outputs a DOMString by default
-                        access_code = responseJSON.access_code;
+                        access_token = responseJSON.access_token;
+                        console.log("GOT ACCESS TOKEN!");
                         $("#test_api ").show();
                         $("#login").hide(); 
                         $("#submit_auth_reg").hide();
@@ -210,8 +208,6 @@
                     }
                 }
             };
-            console.log("get access code here");
-            console.log(postURL);
             xhr.open("POST", postURL, true); 
             xhr.setRequestHeader("Content-type", "application/json"); 
             xhr.send(JSON.stringify(params));
@@ -240,9 +236,9 @@
             }; 
             var postURL = "http://devstore.rerum.io/rerumserver/v1/create.action"; 
             var xhr = new XMLHttpRequest();
-            xhr.open("POST", postURL, false); 
+            xhr.open("POST", postURL, true); 
             xhr.setRequestHeader("Content-type", "application/json"); 
-            xhr.setRequestHeader("Bearer", access_code); 
+            xhr.setRequestHeader("Bearer", access_token); 
             xhr.send(JSON.stringify(params));
         }
 
