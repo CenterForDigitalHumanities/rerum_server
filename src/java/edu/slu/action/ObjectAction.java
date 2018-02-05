@@ -128,8 +128,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
       } catch (MissingResourceException e) {
          System.err.println("Token ".concat(prop).concat(" not in Propertyfile!"));
       }
-      System.out.println("Got property");
-      System.out.println(propVal);
       return propVal;
    }
     
@@ -358,8 +356,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         System.out.println("In method approval where I will verify.");
         boolean auth_verified = false;
         boolean restful = false;
-        System.out.println("Can i get the secret?");
-        System.out.println(getRerumProperty("rerumSecret"));
         // FIXME @webanno if you notice, OPTIONS is not supported here and MUST be 
         // for Web Annotation standards compliance.  
         switch(request_type){
@@ -1998,9 +1994,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         System.out.println(access_token);
         System.out.println("I have to decode it");
         DecodedJWT recievedToken = JWT.decode(access_token);
-        System.out.println("Decoded token is");
-        System.out.println(recievedToken);
-        System.out.println("Need kid out of received token.");
+        System.out.println("Need kid out of decoded token.");
         String KID = recievedToken.getKeyId();
         System.out.println(KID);
         System.out.println("Gather jwks.json doc into a JwkProvider");
@@ -2008,8 +2002,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         System.out.println("Get JWK using KID");
         Jwk jwk = provider.get(KID); //throws Exception when not found or can't get one
         System.out.println("Get public key from JWK");
-        System.out.println(jwk.getPublicKey());
-        System.out.println("Convert found key in RSAPublicKey");
+        System.out.println("Convert found key into RSAPublicKey");
         RSAPublicKey pubKey = (RSAPublicKey) jwk.getPublicKey();       
         try {
             System.out.println("Try to verify the access_code JWT");
