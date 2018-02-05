@@ -88,11 +88,11 @@ import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
-import com.auth0.jwt.interfaces.RSAKeyProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import java.net.ProtocolException;
 import java.security.interfaces.RSAPublicKey;
+import java.util.MissingResourceException;
+import java.util.ResourceBundle;
 
 
 /**
@@ -112,6 +112,23 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     private BufferedReader bodyReader;
     private PrintWriter out;
     final ObjectMapper mapper = new ObjectMapper();
+    
+   /**
+    * Private function to get information from the rerum properties file
+    
+    * @param prop the name of the property to retrieve from the file.
+    * @return the value for the provided property
+    */    
+   public static String getRerumProperty(String prop) {
+      ResourceBundle rb = ResourceBundle.getBundle("rerum");
+      String propVal = "";
+      try {
+         propVal = rb.getString(prop);
+      } catch (MissingResourceException e) {
+         System.err.println("Token ".concat(prop).concat(" not in Propertyfile!"));
+      }
+      return propVal;
+   }
     
     /**
      * Check if the proposed object is a container type.
@@ -146,7 +163,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @return isLd Boolean
      */
     public Boolean isLD(JSONObject jo){
-        Boolean isLD=jo.containsKey("@context");
+        Boolean isLD= jo.containsKey("@context");
         return isLD;
         // TODO: There's probably some great code to do real checking.
     }
@@ -338,7 +355,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         System.out.println("In method approval where I will verify.");
         boolean auth_verified = false;
         boolean restful = false;
-
         // FIXME @webanno if you notice, OPTIONS is not supported here and MUST be 
         // for Web Annotation standards compliance.  
         switch(request_type){
@@ -1977,9 +1993,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         System.out.println(access_token);
         System.out.println("I have to decode it");
         DecodedJWT recievedToken = JWT.decode(access_token);
-        System.out.println("Decoded token is");
-        System.out.println(recievedToken);
-        System.out.println("Need kid out of received token.");
+        System.out.println("Need kid out of decoded token.");
         String KID = recievedToken.getKeyId();
         System.out.println(KID);
         System.out.println("Gather jwks.json doc into a JwkProvider");
@@ -1987,8 +2001,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         System.out.println("Get JWK using KID");
         Jwk jwk = provider.get(KID); //throws Exception when not found or can't get one
         System.out.println("Get public key from JWK");
-        System.out.println(jwk.getPublicKey());
-        System.out.println("Convert found key in RSAPublicKey");
+        System.out.println("Convert found key into RSAPublicKey");
         RSAPublicKey pubKey = (RSAPublicKey) jwk.getPublicKey();       
         try {
             System.out.println("Try to verify the access_code JWT");

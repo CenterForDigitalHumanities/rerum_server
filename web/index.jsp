@@ -191,7 +191,7 @@
             var params = { 
                 "grant_type" : "authorization_code", 
                 "client_id":"jwkd5YE0YA5tFxGxaLW9ALPxAyA6Qw1v",
-                "client_secret":"",
+                "client_secret":"Ndy34oet4AtZy7tzBKbhjmU6TVGAW9LdeufUgNXCu9yt1SM4L8uXJzFAfkNBzWRH",
                 "code":authorization_code,
                 "redirect_uri":"http://devstore.rerum.io"
             }; 
