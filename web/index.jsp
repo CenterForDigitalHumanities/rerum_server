@@ -143,7 +143,7 @@
             var xhr = new XMLHttpRequest();
             var params = {
                 "audience":"http://rerum.io/api",
-                "scope":"name email",
+                "scope":"name email openid",
                 "response_type":"code",
                 "client_id":"jwkd5YE0YA5tFxGxaLW9ALPxAyA6Qw1v",
                 "redirect_uri":"http://devstore.rerum.io",
@@ -164,7 +164,7 @@
             var xhr = new XMLHttpRequest();
             var params = {
                 "audience":"http://rerum.io/api",
-                "scope":"name email",
+                "scope":"name email openid",
                 "response_type":"code",
                 "client_id":"jwkd5YE0YA5tFxGxaLW9ALPxAyA6Qw1v",
                 "redirect_uri":"http://devstore.rerum.io",
@@ -241,6 +241,7 @@
             xhr.setRequestHeader("Bearer", access_token); 
             xhr.send(JSON.stringify(params));
         }
+        
 
     </script>
 </html>

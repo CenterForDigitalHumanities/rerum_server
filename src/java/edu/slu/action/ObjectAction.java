@@ -335,7 +335,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     public Boolean methodApproval(HttpServletRequest http_request, String request_type) throws Exception{
         String requestMethod = http_request.getMethod();
         String access_token = http_request.getHeader("Bearer");
-        System.out.println("Verify with oauth and token "+access_token);
+        System.out.println("In method approval where I will verify.");
         boolean auth_verified = false;
         boolean restful = false;
 
@@ -343,7 +343,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         // for Web Annotation standards compliance.  
         switch(request_type){
             case "update":
-                auth_verified =  verifyAccessCode(access_token);
+                auth_verified =  verifyAccessToken(access_token);
                 if(auth_verified){
                     if(requestMethod.equals("PUT")){
                         restful = true;
@@ -357,7 +357,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 }
             break;
             case "patch":
-                auth_verified =  verifyAccessCode(access_token);
+                auth_verified =  verifyAccessToken(access_token);
                 if(auth_verified){
                     if(requestMethod.equals("PATCH")){
                         restful = true;
@@ -371,7 +371,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 }
             break;
             case "set":
-                auth_verified =  verifyAccessCode(access_token);
+                auth_verified =  verifyAccessToken(access_token);
                 if(auth_verified){
                     if(requestMethod.equals("PATCH")){
                         restful = true;
@@ -385,7 +385,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 }
             break;
             case "unset":
-                auth_verified =  verifyAccessCode(access_token);
+                auth_verified =  verifyAccessToken(access_token);
                 if(auth_verified){
                     if(requestMethod.equals("PATCH")){
                         restful = true;
@@ -399,7 +399,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 }
             break;
             case "release":
-                auth_verified =  verifyAccessCode(access_token);
+                auth_verified =  verifyAccessToken(access_token);
                 if(auth_verified){
                     if(requestMethod.equals("PATCH")){
                         restful = true;
@@ -413,6 +413,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 }
             break;
             case "create":
+                auth_verified =  verifyAccessToken(access_token);
                 if(auth_verified){
                     if(requestMethod.equals("POST")){
                         restful = true;
@@ -426,6 +427,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 }
             break;
             case "delete":
+                auth_verified =  verifyAccessToken(access_token);
                 if(auth_verified){
                     if(requestMethod.equals("DELETE")){
                         restful = true;
@@ -1957,7 +1959,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     /*
     Verify the access code in the Bearer header of an action request.
     */
-    private boolean verifyAccessCode(String access_token) throws IOException, ServletException, Exception{
+    private boolean verifyAccessToken(String access_token) throws IOException, ServletException, Exception{
         /*
         https://gist.github.com/destan/b708d11bd4f403506d6d5bb5fe6a82c5
         https://developer.byu.edu/docs/consume-api/use-api/implement-openid-connect/jwks-public-key-documentation
@@ -1988,8 +1990,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         System.out.println(jwk.getPublicKey());
         System.out.println("Convert found key in RSAPublicKey");
         RSAPublicKey pubKey = (RSAPublicKey) jwk.getPublicKey();       
-        
-    
         try {
             System.out.println("Try to verify the access_code JWT");
             Algorithm algorithm = Algorithm.RSA256(pubKey, null);
@@ -1997,7 +1997,10 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 //.withIssuer("auth0")
                 .build(); //Reusable verifier instance
             DecodedJWT d_jwt = verifier.verify(access_token);
-            System.out.println("We were able to verify it");
+            System.out.println("We were able to verify it.  Now we can try to get the agent ID.");
+            JSONObject userInfo = getRerumUserInfo(access_token);
+            System.out.println("I got the info to get the agent ID out of");
+            System.out.println(userInfo);
             verified = true;
         } catch (JWTVerificationException exception){
             //Invalid signature/claims
@@ -2006,6 +2009,31 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         }
         return verified;
         
+    }
+    
+    private JSONObject getRerumUserInfo(String access_token) throws MalformedURLException, ProtocolException, IOException{
+        System.out.println("I need to get user info from auth0 to get the rerum agent ID");
+        JSONObject userInfo = new JSONObject();
+        String userInfoLocation = "https://cubap.auth0.com/userinfo?access_token="+access_token;
+        URL infoURL = new URL(userInfoLocation);
+        BufferedReader reader = null;
+        StringBuilder stringBuilder;
+        HttpURLConnection connection = (HttpURLConnection) infoURL.openConnection();
+        connection.setRequestMethod("GET"); 
+        connection.setReadTimeout(15*1000);
+        connection.connect();
+        reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+        stringBuilder = new StringBuilder();
+        String line = null;
+        while ((line = reader.readLine()) != null)
+        {
+          stringBuilder.append(line);
+        }
+        connection.disconnect();
+        userInfo = JSONObject.fromObject(stringBuilder.toString());
+        System.out.println("Got the user info");
+        System.out.println(userInfo);
+        return userInfo;
     }
     
 
