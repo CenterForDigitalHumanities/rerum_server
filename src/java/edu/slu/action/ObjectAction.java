@@ -121,7 +121,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     */    
    public static String getRerumProperty(String prop) {
       ResourceBundle rb = ResourceBundle.getBundle("rerum");
-      String msg = "";
       String propVal = "";
       try {
          propVal = rb.getString(prop);
