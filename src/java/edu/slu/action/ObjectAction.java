@@ -88,11 +88,11 @@ import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
-import com.auth0.jwt.interfaces.RSAKeyProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import java.net.ProtocolException;
 import java.security.interfaces.RSAPublicKey;
+import java.util.MissingResourceException;
+import java.util.ResourceBundle;
 
 
 /**
@@ -112,6 +112,26 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     private BufferedReader bodyReader;
     private PrintWriter out;
     final ObjectMapper mapper = new ObjectMapper();
+    
+   /**
+    * Private function to get information from the rerum properties file
+    
+    * @param prop the name of the property to retrieve from the file.
+    * @return the value for the provided property
+    */    
+   public static String getRerumProperty(String prop) {
+      ResourceBundle rb = ResourceBundle.getBundle("rerum");
+      String msg = "";
+      String propVal = "";
+      try {
+         propVal = rb.getString(prop);
+      } catch (MissingResourceException e) {
+         System.err.println("Token ".concat(prop).concat(" not in Propertyfile!"));
+      }
+      System.out.println("Got property");
+      System.out.println(propVal);
+      return propVal;
+   }
     
     /**
      * Check if the proposed object is a container type.
@@ -146,7 +166,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @return isLd Boolean
      */
     public Boolean isLD(JSONObject jo){
-        Boolean isLD=jo.containsKey("@context");
+        Boolean isLD= jo.containsKey("@context");
         return isLD;
         // TODO: There's probably some great code to do real checking.
     }
@@ -338,7 +358,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         System.out.println("In method approval where I will verify.");
         boolean auth_verified = false;
         boolean restful = false;
-
+        System.out.println("Can i get the secret?");
+        System.out.println(getRerumProperty("rerumSecret"));
         // FIXME @webanno if you notice, OPTIONS is not supported here and MUST be 
         // for Web Annotation standards compliance.  
         switch(request_type){
