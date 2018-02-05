@@ -94,6 +94,13 @@
         var responseJSON = {};
         var myURL = document.location.href;
 
+        <%
+            String access_token,
+                    auth_code;
+        if (request.getParameter("code") != null) {
+            auth_code = Integer.parseInt(request.getParameter("p"));
+        }
+        %>
         if(myURL.indexOf("code=") > -1){ //User is logged in and consented to use RERUM.  They have an authorization code
            auth_code = getURLVariable("code");
            if(auth_code !== ""){
