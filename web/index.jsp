@@ -4,6 +4,7 @@
     Author     : hanyan
 --%>
 
+<%@page import="edu.slu.action.ObjectAction"%>
 <%@page contentType="text/html" pageEncoding="UTF-8" buffer="1000kb"%>
 <% String basePath = request.getContextPath(); %>
 <!DOCTYPE html>
@@ -98,7 +99,8 @@
             String access_token,
                     auth_code;
         if (request.getParameter("code") != null) {
-            auth_code = Integer.parseInt(request.getParameter("p"));
+            auth_code = request.getParameter("code");
+            access_token = ObjectAction.getAccessTokenWithAuth(auth_code);
         }
         %>
         if(myURL.indexOf("code=") > -1){ //User is logged in and consented to use RERUM.  They have an authorization code
@@ -185,41 +187,7 @@
 //            xhr.send();
 
         });
-        
-        function getAccessToken(authorization_code){
-            //Failing because of CORS https://auth0.com/docs/cross-origin-authentication
-            var params = { 
-                "grant_type" : "authorization_code", 
-                "client_id":"jwkd5YE0YA5tFxGxaLW9ALPxAyA6Qw1v",
-                "client_secret":"Ndy34oet4AtZy7tzBKbhjmU6TVGAW9LdeufUgNXCu9yt1SM4L8uXJzFAfkNBzWRH",
-                "code":authorization_code,
-                "redirect_uri":"http://devstore.rerum.io"
-            }; 
-            var postURL = "https://cubap.auth0.com/oauth/token"; 
-            var xhr = new XMLHttpRequest();
-            xhr.onreadystatechange = function() {
-                if (this.readyState === XMLHttpRequest.DONE) {
-                    if(this.response !== ""){
-                        responseJSON = JSON.parse(this.response); //Outputs a DOMString by default
-                        access_token = responseJSON.access_token;
-                        console.log("GOT ACCESS TOKEN!");
-                        $("#test_api ").show();
-                        $("#login").hide(); 
-                        $("#submit_auth_reg").hide();
-                    }
-                    else{
-                        alert("CANNOT GET ACCESS TOKEN");
-                        $("#test_api ").hide();
-                        $("#login").show(); 
-                        $("#submit_auth_reg").hide();
-                    }
-                }
-            };
-            xhr.open("POST", postURL, true); 
-            xhr.setRequestHeader("Content-type", "application/json"); 
-            xhr.send(JSON.stringify(params));
-        }
-        
+                
         function getURLVariable(variable){
             var query = window.location.search.substring(1);
             var vars = query.split("&");

@@ -89,8 +89,11 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.OutputStream;
 import java.net.ProtocolException;
 import java.security.interfaces.RSAPublicKey;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 
@@ -1970,6 +1973,52 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         System.out.println("Got the jwks file, going back into verification process with doc...");
         System.out.println(jwksFile);
         return jwksFile;
+    }
+    
+    public static String getAccessTokenWithAuth(String auth_code) throws UnsupportedEncodingException {
+            System.out.println("Getting an access token for auth");
+            String token="";
+            String tokenURL="https://cubap.auth0.com/oauth/token";
+            
+            StringBuilder body_builder = new StringBuilder();
+            body_builder.append("{\"grant_type\": \"authorization_code\"")
+                    .append("\"client_id\": \"jwkd5YE0YA5tFxGxaLW9ALPxAyA6Qw1v\"")
+                    .append("\"client_secret\": \""+getRerumProperty("rerumSecret")+"\"")
+                    .append("\"code\": \""+auth_code+"\"")
+                    .append("\"redirect_uri\": \"http://devstore.rerum.io\"")
+                    .append("}");
+            String body = body_builder.toString();
+
+        try {           
+            URL tURL = new URL(tokenURL);
+            HttpURLConnection connection;
+            connection = (HttpURLConnection) tURL.openConnection();
+            connection.setRequestMethod("POST");
+            OutputStream os = connection.getOutputStream();
+            byte[] bodyByte = body.getBytes("UTF-8");
+            connection.setRequestProperty("Content-Type", "application/json");
+            os.write(bodyByte);
+            connection.connect();
+
+            BufferedReader input = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+            StringBuilder responseBlob = new StringBuilder();
+            String line;
+            while ((line = input.readLine()) != null) {
+                responseBlob.append(line);
+            }
+            connection.disconnect();
+            JSONObject responseObj = JSONObject.fromObject(responseBlob.toString());
+            if(responseObj.containsKey("access_token")){
+                token = responseObj.getString("access_token");
+            }
+
+        } catch (ProtocolException ex) {
+            Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException ex) {
+            Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        return token;
     }
 
     /*
