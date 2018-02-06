@@ -89,13 +89,21 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mongodb.DB;
+import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
+import edu.slu.util.MongoDBUtil;
 import java.io.OutputStream;
 import java.net.ProtocolException;
 import java.security.interfaces.RSAPublicKey;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
+import javax.servlet.http.HttpSession;
+import org.apache.struts2.ServletActionContext;
 
 
 /**
@@ -114,7 +122,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     private StringBuilder bodyString;
     private BufferedReader bodyReader;
     private PrintWriter out;
-    final ObjectMapper mapper = new ObjectMapper();
+    private String generatorID = "http://devstore.rerum.io/id/aeeebryantestingeeea123123";
+    private final ObjectMapper mapper = new ObjectMapper();
     
    /**
     * Private function to get information from the rerum properties file
@@ -280,7 +289,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         rerumOptions.element("history", history);
         rerumOptions.element("releases", releases);      
         //The access token is in the header  "Authorization: Bearer {YOUR_ACCESS_TOKEN}"
-        rerumOptions.element("generatedBy",""); //TODO get the @id of the public agent of the API key
+        rerumOptions.element("generatedBy",generatorID); //TODO get the @id of the public agent of the API key
         configuredObject.element("__rerum", rerumOptions); //.element will replace the __rerum that is there OR create a new one
         return configuredObject; //The mongo save/update has not been called yet.  The object returned here will go into mongo.save or mongo.update
     }
@@ -354,7 +363,11 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     */
     public Boolean methodApproval(HttpServletRequest http_request, String request_type) throws Exception{
         String requestMethod = http_request.getMethod();
-        String access_token = http_request.getHeader("Bearer");
+        String access_token = "";
+        if(null!=http_request.getHeader("Bearer")){
+            access_token = http_request.getHeader("Bearer");
+        }
+        http_request.getHeader("Bearer");
         System.out.println("In method approval where I will verify.");
         boolean auth_verified = false;
         boolean restful = false;
@@ -362,7 +375,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         // for Web Annotation standards compliance.  
         switch(request_type){
             case "update":
-                auth_verified =  verifyAccessToken(access_token);
+                auth_verified =  verifyAccess(access_token);
                 if(auth_verified){
                     if(requestMethod.equals("PUT")){
                         restful = true;
@@ -372,11 +385,11 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     }
                 }
                 else{
-                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
                 }
             break;
             case "patch":
-                auth_verified =  verifyAccessToken(access_token);
+                auth_verified =  verifyAccess(access_token);
                 if(auth_verified){
                     if(requestMethod.equals("PATCH")){
                         restful = true;
@@ -386,11 +399,11 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     }
                 }
                 else{
-                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
                 }
             break;
             case "set":
-                auth_verified =  verifyAccessToken(access_token);
+                auth_verified =  verifyAccess(access_token);
                 if(auth_verified){
                     if(requestMethod.equals("PATCH")){
                         restful = true;
@@ -400,11 +413,11 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     }
                 }
                 else{
-                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
                 }
             break;
             case "unset":
-                auth_verified =  verifyAccessToken(access_token);
+                auth_verified =  verifyAccess(access_token);
                 if(auth_verified){
                     if(requestMethod.equals("PATCH")){
                         restful = true;
@@ -414,11 +427,11 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     }
                 }
                 else{
-                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
                 }
             break;
             case "release":
-                auth_verified =  verifyAccessToken(access_token);
+                auth_verified =  verifyAccess(access_token);
                 if(auth_verified){
                     if(requestMethod.equals("PATCH")){
                         restful = true;
@@ -428,11 +441,11 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     }
                 }
                 else{
-                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
                 }
             break;
             case "create":
-                auth_verified =  verifyAccessToken(access_token);
+                auth_verified =  verifyAccess(access_token);
                 if(auth_verified){
                     if(requestMethod.equals("POST")){
                         restful = true;
@@ -442,11 +455,11 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     }
                 }
                 else{
-                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
                 }
             break;
             case "delete":
-                auth_verified =  verifyAccessToken(access_token);
+                auth_verified =  verifyAccess(access_token);
                 if(auth_verified){
                     if(requestMethod.equals("DELETE")){
                         restful = true;
@@ -456,7 +469,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     }
                 }
                 else{
-                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
                 }
             break;
             case "get":
@@ -470,7 +483,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             break;
             default:
                 writeErrorResponse("Improper request method for this type of request (unknown).", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-            }  
+        }  
         return restful;
     }
     
@@ -2024,53 +2037,66 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     /*
     Verify the access code in the Bearer header of an action request.
     */
-    private boolean verifyAccessToken(String access_token) throws IOException, ServletException, Exception{
-        /*
-        https://gist.github.com/destan/b708d11bd4f403506d6d5bb5fe6a82c5
-        https://developer.byu.edu/docs/consume-api/use-api/implement-openid-connect/jwks-public-key-documentation
-        
-        * We are using the auth0 java package.  Info here https://github.com/auth0/auth0-java
-         * We are using the JSON Web Token java package as well see https://github.com/auth0/java-jwt
-        
-        When using RSA or ECDSA algorithms and you just need to sign JWTs you can avoid specifying a Public Key by passing a null value. 
-        The same can be done with the Private Key when you just need to verify JWTs.
-        */
+    private boolean verifyAccess(String access_token) throws IOException, ServletException, Exception{
         System.out.println("verify a JWT access toekn");
-        //CreatedUser user = null;
         boolean verified = false;
+        JSONObject userInfo = new JSONObject();
         System.out.println("The token is");
         System.out.println(access_token);
-        System.out.println("I have to decode it");
         DecodedJWT recievedToken = JWT.decode(access_token);
-        System.out.println("Need kid out of decoded token.");
         String KID = recievedToken.getKeyId();
         System.out.println(KID);
-        System.out.println("Gather jwks.json doc into a JwkProvider");
         JwkProvider provider = new UrlJwkProvider("https://cubap.auth0.com/.well-known/jwks.json");
-        System.out.println("Get JWK using KID");
         Jwk jwk = provider.get(KID); //throws Exception when not found or can't get one
-        System.out.println("Get public key from JWK");
-        System.out.println("Convert found key into RSAPublicKey");
         RSAPublicKey pubKey = (RSAPublicKey) jwk.getPublicKey();       
         try {
             System.out.println("Try to verify the access_code JWT");
             Algorithm algorithm = Algorithm.RSA256(pubKey, null);
-            JWTVerifier verifier = JWT.require(algorithm)
-                //.withIssuer("auth0")
-                .build(); //Reusable verifier instance
+            JWTVerifier verifier = JWT.require(algorithm).build(); //Reusable verifier instance
+               //.withIssuer("auth0")
             DecodedJWT d_jwt = verifier.verify(access_token);
-            System.out.println("We were able to verify it.  Now we can try to get the agent ID.");
-            JSONObject userInfo = getRerumUserInfo(access_token);
+            System.out.println("We were able to verify it. ");
+            userInfo = getRerumUserInfo(access_token);
             System.out.println("I got the info to get the agent ID out of");
             System.out.println(userInfo);
+            //generatorID = userInfo.getString("agent"); //FIXME new objects need to have this or else NULLPOINTER
             verified = true;
-        } catch (JWTVerificationException exception){
-            //Invalid signature/claims
-            System.out.println("Verification failed");
-            verified = false;
+        } 
+        catch (JWTVerificationException exception){
+            //Invalid signature/claims.  Try to authenticate the old way
+            System.out.println("Verification failed.  Fallback on old IP filter.");
+            String requestIP = request.getRemoteAddr();
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+            //check if the domain name and ip is in database
+            BasicDBObject query = new BasicDBObject();
+            query.append("ip", requestIP);
+            DB db = MongoDBUtil.getDb();
+            DBCollection coll = db.getCollection(Constant.COLLECTION_ACCEPTEDSERVER);
+            DBCursor cursor = coll.find(query);
+            List<DBObject> ls_results = cursor.toArray();
+            if(ls_results.size() > 0){
+                System.out.println("[Modifying Data Request]: ip ========== " + requestIP + "@" + sdf.format(new Date()) + " +++++ From Registered Server");
+                DBObject result = ls_results.get(0);
+                if(null!=result.get("agent") && !"".equals(result.get("agent"))){
+                    //The user registered their IP with the new system
+                    System.out.println("The registered server had an agent ID with it, so it must be from the new system.");
+                    userInfo = JSONObject.fromObject(result);
+                }
+                else{
+                    //This is a legacy user.
+                    //Create agent and write back to server collection
+                    System.out.println("The registered server did not have an agent ID.  It must be from the old system.");
+                    userInfo = generateAgentForLegacyUser(JSONObject.fromObject(result));
+                }
+                generatorID = userInfo.getString("agent");
+                verified = true;
+            }
+            else{
+                System.out.println("[Modifying Data Request]: ip ========== " + requestIP + "@" + sdf.format(new Date()) + " +++++ Server Not Registered");
+                verified = false;
+            }
         }
         return verified;
-        
     }
     
     private JSONObject getRerumUserInfo(String access_token) throws MalformedURLException, ProtocolException, IOException{
@@ -2096,6 +2122,26 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         System.out.println("Got the user info");
         System.out.println(userInfo);
         return userInfo;
+    }
+    
+    private JSONObject generateAgentForLegacyUser(JSONObject legacyUserObj){
+        System.out.println("Detected a legacy registration.  Creating an agent and storing it with this legacy object.");
+        JSONObject newAgent = new JSONObject();
+        DBObject originalToUpdate = (DBObject)JSON.parse(legacyUserObj.toString());
+        JSONObject orig = JSONObject.fromObject(originalToUpdate);
+        newAgent.element("@type", "foaf:Agent");
+        newAgent.element("@context", "http://store.rerum.io/v1/context.json");
+        newAgent.element("mbox", legacyUserObj.getString("email")); //FIXME?
+        newAgent.element("label", legacyUserObj.getString("name")); //FIXME?
+        newAgent.element("homepage", legacyUserObj.getString("website")); //FIXME?
+        DBObject dbo = (DBObject) JSON.parse(newAgent.toString());
+        String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
+        orig.element("agent", newObjectID);
+        newAgent.element("@id", newObjectID);
+        generatorID = newObjectID;
+        DBObject updatedOrig = (DBObject) JSON.parse(orig.toString());
+        mongoDBService.update(Constant.COLLECTION_ACCEPTEDSERVER, originalToUpdate, updatedOrig);
+        return newAgent;
     }
     
 
