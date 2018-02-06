@@ -119,6 +119,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     private StringBuilder bodyString;
     private BufferedReader bodyReader;
     private PrintWriter out;
+    private String generatorID;
     private final ObjectMapper mapper = new ObjectMapper();
     private final  HttpSession session = request.getSession();
     
@@ -286,7 +287,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         rerumOptions.element("history", history);
         rerumOptions.element("releases", releases);      
         //The access token is in the header  "Authorization: Bearer {YOUR_ACCESS_TOKEN}"
-        rerumOptions.element("generatedBy",""); //TODO get the @id of the public agent of the API key
+        rerumOptions.element("generatedBy",generatorID); //TODO get the @id of the public agent of the API key
         configuredObject.element("__rerum", rerumOptions); //.element will replace the __rerum that is there OR create a new one
         return configuredObject; //The mongo save/update has not been called yet.  The object returned here will go into mongo.save or mongo.update
     }
@@ -382,7 +383,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     }
                 }
                 else{
-                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
                 }
             break;
             case "patch":
@@ -396,7 +397,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     }
                 }
                 else{
-                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
                 }
             break;
             case "set":
@@ -410,7 +411,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     }
                 }
                 else{
-                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
                 }
             break;
             case "unset":
@@ -424,7 +425,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     }
                 }
                 else{
-                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
                 }
             break;
             case "release":
@@ -438,7 +439,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     }
                 }
                 else{
-                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
                 }
             break;
             case "create":
@@ -452,7 +453,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     }
                 }
                 else{
-                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
                 }
             break;
             case "delete":
@@ -466,7 +467,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     }
                 }
                 else{
-                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
                 }
             break;
             case "get":
@@ -480,7 +481,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             break;
             default:
                 writeErrorResponse("Improper request method for this type of request (unknown).", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-            }  
+        }  
         return restful;
     }
     
@@ -2011,6 +2012,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         System.out.println("verify a JWT access toekn");
         //CreatedUser user = null;
         boolean verified = false;
+        JSONObject userInfo = new JSONObject();
         System.out.println("The token is");
         System.out.println(access_token);
         System.out.println("I have to decode it");
@@ -2038,7 +2040,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             else{
                 System.out.println("User info already held in session.  Do we still need to get it?");
             }
-            JSONObject userInfo = getRerumUserInfo(access_token);
+            userInfo = getRerumUserInfo(access_token);
             System.out.println("I got the info to get the agent ID out of");
             System.out.println(userInfo);
             session.setAttribute("userInfo", userInfo);
@@ -2058,6 +2060,18 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             List<DBObject> ls_results = cursor.toArray();
             if(ls_results.size() > 0){
                 System.out.println("[Modifying Data Request]: ip ========== " + requestIP + "@" + sdf.format(new Date()) + " +++++ From Registered Server");
+                DBObject result = ls_results.get(0);
+                if(null!=result.get("agent") && !"".equals(result.get("agent"))){
+                    //The user registered their IP with the new system
+                    userInfo = JSONObject.fromObject(result);
+                }
+                else{
+                    //This is a legacy user.
+                    //Create agent and write back to server collection
+                    userInfo = generateAgentForLegacyUser(JSONObject.fromObject(result));
+                }
+                generatorID = userInfo.getString("agent");
+                session.setAttribute("userInfo", userInfo);
                 verified = true;
             }
             else{
@@ -2091,7 +2105,22 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         userInfo = JSONObject.fromObject(stringBuilder.toString());
         System.out.println("Got the user info");
         System.out.println(userInfo);
+        generatorID = userInfo.getString("agent");
         return userInfo;
+    }
+    
+    private JSONObject generateAgentForLegacyUser(JSONObject legacyUserObj){
+        JSONObject newAgent = new JSONObject();
+        newAgent.element("@type", "foaf:Agent");
+        newAgent.element("@context", "http://store.rerum.io/v1/context.json");
+        newAgent.element("mbox", legacyUserObj.getString("email")); //FIXME?
+        newAgent.element("label", legacyUserObj.getString("name")); //FIXME?
+        newAgent.element("homepage", legacyUserObj.getString("website")); //FIXME?
+        DBObject dbo = (DBObject) JSON.parse(newAgent.toString());
+        String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
+        newAgent.element("@id", newObjectID);
+        generatorID = newObjectID;
+        return newAgent;
     }
     
 
