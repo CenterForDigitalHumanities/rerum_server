@@ -56,8 +56,23 @@
             margin-bottom: 20px;
         }
         
-        #test_api, #login, #submit_auth_reg{
+        #test_api, #login, #refresh_status{
             display: none;
+        }
+        
+        .sep{
+            margin-bottom: 35px;
+            border: 1px solid #979A9E;
+            padding: 14px 12px;
+        }
+        
+        .statusHeader {
+            font-size: 14pt;
+            margin-bottom: 5px;
+        }
+        
+        .statusNotice{
+            margin-bottom: 10px;
         }
         
     </style>
@@ -68,16 +83,43 @@
             to answer you must share your server IP address with it. Supply any label you would like stored with your IP address (because RERUM doesn't want to think
             of everyone as just a number).  
         </div>
-        <div class='container col-xs-10 col-sm-10 col-md-10 col-lg-10' name="block" >
-            <h3>Server Registration</h3>
-            <label for="server_name"> Server name: </label> <input type="text" class="form-control" id="server_name" name="serverName" maxlength="50" />
+        <div class='sep container col-xs-10 col-sm-10 col-md-10 col-lg-10' name="block" >
+            <div class="statusHeader"> Server Registration </div>
+<!--            <label for="server_name"> Your Name </label> <input type="text" class="form-control" id="name" name="name" maxlength="50" />
             <br>
-            <label for="serverIP">Server IP:</label> <input class="form-control" type="text" id="server_ip" name="serverIP" maxlength="20" />
-            <span id="msg" style="display: block;margin-bottom:10px; margin-top: 5px;"></span>
-            <!-- <input class='btn btn-primary btn-large' type="button" id="submit_server_reg" value=" Submit " /> -->
-            <input class='btn btn-primary btn-large' type="button" id="submit_auth_reg" value=" Authorize Auth0 To Use This App On Your Behalf" />
-            <input class='btn btn-primary btn-large' type="button" id="login" value=" Log In To Auth0 " />
-            <input class='btn btn-primary btn-large' type="button" onclick="testAPI()" id="test_api" value=" Test RERUM API " />
+            <label for="serverIP">Your email:</label> <input class="form-control" type="text" id="email" name="email" maxlength="75" />
+            <br>
+            <label for="serverIP">Website:</label> <input class="form-control" type="text" id="website" name="website" maxlength="75" />
+            <br>
+            <span id="msg" style="display: block;margin-bottom:10px; margin-top: 5px;"></span>-->
+            <p> If you have never been here before and need to register to use RERUM, we will point you to Auth0 to do so.  Please click the link below to get started. </p>
+            <input class='btn btn-primary btn-large' type="button" id="regsiter" value=" Register With RERUM At Auth0" /> 
+
+        </div>
+        <br><br><br>
+        
+        <div class='sep container col-xs-10 col-sm-10 col-md-10 col-lg-10' name="block">
+            <p>
+                If you are registered, your account must be authorized through auth0.  Auth0 will supply you with an authorization code that RERUM
+                can use to verify who you are and your right to use the API.
+            </p>
+            <div class="statusNotice">
+                <div class="statusHeader"> Auth0 Status </div>
+                <span  class="status" id="authorizationStatus">UNKNOWN</span>
+            </div>
+            <input class='btn btn-primary btn-large' type="button" id="check_status" value=" Check my Authorization Status With Auth0" />
+            <input class='btn btn-primary btn-large' type="button" id="refresh_status" value=" Authorize With Auth0 " />
+            <input class='btn btn-primary btn-large' type="button" id="login" value=" Authorize with Auth0 " />
+        </div>
+        <br><br><br>
+        
+        <div class='sep container col-xs-10 col-sm-10 col-md-10 col-lg-10' name="block">
+            <p> If you would like to check your ability to use RERUM, first check you are authorized with auth0 then click the button below. </p>
+            <div class="statusNotice">
+                <div class="statusHeader"> RERUM status </div>
+                <span class="status" id="rerumStatus">UNKNOWN</span>
+            </div>
+            <input class='btn btn-primary btn-large' type="button" onclick="testAPI()" id="test_api" value=" Check Access To RERUM API " />
         </div>
     </body>
     <script type="text/javascript">
@@ -94,53 +136,57 @@
         var responseJSON = {};
         var myURL = document.location.href;
 
-        if(myURL.indexOf("code=") > -1){ //User is logged in and consented to use RERUM.  They have an authorization code
+        if(myURL.indexOf("code=") > -1){ //Status check says authorized.
            auth_code = getURLVariable("code");
            if(auth_code !== ""){
                getAccessToken(auth_code);
+               $("#authorizationStatus").html("AUTHORIZED");
            }
-           else{ //Bad authorization code, they need to go get it again. 
-               $("#submit_auth_reg").show();
+           else{ //Bad authorization code
+               $("#authorizationStatus").html("UNAUTHORIZED");
            }
+           $("#check_status").hide();
        }
-       else if (myURL.indexOf("error=") > -1){ //Silent log in failed
+       else if (myURL.indexOf("error=") > -1){ //Status check saus unauthorized
            error_code = getURLVariable("error");  
+           $("#authorizationStatus").html("UNAUTHORIZED");
            if(error_code == "login_required"){ //Could not get authorization code.  Do a loud login
                $("#login").show();
            }
            else if (error_code == "consent_required"){ //Request the authorization code to get access token
-               $("#submit_auth_reg").show();
+               $("#refresh_status").show();
            }
            else if (error_code == "interaction_required"){
               alert("AHHHHHHHHHHHH");
            }
+           $("#check_status").hide();
        }
-       else{ //User came to web page, we don't know much about them.  Let them try to consent to use this and get an authorization code
-           $("#submit_auth_reg").show(); //Let them try to consent, do a silent log int
+       else{ //User came to web page, we don't know much about them.  
+           
        }
 
         
-        $("#submit_server_reg").click(function(){
-            var reg = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
-            if(reg.test($('#server_ip').val())){
-                $.post('<%=basePath%>/acceptedServer/saveNewServer.action', 
-                {
-                    "acceptedServer.name": $('#server_name').val(), 
-                    "acceptedServer.ip": $('#server_ip').val()
-                }).done(function(data){
-                    data = JSON.parse(data);
-                    $('#msg').html(data.info);
-                });
-            }
-            else{
-                console.log("reg test failed");
-           }
+        $("#regsiter").click(function(){
+            var params = {
+                "audience":"http://rerum.io/api",
+                "scope":"name email openid",
+                "response_type":"code",
+                "client_id":"jwkd5YE0YA5tFxGxaLW9ALPxAyA6Qw1v",
+                "redirect_uri":"http://devstore.rerum.io",
+                "state":"statious123"           
+            };
+            var getURL = "https://cubap.auth0.com/authorize?" + $.param(params);
+            console.log(getURL);
+            document.location.href = getURL;
         });
         
-        $("#submit_auth_reg").click(function(){
+        $("#refresh_status").click(function(){
+           $("#check_status").click(); 
+        });
+        
+        $("#check_status").click(function(){
         //Be silent about it here because if the user is logged in we don't need to go to the prompt.
         //https://auth0.com/docs/api-auth/tutorials/silent-authentication
-            var xhr = new XMLHttpRequest();
             var params = {
                 "audience":"http://rerum.io/api",
                 "scope":"name email openid",
@@ -161,7 +207,6 @@
         
         $("#login").click(function(){
             //This will send them off to the hosted login page https://auth0.com/docs/hosted-pages/login
-            var xhr = new XMLHttpRequest();
             var params = {
                 "audience":"http://rerum.io/api",
                 "scope":"name email openid",
@@ -171,7 +216,6 @@
                 "state":"statious123"           
             };
             var getURL = "https://cubap.auth0.com/authorize?" + $.param(params);
-            console.log(getURL);
             document.location.href = getURL;
 //            xhr.open("GET", getURL, true); 
 //            xhr.setRequestHeader("Content-type", "application/json"); 
@@ -196,15 +240,16 @@
                         responseJSON = JSON.parse(this.response); //Outputs a DOMString by default
                         access_token = responseJSON.access_token;
                         console.log("GOT ACCESS TOKEN!");
-                        $("#test_api ").show();
+                        $("#test_api").show();
                         $("#login").hide(); 
-                        $("#submit_auth_reg").hide();
+                        $("#refresh_status").hide();
+                        $("#check_status").hide();
                     }
                     else{
-                        alert("CANNOT GET ACCESS TOKEN");
+                        $("#rerumStatus").html("Auth0 Rejected Token Request.  Try to refresh your status and if you still have trouble, contact us at RERUM.");
                         $("#test_api ").hide();
-                        $("#login").show(); 
-                        $("#submit_auth_reg").hide();
+                        $("#login").hide(); 
+                        $("#refresh_status").show();
                     }
                 }
             };
@@ -227,7 +272,7 @@
             var params = { 
                 "@type" : "oa:Annotation", 
                 "motivation" : "sc:painting", 
-                "label" : "1-5-18 Tester", 
+                "label" : "Access Test", 
                 "resource" : { 
                     "@type" : "cnt:ContentAsText", 
                     "cnt:chars" : "This is a test!" 
@@ -236,6 +281,17 @@
             }; 
             var postURL = "http://devstore.rerum.io/rerumserver/v1/create.action"; 
             var xhr = new XMLHttpRequest();
+            xhr.onreadystatechange = function() {
+                if (this.readyState === XMLHttpRequest.DONE) {
+                   if(this.status === 201){
+                       $("#rerumStatus").html("AUTHORIZED");
+                       $("#test_api").show();
+                   }
+                   else{
+                       $("#rerumStatus").html("UNAUTHORIZED.  Try to refresh your status and if you still have trouble, contact us at RERUM.");
+                   }
+                }
+            };
             xhr.open("POST", postURL, true); 
             xhr.setRequestHeader("Content-type", "application/json"); 
             xhr.setRequestHeader("Bearer", access_token); 

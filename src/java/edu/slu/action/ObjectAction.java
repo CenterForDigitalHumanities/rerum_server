@@ -119,9 +119,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     private StringBuilder bodyString;
     private BufferedReader bodyReader;
     private PrintWriter out;
-    private String generatorID;
+    private String generatorID = "http://devstore.rerum.io/id/aeeebryantestingeeea123123";
     private final ObjectMapper mapper = new ObjectMapper();
-    private final  HttpSession session = request.getSession();
     
    /**
     * Private function to get information from the rerum properties file
@@ -1990,60 +1989,40 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     * Verify the access code in the Bearer header of an action request and get the user information from a valid access token.  If there was no Bearer, access_token is ""
     * Once verified, store this to the session so we don't have to verify every request from the same user in a given sessions?
     * Do the same thing for the userInfo object we get from auth0/getUserInfo?
-    
+    * 
+    * We are using the auth0 java package.  Info here https://github.com/auth0/auth0-java
+    * We are using the JSON Web Token java package as well see https://github.com/auth0/java-jwt
+    *   
+    * When using RSA or ECDSA algorithms and you just need to sign JWTs you can avoid specifying a Public Key by passing a null value. 
+    * The same can be done with the Private Key when you just need to verify JWTs.
+    * 
+    * https://gist.github.com/destan/b708d11bd4f403506d6d5bb5fe6a82c5
+    * https://developer.byu.edu/docs/consume-api/use-api/implement-openid-connect/jwks-public-key-documentation
     * @param access_token the java web token access token provided by auth0 to an application to use with this API.  It must be verified as valid. 
     */
     private boolean verifyAccess(String access_token) throws IOException, ServletException, Exception{
-        /*
-        https://gist.github.com/destan/b708d11bd4f403506d6d5bb5fe6a82c5
-        https://developer.byu.edu/docs/consume-api/use-api/implement-openid-connect/jwks-public-key-documentation
-        
-        * We are using the auth0 java package.  Info here https://github.com/auth0/auth0-java
-        * We are using the JSON Web Token java package as well see https://github.com/auth0/java-jwt
-        
-        When using RSA or ECDSA algorithms and you just need to sign JWTs you can avoid specifying a Public Key by passing a null value. 
-        The same can be done with the Private Key when you just need to verify JWTs.
-        
-        */
-        if(session.getAttribute("verified").equals("true")){
-            System.out.println("Verfied held in session is true, do we still need to do it for every request?");
-            //return true;
-        }
         System.out.println("verify a JWT access toekn");
-        //CreatedUser user = null;
         boolean verified = false;
         JSONObject userInfo = new JSONObject();
         System.out.println("The token is");
         System.out.println(access_token);
-        System.out.println("I have to decode it");
         DecodedJWT recievedToken = JWT.decode(access_token);
-        System.out.println("Need kid out of decoded token.");
         String KID = recievedToken.getKeyId();
         System.out.println(KID);
-        System.out.println("Gather jwks.json doc into a JwkProvider");
         JwkProvider provider = new UrlJwkProvider("https://cubap.auth0.com/.well-known/jwks.json");
-        System.out.println("Get JWK using KID");
         Jwk jwk = provider.get(KID); //throws Exception when not found or can't get one
-        System.out.println("Get public key from JWK");
-        System.out.println("Convert found key into RSAPublicKey");
         RSAPublicKey pubKey = (RSAPublicKey) jwk.getPublicKey();       
         try {
             System.out.println("Try to verify the access_code JWT");
             Algorithm algorithm = Algorithm.RSA256(pubKey, null);
-            JWTVerifier verifier = JWT.require(algorithm)
-                //.withIssuer("auth0")
-                .build(); //Reusable verifier instance
+            JWTVerifier verifier = JWT.require(algorithm).build(); //Reusable verifier instance
+               //.withIssuer("auth0")
             DecodedJWT d_jwt = verifier.verify(access_token);
             System.out.println("We were able to verify it. ");
-            if(null==session.getAttribute("userInfo")){
-            }
-            else{
-                System.out.println("User info already held in session.  Do we still need to get it?");
-            }
             userInfo = getRerumUserInfo(access_token);
             System.out.println("I got the info to get the agent ID out of");
             System.out.println(userInfo);
-            session.setAttribute("userInfo", userInfo);
+            //generatorID = userInfo.getString("agent"); //FIXME new objects need to have this or else NULLPOINTER
             verified = true;
         } 
         catch (JWTVerificationException exception){
@@ -2063,15 +2042,16 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 DBObject result = ls_results.get(0);
                 if(null!=result.get("agent") && !"".equals(result.get("agent"))){
                     //The user registered their IP with the new system
+                    System.out.println("The registered server had an agent ID with it, so it must be from the new system.");
                     userInfo = JSONObject.fromObject(result);
                 }
                 else{
                     //This is a legacy user.
                     //Create agent and write back to server collection
+                    System.out.println("The registered server did not have an agent ID.  It must be from the old system.");
                     userInfo = generateAgentForLegacyUser(JSONObject.fromObject(result));
                 }
                 generatorID = userInfo.getString("agent");
-                session.setAttribute("userInfo", userInfo);
                 verified = true;
             }
             else{
@@ -2079,7 +2059,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 verified = false;
             }
         }
-        session.setAttribute("authVerified", true);
         return verified;
     }
     
@@ -2105,12 +2084,14 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         userInfo = JSONObject.fromObject(stringBuilder.toString());
         System.out.println("Got the user info");
         System.out.println(userInfo);
-        generatorID = userInfo.getString("agent");
         return userInfo;
     }
     
     private JSONObject generateAgentForLegacyUser(JSONObject legacyUserObj){
+        System.out.println("Detected a legacy registration.  Creating an agent and storing it with this legacy object.");
         JSONObject newAgent = new JSONObject();
+        DBObject originalToUpdate = (DBObject)JSON.parse(legacyUserObj.toString());
+        JSONObject orig = JSONObject.fromObject(originalToUpdate);
         newAgent.element("@type", "foaf:Agent");
         newAgent.element("@context", "http://store.rerum.io/v1/context.json");
         newAgent.element("mbox", legacyUserObj.getString("email")); //FIXME?
@@ -2118,8 +2099,11 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         newAgent.element("homepage", legacyUserObj.getString("website")); //FIXME?
         DBObject dbo = (DBObject) JSON.parse(newAgent.toString());
         String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
+        orig.element("agent", newObjectID);
         newAgent.element("@id", newObjectID);
         generatorID = newObjectID;
+        DBObject updatedOrig = (DBObject) JSON.parse(orig.toString());
+        mongoDBService.update(Constant.COLLECTION_ACCEPTEDSERVER, originalToUpdate, updatedOrig);
         return newAgent;
     }
     
