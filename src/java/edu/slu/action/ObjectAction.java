@@ -89,10 +89,18 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mongodb.DB;
+import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
+import edu.slu.util.MongoDBUtil;
 import java.net.ProtocolException;
 import java.security.interfaces.RSAPublicKey;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
+import javax.servlet.http.HttpSession;
+import org.apache.struts2.ServletActionContext;
 
 
 /**
@@ -111,7 +119,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     private StringBuilder bodyString;
     private BufferedReader bodyReader;
     private PrintWriter out;
-    final ObjectMapper mapper = new ObjectMapper();
+    private final ObjectMapper mapper = new ObjectMapper();
+    private final  HttpSession session = request.getSession();
     
    /**
     * Private function to get information from the rerum properties file
@@ -351,7 +360,11 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     */
     public Boolean methodApproval(HttpServletRequest http_request, String request_type) throws Exception{
         String requestMethod = http_request.getMethod();
-        String access_token = http_request.getHeader("Bearer");
+        String access_token = "";
+        if(null!=http_request.getHeader("Bearer")){
+            access_token = http_request.getHeader("Bearer");
+        }
+        http_request.getHeader("Bearer");
         System.out.println("In method approval where I will verify.");
         boolean auth_verified = false;
         boolean restful = false;
@@ -359,7 +372,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         // for Web Annotation standards compliance.  
         switch(request_type){
             case "update":
-                auth_verified =  verifyAccessToken(access_token);
+                auth_verified =  verifyAccess(access_token);
                 if(auth_verified){
                     if(requestMethod.equals("PUT")){
                         restful = true;
@@ -373,7 +386,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 }
             break;
             case "patch":
-                auth_verified =  verifyAccessToken(access_token);
+                auth_verified =  verifyAccess(access_token);
                 if(auth_verified){
                     if(requestMethod.equals("PATCH")){
                         restful = true;
@@ -387,7 +400,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 }
             break;
             case "set":
-                auth_verified =  verifyAccessToken(access_token);
+                auth_verified =  verifyAccess(access_token);
                 if(auth_verified){
                     if(requestMethod.equals("PATCH")){
                         restful = true;
@@ -401,7 +414,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 }
             break;
             case "unset":
-                auth_verified =  verifyAccessToken(access_token);
+                auth_verified =  verifyAccess(access_token);
                 if(auth_verified){
                     if(requestMethod.equals("PATCH")){
                         restful = true;
@@ -415,7 +428,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 }
             break;
             case "release":
-                auth_verified =  verifyAccessToken(access_token);
+                auth_verified =  verifyAccess(access_token);
                 if(auth_verified){
                     if(requestMethod.equals("PATCH")){
                         restful = true;
@@ -429,7 +442,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 }
             break;
             case "create":
-                auth_verified =  verifyAccessToken(access_token);
+                auth_verified =  verifyAccess(access_token);
                 if(auth_verified){
                     if(requestMethod.equals("POST")){
                         restful = true;
@@ -443,7 +456,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 }
             break;
             case "delete":
-                auth_verified =  verifyAccessToken(access_token);
+                auth_verified =  verifyAccess(access_token);
                 if(auth_verified){
                     if(requestMethod.equals("DELETE")){
                         restful = true;
@@ -1972,20 +1985,29 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         return jwksFile;
     }
 
-    /*
-    Verify the access code in the Bearer header of an action request.
+    /**
+    * Verify the access code in the Bearer header of an action request and get the user information from a valid access token.  If there was no Bearer, access_token is ""
+    * Once verified, store this to the session so we don't have to verify every request from the same user in a given sessions?
+    * Do the same thing for the userInfo object we get from auth0/getUserInfo?
+    
+    * @param access_token the java web token access token provided by auth0 to an application to use with this API.  It must be verified as valid. 
     */
-    private boolean verifyAccessToken(String access_token) throws IOException, ServletException, Exception{
+    private boolean verifyAccess(String access_token) throws IOException, ServletException, Exception{
         /*
         https://gist.github.com/destan/b708d11bd4f403506d6d5bb5fe6a82c5
         https://developer.byu.edu/docs/consume-api/use-api/implement-openid-connect/jwks-public-key-documentation
         
         * We are using the auth0 java package.  Info here https://github.com/auth0/auth0-java
-         * We are using the JSON Web Token java package as well see https://github.com/auth0/java-jwt
+        * We are using the JSON Web Token java package as well see https://github.com/auth0/java-jwt
         
         When using RSA or ECDSA algorithms and you just need to sign JWTs you can avoid specifying a Public Key by passing a null value. 
         The same can be done with the Private Key when you just need to verify JWTs.
+        
         */
+        if(session.getAttribute("verified").equals("true")){
+            System.out.println("Verfied held in session is true, do we still need to do it for every request?");
+            //return true;
+        }
         System.out.println("verify a JWT access toekn");
         //CreatedUser user = null;
         boolean verified = false;
@@ -2010,18 +2032,41 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 //.withIssuer("auth0")
                 .build(); //Reusable verifier instance
             DecodedJWT d_jwt = verifier.verify(access_token);
-            System.out.println("We were able to verify it.  Now we can try to get the agent ID.");
+            System.out.println("We were able to verify it. ");
+            if(null==session.getAttribute("userInfo")){
+            }
+            else{
+                System.out.println("User info already held in session.  Do we still need to get it?");
+            }
             JSONObject userInfo = getRerumUserInfo(access_token);
             System.out.println("I got the info to get the agent ID out of");
             System.out.println(userInfo);
+            session.setAttribute("userInfo", userInfo);
             verified = true;
-        } catch (JWTVerificationException exception){
-            //Invalid signature/claims
-            System.out.println("Verification failed");
-            verified = false;
+        } 
+        catch (JWTVerificationException exception){
+            //Invalid signature/claims.  Try to authenticate the old way
+            System.out.println("Verification failed.  Fallback on old IP filter.");
+            String requestIP = request.getRemoteAddr();
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+            //check if the domain name and ip is in database
+            BasicDBObject query = new BasicDBObject();
+            query.append("ip", requestIP);
+            DB db = MongoDBUtil.getDb();
+            DBCollection coll = db.getCollection(Constant.COLLECTION_ACCEPTEDSERVER);
+            DBCursor cursor = coll.find(query);
+            List<DBObject> ls_results = cursor.toArray();
+            if(ls_results.size() > 0){
+                System.out.println("[Modifying Data Request]: ip ========== " + requestIP + "@" + sdf.format(new Date()) + " +++++ From Registered Server");
+                verified = true;
+            }
+            else{
+                System.out.println("[Modifying Data Request]: ip ========== " + requestIP + "@" + sdf.format(new Date()) + " +++++ Server Not Registered");
+                verified = false;
+            }
         }
+        session.setAttribute("authVerified", true);
         return verified;
-        
     }
     
     private JSONObject getRerumUserInfo(String access_token) throws MalformedURLException, ProtocolException, IOException{
