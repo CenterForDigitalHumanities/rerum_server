@@ -93,10 +93,13 @@ import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import edu.slu.util.MongoDBUtil;
+import java.io.OutputStream;
 import java.net.ProtocolException;
 import java.security.interfaces.RSAPublicKey;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 import javax.servlet.http.HttpSession;
@@ -1998,21 +2001,55 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         System.out.println(jwksFile);
         return jwksFile;
     }
+    
+    public static String getAccessTokenWithAuth(String auth_code) throws UnsupportedEncodingException {
+            System.out.println("Getting an access token for auth");
+            String token="";
+            String tokenURL="https://cubap.auth0.com/oauth/token";
+            
+            StringBuilder body_builder = new StringBuilder();
+            body_builder.append("{\"grant_type\": \"authorization_code\"")
+                    .append("\"client_id\": \"jwkd5YE0YA5tFxGxaLW9ALPxAyA6Qw1v\"")
+                    .append("\"client_secret\": \""+getRerumProperty("rerumSecret")+"\"")
+                    .append("\"code\": \""+auth_code+"\"")
+                    .append("\"redirect_uri\": \"http://devstore.rerum.io\"")
+                    .append("}");
+            String body = body_builder.toString();
 
-    /**
-    * Verify the access code in the Bearer header of an action request and get the user information from a valid access token.  If there was no Bearer, access_token is ""
-    * Once verified, store this to the session so we don't have to verify every request from the same user in a given sessions?
-    * Do the same thing for the userInfo object we get from auth0/getUserInfo?
-    * 
-    * We are using the auth0 java package.  Info here https://github.com/auth0/auth0-java
-    * We are using the JSON Web Token java package as well see https://github.com/auth0/java-jwt
-    *   
-    * When using RSA or ECDSA algorithms and you just need to sign JWTs you can avoid specifying a Public Key by passing a null value. 
-    * The same can be done with the Private Key when you just need to verify JWTs.
-    * 
-    * https://gist.github.com/destan/b708d11bd4f403506d6d5bb5fe6a82c5
-    * https://developer.byu.edu/docs/consume-api/use-api/implement-openid-connect/jwks-public-key-documentation
-    * @param access_token the java web token access token provided by auth0 to an application to use with this API.  It must be verified as valid. 
+        try {           
+            URL tURL = new URL(tokenURL);
+            HttpURLConnection connection;
+            connection = (HttpURLConnection) tURL.openConnection();
+            connection.setRequestMethod("POST");
+            OutputStream os = connection.getOutputStream();
+            byte[] bodyByte = body.getBytes("UTF-8");
+            connection.setRequestProperty("Content-Type", "application/json");
+            os.write(bodyByte);
+            connection.connect();
+
+            BufferedReader input = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+            StringBuilder responseBlob = new StringBuilder();
+            String line;
+            while ((line = input.readLine()) != null) {
+                responseBlob.append(line);
+            }
+            connection.disconnect();
+            JSONObject responseObj = JSONObject.fromObject(responseBlob.toString());
+            if(responseObj.containsKey("access_token")){
+                token = responseObj.getString("access_token");
+            }
+
+        } catch (ProtocolException ex) {
+            Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException ex) {
+            Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        return token;
+    }
+
+    /*
+    Verify the access code in the Bearer header of an action request.
     */
     private boolean verifyAccess(String access_token) throws IOException, ServletException, Exception{
         System.out.println("verify a JWT access toekn");
