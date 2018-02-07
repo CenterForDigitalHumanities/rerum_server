@@ -150,6 +150,7 @@
            if(auth_code !== ""){
                access_token = "<% out.write(access_token); %>";
                $("#authorizationStatus").html("AUTHORIZED: token="+access_token);
+               $("#test_api").show();
            }
            else{ //Bad authorization code
                $("#authorizationStatus").html("UNAUTHORIZED");
@@ -174,7 +175,6 @@
            
        }
 
-        
         $("#regsiter").click(function(){
             var params = {
                 "audience":"http://rerum.io/api",

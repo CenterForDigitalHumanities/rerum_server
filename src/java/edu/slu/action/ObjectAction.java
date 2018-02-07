@@ -93,8 +93,10 @@ import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import edu.slu.util.MongoDBUtil;
+import java.io.DataOutputStream;
 import java.io.OutputStream;
 import java.net.ProtocolException;
+import java.net.URLEncoder;
 import java.security.interfaces.RSAPublicKey;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -122,7 +124,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     private StringBuilder bodyString;
     private BufferedReader bodyReader;
     private PrintWriter out;
-    private String generatorID = "http://devstore.rerum.io/id/aeeebryantestingeeea123123";
+    private String generatorID = "unknown";
     private final ObjectMapper mapper = new ObjectMapper();
     
    /**
@@ -1013,7 +1015,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     // Slug is the user suggested ID for the annotation. This could be a cool RERUM thing.
                     // cubap: if we want, we can just copy the Slug to @id, warning
                     // if there was some mismatch, since versions are fine with that.
-                };
+                }
                 System.out.println("perform mongo save");
                 String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
                 //set @id from _id and update the annotation
@@ -1883,17 +1885,24 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         dboWithObjectID.append("@id", uid);
         mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
         iiif_return = checkIIIFCompliance(uid, "2.1"); //If it is an object we are creating, this line means @context must point to Presentation API 2 or 2.1
-        if(iiif_return.getInt("okay") == 0){
-            if(intendedIIIF){
-                //If it was intended to be a IIIF object, then remove this object from the store because it was not valid and return an error to the user
-                
+        if(iiif_return.containsKey("okay")){
+            if(iiif_return.getInt("okay") == 0){
+                if(intendedIIIF){
+                    //If it was intended to be a IIIF object, then remove this object from the store because it was not valid and return an error to the user
+
+                }
+                else{
+                    //Otherwise say it is ok so the action looking do validate does not writeErrorResponse()
+                    iiif_return.element("okay", 1);
+                }
             }
-            else{
-                //Otherwise say it is ok so the action looking do validate does not writeErrorResponse()
-                iiif_return.element("okay", 1);
-            }
+            iiif_return.remove("received");
         }
-        iiif_return.remove("received");
+        else{
+            //Then the validator had a problem, perhaps it timed out and returned a blank object...
+            iiif_return.element("okay", 0);
+            iiif_return.element("error", "504: IIIF took too long to repond to RERUM.  The object was not submitted for validation.");
+        }
         BasicDBObject query = new BasicDBObject();
         query.append("_id", newObjectID);
         mongoDBService.delete(Constant.COLLECTION_ANNOTATION, query);
@@ -1919,7 +1928,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             StringBuilder stringBuilder;
             HttpURLConnection connection = (HttpURLConnection) validator.openConnection();
             connection.setRequestMethod("GET"); 
-            connection.setReadTimeout(5*1000); //This tends to choke sometimes...should i handle a timeout better?
+            connection.setConnectTimeout(5*1000); //This tends to choke sometimes...should i handle a timeout better?
             System.out.println("Connect to iiif validator...");
             connection.connect();
             reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
@@ -2014,33 +2023,32 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             System.out.println("Getting an access token for auth");
             String token="";
             String tokenURL="https://cubap.auth0.com/oauth/token";
-            
-            StringBuilder body_builder = new StringBuilder();
-            body_builder.append("{\"grant_type\": \"authorization_code\"")
-                    .append("\"client_id\": \"jwkd5YE0YA5tFxGxaLW9ALPxAyA6Qw1v\"")
-                    .append("\"client_secret\": \""+getRerumProperty("rerumSecret")+"\"")
-                    .append("\"code\": \""+auth_code+"\"")
-                    .append("\"redirect_uri\": \"http://devstore.rerum.io\"")
-                    .append("}");
-            String body = body_builder.toString();
-
+            JSONObject body = new JSONObject();
+            body.element("grant_type", "authorization_code");
+            body.element("client_id", "jwkd5YE0YA5tFxGxaLW9ALPxAyA6Qw1v");
+            body.element("client_secret", getRerumProperty("rerumSecret"));
+            body.element("code", auth_code);
+            body.element("redirect_uri", "http://devstore.rerum.io/");
         try {           
             URL tURL = new URL(tokenURL);
             HttpURLConnection connection;
             connection = (HttpURLConnection) tURL.openConnection();
             connection.setRequestMethod("POST");
-            OutputStream os = connection.getOutputStream();
-            byte[] bodyByte = body.getBytes("UTF-8");
+            connection.setDoOutput(true);
+            connection.setDoInput(true);
             connection.setRequestProperty("Content-Type", "application/json");
-            os.write(bodyByte);
             connection.connect();
-
+            DataOutputStream jsonString = new DataOutputStream(connection.getOutputStream());
+            jsonString.writeBytes(body.toString());
+            jsonString.flush();
+            jsonString.close();
             BufferedReader input = new BufferedReader(new InputStreamReader(connection.getInputStream()));
             StringBuilder responseBlob = new StringBuilder();
             String line;
             while ((line = input.readLine()) != null) {
                 responseBlob.append(line);
             }
+            input.close();
             connection.disconnect();
             JSONObject responseObj = new JSONObject();
             if(responseBlob.length() > 0){
@@ -2077,6 +2085,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         JSONObject userInfo = new JSONObject();
         System.out.println("The token is");
         System.out.println(access_token);
+        boolean getUser = true;
         try {
             System.out.println("Try to verify the access_code JWT");
             DecodedJWT recievedToken = JWT.decode(access_token);
@@ -2091,10 +2100,15 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                //.withIssuer("auth0")
             DecodedJWT d_jwt = verifier.verify(access_token);
             System.out.println("We were able to verify it. ");
-            userInfo = getRerumUserInfo(access_token);
-            System.out.println("Since it was verified, I got user info to get agent from");
-            generatorID = userInfo.getString("agent"); 
             verified = true;
+            userInfo = getRerumUserInfo(access_token);
+            if(userInfo.containsKey("agent")){
+                System.out.println("Since it was verified, I got user info to get agent from "+generatorID);
+                generatorID = userInfo.getString("agent"); 
+            }
+            else{
+                System.out.println("It was verified, but the user connected with the key did not have the field 'agent'.  When the user signed up, they were not created correctly.");
+            }
         } 
         catch (Exception exception){
             //Invalid signature/claims.  Try to authenticate the old way
@@ -2124,10 +2138,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     userInfo = generateAgentForLegacyUser(JSONObject.fromObject(result));
                 }
                 generatorID = userInfo.getString("agent");
+                getUser = false;
                 verified = true;
             }
             else{
                 System.out.println("[Modifying Data Request]: ip ========== " + requestIP + "@" + sdf.format(new Date()) + " +++++ Server Not Registered");
+                getUser = false;
                 verified = false;
             }
         }
@@ -2184,10 +2200,10 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         newAgent.element("homepage", homepage); 
         DBObject dbo = (DBObject) JSON.parse(newAgent.toString());
         String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
-        orig.element("agent", "http://devstore.rerum.io/id/"+newObjectID);
-        newAgent.element("@id", "http://devstore.rerum.io/id/"+newObjectID);
-        newAgent.element("agent", "http://devstore.rerum.io/id/"+newObjectID);
-        generatorID = newObjectID;
+        orig.element("agent", "http://devstore.rerum.io/rerumserver/id/"+newObjectID);
+        newAgent.element("@id", "http://devstore.rerum.io/rerumserver/id/"+newObjectID);
+        newAgent.element("agent", "http://devstore.rerum.io/rerumserver/id/"+newObjectID);
+        generatorID = "http://devstore.rerum.io/rerumserver/id/"+newObjectID;
         DBObject updatedOrig = (DBObject) JSON.parse(orig.toString());
         mongoDBService.update(Constant.COLLECTION_ACCEPTEDSERVER, originalToUpdate, updatedOrig);
         return newAgent;
