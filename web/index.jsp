@@ -208,10 +208,7 @@
             var getURL = "https://cubap.auth0.com/authorize?" + $.param(params);
             console.log(getURL);
             document.location.href = getURL;
-            
-//            xhr.open("GET", getURL, true); 
-//            xhr.setRequestHeader("Content-type", "application/json"); 
-//            xhr.send();
+
         });
         
         $("#login").click(function(){
@@ -226,9 +223,6 @@
             };
             var getURL = "https://cubap.auth0.com/authorize?" + $.param(params);
             document.location.href = getURL;
-//            xhr.open("GET", getURL, true); 
-//            xhr.setRequestHeader("Content-type", "application/json"); 
-//            xhr.send();
 
         });
                 

@@ -1908,33 +1908,40 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @param objURL The @id or id URL of a IIIF JSON object represented as a String.
      * @param version The Intended Presentation API version to validate against represented as a String.  (1, 2 or 2.1)
      * @return iiif_return The return JSONObject from hitting the IIIF Validation API.
+     * @throws java.net.MalformedURLException
      */
     public JSONObject checkIIIFCompliance(String objURL, String version) throws MalformedURLException, IOException{
         JSONObject iiif_return = new JSONObject();
         String iiif_validation_url = "https://iiif.io/api/presentation/validator/service/validate?format=json&version="+version+"&url="+objURL;
-        URL validator = new URL(iiif_validation_url);
-        BufferedReader reader = null;
-        StringBuilder stringBuilder;
-        HttpURLConnection connection = (HttpURLConnection) validator.openConnection();
-        connection.setRequestMethod("GET"); 
-        connection.setReadTimeout(5*1000); //This tends to choke sometimes...should i handle a timeout better?
-        System.out.println("Connect to iiif validator...");
-        connection.connect();
-        reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-        stringBuilder = new StringBuilder();
-        String line = null;
-        while ((line = reader.readLine()) != null)
-        {
-          stringBuilder.append(line);
+        try{
+            URL validator = new URL(iiif_validation_url);
+            BufferedReader reader = null;
+            StringBuilder stringBuilder;
+            HttpURLConnection connection = (HttpURLConnection) validator.openConnection();
+            connection.setRequestMethod("GET"); 
+            connection.setReadTimeout(5*1000); //This tends to choke sometimes...should i handle a timeout better?
+            System.out.println("Connect to iiif validator...");
+            connection.connect();
+            reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+            stringBuilder = new StringBuilder();
+            String line = null;
+            while ((line = reader.readLine()) != null)
+            {
+              stringBuilder.append(line);
+            }
+            System.out.println("disconnect from iiif because we got the response");
+            connection.disconnect();
+        
+            if(stringBuilder.length() > 0){
+                iiif_return = JSONObject.fromObject(stringBuilder.toString());
+                iiif_return.remove("received");
+            }
+            else{
+                iiif_return = new JSONObject();
+            }
         }
-        System.out.println("disconnect from iiif because we got the response");
-        connection.disconnect();
-        if(stringBuilder.length() > 0){
-            iiif_return = JSONObject.fromObject(stringBuilder.toString());
-            iiif_return.remove("received");
-        }
-        else{
-            iiif_return = new JSONObject();
+        catch(java.net.SocketTimeoutException e){ //This specifically catches the timeout
+            iiif_return = new JSONObject(); //We were never going to get a response, so return an empty object.
         }
         return iiif_return;
     }
@@ -2034,11 +2041,23 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 responseBlob.append(line);
             }
             connection.disconnect();
-            JSONObject responseObj = JSONObject.fromObject(responseBlob.toString());
+            JSONObject responseObj = new JSONObject();
+            if(responseBlob.length() > 0){
+                try{
+                    responseObj = JSONObject.fromObject(responseBlob.toString());
+                }
+                catch(Exception e){
+                    //response was not JSON, so let it an empty object.
+                    //responseObj = new JSONObject();
+                }
+            }
             if(responseObj.containsKey("access_token")){
                 token = responseObj.getString("access_token");
             }
-
+            else{
+                token = "Auth0 rejected the request for a token.  Your authentication code may have expired.  Please try again.";
+                //writeErrorResponse("Auth0 rejected the request for a token.  Your authentication code may have expired.  Please try again.", HttpServletResponse.SC_CONFLICT);
+            }
         } catch (ProtocolException ex) {
             Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
         } catch (IOException ex) {
