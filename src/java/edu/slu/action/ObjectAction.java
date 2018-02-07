@@ -360,16 +360,15 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     */
     public Boolean methodApproval(HttpServletRequest http_request, String request_type) throws Exception{
         String requestMethod = http_request.getMethod();
-        String access_token = "";
-        if(null!=http_request.getHeader("Bearer")){
-            access_token = http_request.getHeader("Bearer");
-        }
-        http_request.getHeader("Bearer");
+        String access_token = "123";
         System.out.println("In method approval where I will verify.");
         boolean auth_verified = false;
         boolean restful = false;
         // FIXME @webanno if you notice, OPTIONS is not supported here and MUST be 
         // for Web Annotation standards compliance.  
+        if(null!=http_request.getHeader("Bearer") && !"".equals(http_request.getHeader("Bearer"))){
+            access_token = http_request.getHeader("Bearer");
+        }
         switch(request_type){
             case "update":
                 auth_verified =  verifyAccess(access_token);
@@ -443,6 +442,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             break;
             case "create":
                 auth_verified =  verifyAccess(access_token);
+                System.out.println("back in create and I know whether or not we were verified: "+auth_verified);
                 if(auth_verified){
                     if(requestMethod.equals("POST")){
                         restful = true;
@@ -481,6 +481,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             default:
                 writeErrorResponse("Improper request method for this type of request (unknown).", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
         }  
+        System.out.println("I know whether or not we are restful: "+restful);
         return restful;
     }
     
@@ -505,7 +506,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         String line;
         JSONObject test;
         JSONArray test2;
-        if(cType.contains("application/json") || cType.contains("application/ld+json")){
+        if(null!=cType && (cType.contains("application/json") || cType.contains("application/ld+json"))){
             while ((line = bodyReader.readLine()) != null)
             {
               bodyString.append(line);
@@ -993,26 +994,32 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     public void saveNewObject() throws IOException, ServletException, Exception{
         System.out.println("Save an object!");
         if(null != processRequestBody(request, false) && methodApproval(request, "create")){
+            System.out.println("I did all the work to figure out if this request can happen.  Continuing to save object");
             JSONObject received = JSONObject.fromObject(content);
             if(received.containsKey("@id")){
                 writeErrorResponse("Object already contains an @id "+received.containsKey("@id")+".  Either remove this property for saving or if it is a REERUM object update instead.", HttpServletResponse.SC_BAD_REQUEST);
             }
             else{
+                System.out.println("check iiif compliance");
                 JSONObject iiif_validation_response = checkIIIFCompliance(received, true); //This boolean should be provided by the user somehow.  It is a intended-to-be-iiif flag
+                System.out.println("Add iiif response to user response");
+                System.out.println("Configure the __rerum property for the new object");
                 configureRerumOptions(received, false);
                 DBObject dbo = (DBObject) JSON.parse(received.toString());
                 if(null!=request.getHeader("Slug")){
                     // Slug is the user suggested ID for the annotation. This could be a cool RERUM thing.
                     // cubap: if we want, we can just copy the Slug to @id, warning
                     // if there was some mismatch, since versions are fine with that.
-                }
+                };
+                System.out.println("perform mongo save");
                 String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
                 //set @id from _id and update the annotation
                 BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
+                System.out.println("Mongo update the object saved just now with an @id");
                 String uid = "http://devstore.rerum.io/rerumserver/id/"+newObjectID;
-
                 dboWithObjectID.append("@id", uid);
                 mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
+                System.out.println("Respond to user.");
                 JSONObject jo = new JSONObject();
                 JSONObject newObjWithID = JSONObject.fromObject(dboWithObjectID);
                 jo.element("code", HttpServletResponse.SC_CREATED);
@@ -1901,13 +1908,14 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      */
     public JSONObject checkIIIFCompliance(String objURL, String version) throws MalformedURLException, IOException{
         JSONObject iiif_return = new JSONObject();
-        String iiif_validation_url = "http://iiif.io/api/presentation/validator/service/validate?format=json&version="+version+"&url="+objURL;
+        String iiif_validation_url = "https://iiif.io/api/presentation/validator/service/validate?format=json&version="+version+"&url="+objURL;
         URL validator = new URL(iiif_validation_url);
         BufferedReader reader = null;
         StringBuilder stringBuilder;
         HttpURLConnection connection = (HttpURLConnection) validator.openConnection();
-        connection.setRequestMethod("GET"); //hmm... I think this is right
-        connection.setReadTimeout(15*1000);
+        connection.setRequestMethod("GET"); 
+        connection.setReadTimeout(5*1000); //This tends to choke sometimes...should i handle a timeout better?
+        System.out.println("Connect to iiif validator...");
         connection.connect();
         reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
         stringBuilder = new StringBuilder();
@@ -1916,9 +1924,15 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         {
           stringBuilder.append(line);
         }
+        System.out.println("disconnect from iiif because we got the response");
         connection.disconnect();
-        iiif_return = JSONObject.fromObject(stringBuilder.toString());
-        iiif_return.remove("received");
+        if(stringBuilder.length() > 0){
+            iiif_return = JSONObject.fromObject(stringBuilder.toString());
+            iiif_return.remove("received");
+        }
+        else{
+            iiif_return = new JSONObject();
+        }
         return iiif_return;
     }
     
@@ -2006,28 +2020,27 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         JSONObject userInfo = new JSONObject();
         System.out.println("The token is");
         System.out.println(access_token);
-        DecodedJWT recievedToken = JWT.decode(access_token);
-        String KID = recievedToken.getKeyId();
-        System.out.println(KID);
-        JwkProvider provider = new UrlJwkProvider("https://cubap.auth0.com/.well-known/jwks.json");
-        Jwk jwk = provider.get(KID); //throws Exception when not found or can't get one
-        RSAPublicKey pubKey = (RSAPublicKey) jwk.getPublicKey();       
         try {
             System.out.println("Try to verify the access_code JWT");
+            DecodedJWT recievedToken = JWT.decode(access_token);
+            String KID = recievedToken.getKeyId();
+            System.out.println(KID);
+            JwkProvider provider = new UrlJwkProvider("https://cubap.auth0.com/.well-known/jwks.json");
+            Jwk jwk = provider.get(KID); //throws Exception when not found or can't get one
+            RSAPublicKey pubKey = (RSAPublicKey) jwk.getPublicKey();      
             Algorithm algorithm = Algorithm.RSA256(pubKey, null);
             JWTVerifier verifier = JWT.require(algorithm).build(); //Reusable verifier instance
                //.withIssuer("auth0")
             DecodedJWT d_jwt = verifier.verify(access_token);
             System.out.println("We were able to verify it. ");
             userInfo = getRerumUserInfo(access_token);
-            System.out.println("I got the info to get the agent ID out of");
-            System.out.println(userInfo);
-            //generatorID = userInfo.getString("agent"); //FIXME new objects need to have this or else NULLPOINTER
+            System.out.println("Since it was verified, I got user info to get agent from");
+            generatorID = userInfo.getString("agent"); //FIXME new objects need to have this or else NULLPOINTER
             verified = true;
         } 
-        catch (JWTVerificationException exception){
+        catch (Exception exception){
             //Invalid signature/claims.  Try to authenticate the old way
-            System.out.println("Verification failed.  Fallback on old IP filter.");
+            System.out.println("Verification failed.  We were given a bad token.");
             String requestIP = request.getRemoteAddr();
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
             //check if the domain name and ip is in database
@@ -2040,6 +2053,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             if(ls_results.size() > 0){
                 System.out.println("[Modifying Data Request]: ip ========== " + requestIP + "@" + sdf.format(new Date()) + " +++++ From Registered Server");
                 DBObject result = ls_results.get(0);
+                System.out.println(result);
                 if(null!=result.get("agent") && !"".equals(result.get("agent"))){
                     //The user registered their IP with the new system
                     System.out.println("The registered server had an agent ID with it, so it must be from the new system.");
@@ -2059,6 +2073,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 verified = false;
             }
         }
+        System.out.println("I need a generator out of all this.  Did I get it: "+generatorID);
         return verified;
     }
     
@@ -2092,15 +2107,28 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         JSONObject newAgent = new JSONObject();
         DBObject originalToUpdate = (DBObject)JSON.parse(legacyUserObj.toString());
         JSONObject orig = JSONObject.fromObject(originalToUpdate);
+        String mbox = "Not Provided";
+        String label = "Not Provided";
+        String homepage = "Not Provided";
+        if(legacyUserObj.containsKey("name") && !"".equals(legacyUserObj.getString("name"))){
+            label = legacyUserObj.getString("name");
+        }
+        if(legacyUserObj.containsKey("contact") && !"".equals(legacyUserObj.getString("contact"))){
+            mbox = legacyUserObj.getString("contact");
+        }
+        if(legacyUserObj.containsKey("website") && !"".equals(legacyUserObj.getString("website"))){
+            homepage = legacyUserObj.getString("website");
+        }
         newAgent.element("@type", "foaf:Agent");
         newAgent.element("@context", "http://store.rerum.io/v1/context.json");
-        newAgent.element("mbox", legacyUserObj.getString("email")); //FIXME?
-        newAgent.element("label", legacyUserObj.getString("name")); //FIXME?
-        newAgent.element("homepage", legacyUserObj.getString("website")); //FIXME?
+        newAgent.element("mbox", mbox); 
+        newAgent.element("label", label); 
+        newAgent.element("homepage", homepage); 
         DBObject dbo = (DBObject) JSON.parse(newAgent.toString());
         String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
-        orig.element("agent", newObjectID);
-        newAgent.element("@id", newObjectID);
+        orig.element("agent", "http://devstore.rerum.io/id/"+newObjectID);
+        newAgent.element("@id", "http://devstore.rerum.io/id/"+newObjectID);
+        newAgent.element("agent", "http://devstore.rerum.io/id/"+newObjectID);
         generatorID = newObjectID;
         DBObject updatedOrig = (DBObject) JSON.parse(orig.toString());
         mongoDBService.update(Constant.COLLECTION_ACCEPTEDSERVER, originalToUpdate, updatedOrig);
