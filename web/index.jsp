@@ -7,6 +7,14 @@
 <%@page import="edu.slu.action.ObjectAction"%>
 <%@page contentType="text/html" pageEncoding="UTF-8" buffer="1000kb"%>
 <% String basePath = request.getContextPath(); %>
+<%
+    String access_token = "",
+    auth_code = "";
+    if (request.getParameter("code") != null) {
+        auth_code = request.getParameter("code");
+        access_token = ObjectAction.getAccessTokenWithAuth(auth_code);
+    }
+%>
 <!DOCTYPE html>
 <html>
     <head>
@@ -136,14 +144,7 @@
         var responseJSON = {};
         var myURL = document.location.href;
 
-        <%
-            String access_token = "",
-                    auth_code = "";
-        if (request.getParameter("code") != null) {
-            auth_code = request.getParameter("code");
-            access_token = ObjectAction.getAccessTokenWithAuth(auth_code);
-        }
-        %>
+
         if(myURL.indexOf("code=") > -1){ //User is logged in and consented to use RERUM.  They have an authorization code
            auth_code = getURLVariable("code");
            if(auth_code !== ""){
