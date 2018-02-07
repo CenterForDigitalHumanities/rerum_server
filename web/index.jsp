@@ -7,6 +7,14 @@
 <%@page import="edu.slu.action.ObjectAction"%>
 <%@page contentType="text/html" pageEncoding="UTF-8" buffer="1000kb"%>
 <% String basePath = request.getContextPath(); %>
+<%
+    String access_token = "",
+    auth_code = "";
+    if (request.getParameter("code") != null) {
+        auth_code = request.getParameter("code");
+        access_token = ObjectAction.getAccessTokenWithAuth(auth_code);
+    }
+%>
 <!DOCTYPE html>
 <html>
     <head>
@@ -80,9 +88,8 @@
     <body>
         <h1 onclick="window.location='http://rerum.io'" target="_blank" class="navbar-brand"><i class="fa fa-cubes"></i> rerum</h1>
         <div class='container col-xs-10 col-sm-10 col-md-10 col-lg-10' id="intro">
-            We are so glad you are interested in using Saint Louis University's public object store, RERUM!  Our store likes to screen calls, so if you would like it
-            to answer you must share your server IP address with it. Supply any label you would like stored with your IP address (because RERUM doesn't want to think
-            of everyone as just a number).  
+            We are so glad you are interested in using Saint Louis University's public object store, RERUM!  We work with Auth0 to authenticate you.
+            Follow the prompts below to set up and test your access to auth0 and the RERUM API.  
         </div>
         <div class='sep container col-xs-10 col-sm-10 col-md-10 col-lg-10' name="block" >
             <div class="statusHeader"> Server Registration </div>
@@ -109,7 +116,7 @@
                 <span  class="status" id="authorizationStatus">UNKNOWN</span>
             </div>
             <input class='btn btn-primary btn-large' type="button" id="check_status" value=" Check my Authorization Status With Auth0" />
-            <input class='btn btn-primary btn-large' type="button" id="refresh_status" value=" Authorize With Auth0 " />
+            <input class='btn btn-primary btn-large' type="button" id="refresh_status" value=" Refresh Authorization With Auth0 " />
             <input class='btn btn-primary btn-large' type="button" id="login" value=" Authorize with Auth0 " />
         </div>
         <br><br><br>
@@ -137,19 +144,13 @@
         var responseJSON = {};
         var myURL = document.location.href;
 
-        <%
-            String access_token = "",
-                    auth_code = "";
-        if (request.getParameter("code") != null) {
-            auth_code = request.getParameter("code");
-            access_token = ObjectAction.getAccessTokenWithAuth(auth_code);
-        }
-        %>
+
         if(myURL.indexOf("code=") > -1){ //User is logged in and consented to use RERUM.  They have an authorization code
            auth_code = getURLVariable("code");
            if(auth_code !== ""){
                access_token = "<% out.write(access_token); %>";
                $("#authorizationStatus").html("AUTHORIZED: token="+access_token);
+               $("#test_api").show();
            }
            else{ //Bad authorization code
                $("#authorizationStatus").html("UNAUTHORIZED");
@@ -174,7 +175,6 @@
            
        }
 
-        
         $("#regsiter").click(function(){
             var params = {
                 "audience":"http://rerum.io/api",
@@ -208,10 +208,7 @@
             var getURL = "https://cubap.auth0.com/authorize?" + $.param(params);
             console.log(getURL);
             document.location.href = getURL;
-            
-//            xhr.open("GET", getURL, true); 
-//            xhr.setRequestHeader("Content-type", "application/json"); 
-//            xhr.send();
+
         });
         
         $("#login").click(function(){
@@ -226,9 +223,6 @@
             };
             var getURL = "https://cubap.auth0.com/authorize?" + $.param(params);
             document.location.href = getURL;
-//            xhr.open("GET", getURL, true); 
-//            xhr.setRequestHeader("Content-type", "application/json"); 
-//            xhr.send();
 
         });
                 
