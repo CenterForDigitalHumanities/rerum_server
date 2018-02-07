@@ -1941,6 +1941,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             }
         }
         catch(java.net.SocketTimeoutException e){ //This specifically catches the timeout
+            System.out.println("The iiif endpoing is taking too long, so its going to be a blank object.");
             iiif_return = new JSONObject(); //We were never going to get a response, so return an empty object.
         }
         return iiif_return;
@@ -1993,7 +1994,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         StringBuilder stringBuilder;
         HttpURLConnection connection = (HttpURLConnection) jwksURL.openConnection();
         connection.setRequestMethod("GET"); 
-        connection.setReadTimeout(15*1000);
+        connection.setReadTimeout(5*1000);
         connection.connect();
         reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
         stringBuilder = new StringBuilder();
@@ -2081,6 +2082,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             DecodedJWT recievedToken = JWT.decode(access_token);
             String KID = recievedToken.getKeyId();
             System.out.println(KID);
+            //FIXME catch a timeout or fail to get jwks.json and handle gracefully.
             JwkProvider provider = new UrlJwkProvider("https://cubap.auth0.com/.well-known/jwks.json");
             Jwk jwk = provider.get(KID); //throws Exception when not found or can't get one
             RSAPublicKey pubKey = (RSAPublicKey) jwk.getPublicKey();      
@@ -2091,7 +2093,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             System.out.println("We were able to verify it. ");
             userInfo = getRerumUserInfo(access_token);
             System.out.println("Since it was verified, I got user info to get agent from");
-            generatorID = userInfo.getString("agent"); //FIXME new objects need to have this or else NULLPOINTER
+            generatorID = userInfo.getString("agent"); 
             verified = true;
         } 
         catch (Exception exception){
