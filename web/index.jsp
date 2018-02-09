@@ -199,6 +199,7 @@
                     $("#authorizationStatus").html("AUTHORIZED: auth code="+auth_code)+".<br> You cannot ask for your current access token, but you can generate a new one by\n\
                     requesting one below.  If you have not yet registered with RERUM at Auth0, you will need to do that to get your first access token. ";
                     $("#request_token").show();
+                    $("#test_api").show();
                }
            }
            else{ //Weird
@@ -214,7 +215,7 @@
                 $("#login").show();
            }
            else if (error_code == "consent_required"){ //User has not consented and has never gotten an access token.  Request the authorization code to get access token
-                $("#authorizationStatus").html("You have never consented to use the API, so you do not have an access token.");
+                $("#authorizationStatus").html("You have never consented to use the API, so you do not have an access token.  Get one to test access to RERUM.");
                 $("#request_token").show();
            }
            else if (error_code == "interaction_required"){
