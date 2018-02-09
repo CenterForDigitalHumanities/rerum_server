@@ -164,7 +164,7 @@
                 If you would like to check your ability to use RERUM, first check your status with Auth0 to reveal the button.  If you are known by Auth0, 
                 please enter the access token you were provided when you registered for RERUM or requested a new token then click 'Check Access To RERUM API'. 
                 If you do not know your access token, you can request a new one after you check your authorization status with Auth0.
-                (Note: Your old token will no longer work if you re register or request a new token).  
+                (Note: Your old token may no longer work in certain situations if you re register or request a new token, even if RERUM accepts it here).  
             </p>
             <textarea id="a_t" placeholder="Enter your access token here to check your access to RERUM."> </textarea>
             <div class="statusNotice">
