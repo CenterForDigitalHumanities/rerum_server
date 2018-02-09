@@ -142,7 +142,7 @@
                 Be prepared to be routed to Auth0 (don't know why?
                 <a target="_blank" href="https://github.com/CenterForDigitalHumanities/rerum_server/blob/master/API.md" class="linkOut">Read the API</a>).<br>
                 
-                <input class='btn btn-primary btn-large' type="button" id="regsiter" value=" Register With RERUM At Auth0" /> 
+                <input class='btn btn-primary btn-large' type="button" id="register" value=" Register With RERUM At Auth0" /> 
             </p>
         </div>
 
@@ -228,7 +228,7 @@
            
        }
 
-        $("#regsiter").click(function(){
+        $("#register").click(function(){
         //Register means sign up at auth0 and authorize to get an auth code.  Then use that auth code to generate a token, so access=true to generate an access token.
             var params = {
                 "audience":"http://rerum.io/api",
