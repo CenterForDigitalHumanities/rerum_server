@@ -160,8 +160,12 @@
         </div>
         
         <div class='sep container col-xs-10 col-sm-10 col-md-10 col-lg-10' name="block">
-            <p> If you would like to check your ability to use RERUM, first check your status with Auth0 to reveal the button.  If you are known by Auth0, 
-                please enter your token into the are below and click 'Check Access To RERUM API'. </p>
+            <p> 
+                If you would like to check your ability to use RERUM, first check your status with Auth0 to reveal the button.  If you are known by Auth0, 
+                please enter the access token you were provided when you registered for RERUM or requested a new token then click 'Check Access To RERUM API'. 
+                If you do not know your access token, you can request a new one after you check your authorization status with Auth0.
+                (Note: Your old token will no longer work if you re register or request a new token).  
+            </p>
             <textarea id="a_t" placeholder="Enter your access token here to check your access to RERUM."> </textarea>
             <div class="statusNotice">
                 <div class="statusHeader"> RERUM status </div>
