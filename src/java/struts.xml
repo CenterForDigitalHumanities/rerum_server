@@ -59,18 +59,18 @@
     <package name="v1" extends="default" namespace="/v1">
         <!-- INTERCEPTOR -->
         <interceptors>
-            <interceptor name="requestServerAuthenticationFilter" class="edu.slu.filter.RequestServerAuthenticationFilter">
+<!--            <interceptor name="requestServerAuthenticationFilter" class="edu.slu.filter.RequestServerAuthenticationFilter">
                 <param name="includeMethods">saveNewObject, batchSaveFromCopy, patchUpdateObject, putUpdateObject, patchSetUpdate, deleteObject, releaseObject </param>
-            </interceptor>
+            </interceptor>-->
             <interceptor name="getRequestClientInfoRecorder" class="edu.slu.filter.GetRequestClientInfoRecorder">
-                <param name="includeMethods">getByProperties, getByID, getAllAncestors, getAllDescendents, getAllVersions</param>
+                <param name="includeMethods">askAuth0, getByProperties, getByID, getAllAncestors, getAllDescendents, getAllVersions</param>
             </interceptor>
             <!--<interceptor name="responseEncoding" class="edu.slu.filter.ResponseEncoding"></interceptor>-->
-            <interceptor name="inSessionFilter" class="edu.slu.filter.InSessionFilter"></interceptor>
+            <!--<interceptor name="inSessionFilter" class="edu.slu.filter.InSessionFilter"></interceptor>-->
             <interceptor-stack name="myDefault">
                 <!--<interceptor-ref name="responseEncoding" />-->
-                <interceptor-ref name="inSessionFilter" />
-                <interceptor-ref name="requestServerAuthenticationFilter" />
+                <!--<interceptor-ref name="inSessionFilter" />-->
+                <!--<interceptor-ref name="requestServerAuthenticationFilter" />-->
                 <interceptor-ref name="getRequestClientInfoRecorder" />
                 <interceptor-ref name="defaultStack" />
             </interceptor-stack>
@@ -92,6 +92,7 @@
         <action name="set" class="objectAction" method="patchSetUpdate"></action>
         <action name="unset" class="objectAction" method="patchUnsetUpdate"></action>
         <action name="delete" class="objectAction" method="deleteObject"></action>
+        <action name="ask" class="objectAction" method="askAuth0"></action>
     </package>
     
     <!-- ACCEPTED SERVER -->

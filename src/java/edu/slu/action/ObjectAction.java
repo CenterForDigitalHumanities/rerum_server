@@ -49,6 +49,9 @@
 
 package edu.slu.action;
 
+import com.auth0.jwk.Jwk;
+import com.auth0.jwk.JwkProvider;
+import com.auth0.jwk.UrlJwkProvider;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
@@ -62,7 +65,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -73,12 +75,37 @@ import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.struts2.interceptor.ServletRequestAware;
 import org.apache.struts2.interceptor.ServletResponseAware;
-import org.bson.types.ObjectId;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+
+//import org.apache.commons.codec.*;
+//import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
+
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.JWTVerifier;
+import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.exceptions.JWTVerificationException;
+import com.auth0.jwt.interfaces.DecodedJWT;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mongodb.DB;
+import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
+import edu.slu.util.MongoDBUtil;
+import java.io.DataOutputStream;
+import java.io.OutputStream;
+import java.net.ProtocolException;
+import java.net.URLEncoder;
+import java.security.interfaces.RSAPublicKey;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.MissingResourceException;
+import java.util.ResourceBundle;
+import javax.servlet.http.HttpSession;
+import org.apache.struts2.ServletActionContext;
 
 
 /**
@@ -97,7 +124,25 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     private StringBuilder bodyString;
     private BufferedReader bodyReader;
     private PrintWriter out;
-    final ObjectMapper mapper = new ObjectMapper();
+    private String generatorID = "unknown";
+    private final ObjectMapper mapper = new ObjectMapper();
+    
+   /**
+    * Private function to get information from the rerum properties file
+    
+    * @param prop the name of the property to retrieve from the file.
+    * @return the value for the provided property
+    */    
+   public static String getRerumProperty(String prop) {
+      ResourceBundle rb = ResourceBundle.getBundle("rerum");
+      String propVal = "";
+      try {
+         propVal = rb.getString(prop);
+      } catch (MissingResourceException e) {
+         System.err.println("Token ".concat(prop).concat(" not in Propertyfile!"));
+      }
+      return propVal;
+   }
     
     /**
      * Check if the proposed object is a container type.
@@ -132,7 +177,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @return isLd Boolean
      */
     public Boolean isLD(JSONObject jo){
-        Boolean isLD=jo.containsKey("@context");
+        Boolean isLD= jo.containsKey("@context");
         return isLD;
         // TODO: There's probably some great code to do real checking.
     }
@@ -246,8 +291,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         rerumOptions.element("history", history);
         rerumOptions.element("releases", releases);      
         //The access token is in the header  "Authorization: Bearer {YOUR_ACCESS_TOKEN}"
-        //HttpResponse<String> response = Unirest.post("https://cubap.auth0.com/oauth/token") .header("content-type", "application/json") .body("{\"grant_type\":\"client_credentials\",\"client_id\": \"WSCfCWDNSZVRQrX09GUKnAX0QdItmCBI\",\"client_secret\": \"8Mk54OqMDqBzZgm7fJuR4rPA-4T8GGPsqLir2aP432NnmG6EAJBCDl_r_fxPJ4x5\",\"audience\": \"https://cubap.auth0.com/api/v2/\"}") .asString(); 
-        rerumOptions.element("generatedBy",""); //TODO get the @id of the public agent of the API key
+        rerumOptions.element("generatedBy",generatorID); //TODO get the @id of the public agent of the API key
         configuredObject.element("__rerum", rerumOptions); //.element will replace the __rerum that is there OR create a new one
         return configuredObject; //The mongo save/update has not been called yet.  The object returned here will go into mongo.save or mongo.update
     }
@@ -321,67 +365,115 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     */
     public Boolean methodApproval(HttpServletRequest http_request, String request_type) throws Exception{
         String requestMethod = http_request.getMethod();
+        String access_token = "123";
+        boolean auth_verified = false;
         boolean restful = false;
         // FIXME @webanno if you notice, OPTIONS is not supported here and MUST be 
         // for Web Annotation standards compliance.  
+        if(null!=http_request.getHeader("Bearer") && !"".equals(http_request.getHeader("Bearer"))){
+            access_token = http_request.getHeader("Bearer");
+        }
         switch(request_type){
             case "update":
-                if(requestMethod.equals("PUT")){
-                    restful = true;
+                auth_verified =  verifyAccess(access_token);
+                if(auth_verified){
+                    if(requestMethod.equals("PUT")){
+                        restful = true;
+                    }
+                    else{
+                        writeErrorResponse("Improper request method for updating, please use PUT to replace this object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    }
                 }
                 else{
-                    writeErrorResponse("Improper request method for updating, please use PUT to replace this object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
                 }
             break;
             case "patch":
-                if(requestMethod.equals("PATCH")){
-                    restful = true;
+                auth_verified =  verifyAccess(access_token);
+                if(auth_verified){
+                    if(requestMethod.equals("PATCH")){
+                        restful = true;
+                    }
+                    else{
+                        writeErrorResponse("Improper request method for updating, please use PATCH to alter this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    }
                 }
                 else{
-                    writeErrorResponse("Improper request method for updating, please use PATCH to alter this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
                 }
             break;
             case "set":
-                if(requestMethod.equals("PATCH")){
-                    restful = true;
+                auth_verified =  verifyAccess(access_token);
+                if(auth_verified){
+                    if(requestMethod.equals("PATCH")){
+                        restful = true;
+                    }
+                    else{
+                        writeErrorResponse("Improper request method for updating, PATCH to add keys to this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    }
                 }
                 else{
-                    writeErrorResponse("Improper request method for updating, PATCH to add keys to this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
                 }
             break;
             case "unset":
-                if(requestMethod.equals("PATCH")){
-                    restful = true;
+                auth_verified =  verifyAccess(access_token);
+                if(auth_verified){
+                    if(requestMethod.equals("PATCH")){
+                        restful = true;
+                    }
+                    else{
+                        writeErrorResponse("Improper request method for updating, PATCH to remove keys from this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    }
                 }
                 else{
-                    writeErrorResponse("Improper request method for updating, PATCH to remove keys from this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
                 }
             break;
             case "release":
-            if(requestMethod.equals("PATCH")){
-                restful = true;
-            }
-            else{
-                writeErrorResponse("Improper request method for updating, please use PATCH to alter this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-            }
-            break;
-            case "create":
-                if(requestMethod.equals("POST")){
-                    restful = true;
+                auth_verified =  verifyAccess(access_token);
+                if(auth_verified){
+                    if(requestMethod.equals("PATCH")){
+                        restful = true;
+                    }
+                    else{
+                        writeErrorResponse("Improper request method for updating, please use PATCH to alter this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    }
                 }
                 else{
-                    writeErrorResponse("Improper request method for creating, please use POST.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                }
+            break;
+            case "create":
+                auth_verified =  verifyAccess(access_token);
+                if(auth_verified){
+                    if(requestMethod.equals("POST")){
+                        restful = true;
+                    }
+                    else{
+                        writeErrorResponse("Improper request method for creating, please use POST.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    }
+                }
+                else{
+                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
                 }
             break;
             case "delete":
-                if(requestMethod.equals("DELETE")){
-                    restful = true;
+                auth_verified =  verifyAccess(access_token);
+                if(auth_verified){
+                    if(requestMethod.equals("DELETE")){
+                        restful = true;
+                    }
+                    else{
+                        writeErrorResponse("Improper request method for deleting, please use DELETE.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    }
                 }
                 else{
-                    writeErrorResponse("Improper request method for deleting, please use DELETE.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
                 }
             break;
             case "get":
+                auth_verified = true;
                 if(requestMethod.equals("GET") || requestMethod.equals("HEAD")){
                     restful = true;
                 }
@@ -391,8 +483,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             break;
             default:
                 writeErrorResponse("Improper request method for this type of request (unknown).", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-
-            }  
+        }  
+        System.out.println("I know whether or not we are restful: "+restful);
         return restful;
     }
     
@@ -417,7 +509,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         String line;
         JSONObject test;
         JSONArray test2;
-        if(cType.contains("application/json") || cType.contains("application/ld+json")){
+        if(null!=cType && (cType.contains("application/json") || cType.contains("application/ld+json"))){
             while ((line = bodyReader.readLine()) != null)
             {
               bodyString.append(line);
@@ -903,6 +995,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @respond with new @id in Location header and the new annotation in the body.
      */
     public void saveNewObject() throws IOException, ServletException, Exception{
+        System.out.println("Save an object!");
         if(null != processRequestBody(request, false) && methodApproval(request, "create")){
             JSONObject received = JSONObject.fromObject(content);
             if(received.containsKey("@id")){
@@ -921,7 +1014,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 //set @id from _id and update the annotation
                 BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
                 String uid = "http://devstore.rerum.io/rerumserver/id/"+newObjectID;
-
                 dboWithObjectID.append("@id", uid);
                 mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
                 JSONObject jo = new JSONObject();
@@ -1784,17 +1876,24 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         dboWithObjectID.append("@id", uid);
         mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
         iiif_return = checkIIIFCompliance(uid, "2.1"); //If it is an object we are creating, this line means @context must point to Presentation API 2 or 2.1
-        if(iiif_return.getInt("okay") == 0){
-            if(intendedIIIF){
-                //If it was intended to be a IIIF object, then remove this object from the store because it was not valid and return an error to the user
-                
+        if(iiif_return.containsKey("okay")){
+            if(iiif_return.getInt("okay") == 0){
+                if(intendedIIIF){
+                    //If it was intended to be a IIIF object, then remove this object from the store because it was not valid and return an error to the user
+
+                }
+                else{
+                    //Otherwise say it is ok so the action looking do validate does not writeErrorResponse()
+                    iiif_return.element("okay", 1);
+                }
             }
-            else{
-                //Otherwise say it is ok so the action looking do validate does not writeErrorResponse()
-                iiif_return.element("okay", 1);
-            }
+            iiif_return.remove("received");
         }
-        iiif_return.remove("received");
+        else{
+            //Then the validator had a problem, perhaps it timed out and returned a blank object...
+            iiif_return.element("okay", 0);
+            iiif_return.element("error", "504: IIIF took too long to repond to RERUM.  The object was not submitted for validation.");
+        }
         BasicDBObject query = new BasicDBObject();
         query.append("_id", newObjectID);
         mongoDBService.delete(Constant.COLLECTION_ANNOTATION, query);
@@ -1809,27 +1908,41 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @param objURL The @id or id URL of a IIIF JSON object represented as a String.
      * @param version The Intended Presentation API version to validate against represented as a String.  (1, 2 or 2.1)
      * @return iiif_return The return JSONObject from hitting the IIIF Validation API.
+     * @throws java.net.MalformedURLException
      */
     public JSONObject checkIIIFCompliance(String objURL, String version) throws MalformedURLException, IOException{
         JSONObject iiif_return = new JSONObject();
-        String iiif_validation_url = "http://iiif.io/api/presentation/validator/service/validate?format=json&version="+version+"&url="+objURL;
-        URL validator = new URL(iiif_validation_url);
-        BufferedReader reader = null;
-        StringBuilder stringBuilder;
-        HttpURLConnection connection = (HttpURLConnection) validator.openConnection();
-        connection.setRequestMethod("GET"); //hmm... I think this is right
-        connection.setReadTimeout(15*1000);
-        connection.connect();
-        reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-        stringBuilder = new StringBuilder();
-        String line = null;
-        while ((line = reader.readLine()) != null)
-        {
-          stringBuilder.append(line);
+        String iiif_validation_url = "https://iiif.io/api/presentation/validator/service/validate?format=json&version="+version+"&url="+objURL;
+        try{
+            URL validator = new URL(iiif_validation_url);
+            BufferedReader reader = null;
+            StringBuilder stringBuilder;
+            HttpURLConnection connection = (HttpURLConnection) validator.openConnection();
+            connection.setRequestMethod("GET"); 
+            connection.setConnectTimeout(5*1000); //This tends to choke sometimes...should i handle a timeout better?
+            System.out.println("Connect to iiif validator...");
+            connection.connect();
+            reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+            stringBuilder = new StringBuilder();
+            String line = null;
+            while ((line = reader.readLine()) != null)
+            {
+              stringBuilder.append(line);
+            }
+            connection.disconnect();
+        
+            if(stringBuilder.length() > 0){
+                iiif_return = JSONObject.fromObject(stringBuilder.toString());
+                iiif_return.remove("received");
+            }
+            else{
+                iiif_return = new JSONObject();
+            }
         }
-        connection.disconnect();
-        iiif_return = JSONObject.fromObject(stringBuilder.toString());
-        iiif_return.remove("received");
+        catch(java.net.SocketTimeoutException e){ //This specifically catches the timeout
+            System.out.println("The iiif endpoing is taking too long, so its going to be a blank object.");
+            iiif_return = new JSONObject(); //We were never going to get a response, so return an empty object.
+        }
         return iiif_return;
     }
     
@@ -1870,6 +1983,215 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
         }
      }
+    
+    private JSONObject getJWKS() throws MalformedURLException, ProtocolException, IOException{
+        JSONObject jwksFile = new JSONObject();
+        String jwksLocation = "https://cubap.auth0.com/.well-known/jwks.json";
+        URL jwksURL = new URL(jwksLocation);
+        BufferedReader reader = null;
+        StringBuilder stringBuilder;
+        HttpURLConnection connection = (HttpURLConnection) jwksURL.openConnection();
+        connection.setRequestMethod("GET"); 
+        connection.setReadTimeout(5*1000);
+        connection.connect();
+        reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+        stringBuilder = new StringBuilder();
+        String line = null;
+        while ((line = reader.readLine()) != null)
+        {
+          stringBuilder.append(line);
+        }
+        connection.disconnect();
+        jwksFile = JSONObject.fromObject(stringBuilder.toString());
+        return jwksFile;
+    }
+    
+    public static String getAccessTokenWithAuth(String auth_code) throws UnsupportedEncodingException {
+            System.out.println("Getting an access token for auth");
+            String token="";
+            String tokenURL="https://cubap.auth0.com/oauth/token";
+            JSONObject body = new JSONObject();
+            body.element("grant_type", "authorization_code");
+            body.element("client_id", "jwkd5YE0YA5tFxGxaLW9ALPxAyA6Qw1v");
+            body.element("client_secret", getRerumProperty("rerumSecret"));
+            body.element("code", auth_code);
+            body.element("redirect_uri", "http://devstore.rerum.io/");
+        try {           
+            URL tURL = new URL(tokenURL);
+            HttpURLConnection connection;
+            connection = (HttpURLConnection) tURL.openConnection();
+            connection.setRequestMethod("POST");
+            connection.setDoOutput(true);
+            connection.setDoInput(true);
+            connection.setRequestProperty("Content-Type", "application/json");
+            connection.connect();
+            DataOutputStream jsonString = new DataOutputStream(connection.getOutputStream());
+            jsonString.writeBytes(body.toString());
+            jsonString.flush();
+            jsonString.close();
+            BufferedReader input = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+            StringBuilder responseBlob = new StringBuilder();
+            String line;
+            while ((line = input.readLine()) != null) {
+                responseBlob.append(line);
+            }
+            input.close();
+            connection.disconnect();
+            JSONObject responseObj = new JSONObject();
+            if(responseBlob.length() > 0){
+                try{
+                    responseObj = JSONObject.fromObject(responseBlob.toString());
+                }
+                catch(Exception e){
+                    //response was not JSON, so let it an empty object.
+                    //responseObj = new JSONObject();
+                }
+            }
+            if(responseObj.containsKey("access_token")){
+                token = responseObj.getString("access_token");
+            }
+            else{
+                token = "Auth0 rejected the request for a token.  Your authentication code may have expired.  Please try again.";
+                //writeErrorResponse("Auth0 rejected the request for a token.  Your authentication code may have expired.  Please try again.", HttpServletResponse.SC_CONFLICT);
+            }
+        } catch (ProtocolException ex) {
+            Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException ex) {
+            Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        return token;
+    }
+
+    /*
+    Verify the access code in the Bearer header of an action request.
+    */
+    private boolean verifyAccess(String access_token) throws IOException, ServletException, Exception{
+        System.out.println("verify a JWT access toekn");
+        boolean verified = false;
+        JSONObject userInfo = new JSONObject();
+        System.out.println("The token is");
+        System.out.println(access_token);
+        boolean getUser = true;
+        try {
+            DecodedJWT recievedToken = JWT.decode(access_token);
+            String KID = recievedToken.getKeyId();
+            //FIXME catch a timeout or fail to get jwks.json and handle gracefully.
+            JwkProvider provider = new UrlJwkProvider("https://cubap.auth0.com/.well-known/jwks.json");
+            Jwk jwk = provider.get(KID); //throws Exception when not found or can't get one
+            RSAPublicKey pubKey = (RSAPublicKey) jwk.getPublicKey();      
+            Algorithm algorithm = Algorithm.RSA256(pubKey, null);
+            JWTVerifier verifier = JWT.require(algorithm).build(); //Reusable verifier instance
+               //.withIssuer("auth0")
+            DecodedJWT d_jwt = verifier.verify(access_token);
+            System.out.println("We were able to verify it. ");
+            verified = true;
+            userInfo = getRerumUserInfo(access_token);
+            if(userInfo.containsKey("agent")){
+                generatorID = userInfo.getString("agent"); 
+            }
+            else{
+                System.out.println("It was verified, but the user connected with the key did not have the field 'agent'.  When the user signed up, they were not created correctly.");
+            }
+        } 
+        catch (Exception exception){
+            //Invalid signature/claims.  Try to authenticate the old way
+            System.out.println("Verification failed.  We were given a bad token.  IP fallback");
+            String requestIP = request.getRemoteAddr();
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+            //check if the domain name and ip is in database
+            BasicDBObject query = new BasicDBObject();
+            query.append("ip", requestIP);
+            DB db = MongoDBUtil.getDb();
+            DBCollection coll = db.getCollection(Constant.COLLECTION_ACCEPTEDSERVER);
+            DBCursor cursor = coll.find(query);
+            List<DBObject> ls_results = cursor.toArray();
+            if(ls_results.size() > 0){
+                System.out.println("[Modifying Data Request]: ip ========== " + requestIP + "@" + sdf.format(new Date()) + " +++++ From Registered Server");
+                DBObject result = ls_results.get(0);
+                if(null!=result.get("agent") && !"".equals(result.get("agent"))){
+                    //The user registered their IP with the new system
+                    System.out.println("The registered server had an agent ID with it, so it must be from the new system.");
+                    userInfo = JSONObject.fromObject(result);
+                }
+                else{
+                    //This is a legacy user.
+                    //Create agent and write back to server collection
+                    System.out.println("The registered server did not have an agent ID.  It must be from the old system.");
+                    userInfo = generateAgentForLegacyUser(JSONObject.fromObject(result));
+                }
+                generatorID = userInfo.getString("agent");
+                getUser = false;
+                verified = true;
+            }
+            else{
+                System.out.println("[Modifying Data Request]: ip ========== " + requestIP + "@" + sdf.format(new Date()) + " +++++ Server Not Registered");
+                getUser = false;
+                verified = false;
+            }
+        }
+        System.out.println("I need a generator out of all this.  Did I get it: "+generatorID);
+        return verified;
+    }
+    
+    private JSONObject getRerumUserInfo(String access_token) throws MalformedURLException, ProtocolException, IOException{
+        System.out.println("I need to get user info from auth0 to get the rerum agent ID");
+        JSONObject userInfo = new JSONObject();
+        String userInfoLocation = "https://cubap.auth0.com/userinfo?access_token="+access_token;
+        URL infoURL = new URL(userInfoLocation);
+        BufferedReader reader = null;
+        StringBuilder stringBuilder;
+        HttpURLConnection connection = (HttpURLConnection) infoURL.openConnection();
+        connection.setRequestMethod("GET"); 
+        connection.setReadTimeout(15*1000);
+        connection.connect();
+        reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+        stringBuilder = new StringBuilder();
+        String line = null;
+        while ((line = reader.readLine()) != null)
+        {
+          stringBuilder.append(line);
+        }
+        connection.disconnect();
+        userInfo = JSONObject.fromObject(stringBuilder.toString());
+        System.out.println("Got the user info");
+        System.out.println(userInfo);
+        return userInfo;
+    }
+    
+    private JSONObject generateAgentForLegacyUser(JSONObject legacyUserObj){
+        System.out.println("Detected a legacy registration.  Creating an agent and storing it with this legacy object.");
+        JSONObject newAgent = new JSONObject();
+        DBObject originalToUpdate = (DBObject)JSON.parse(legacyUserObj.toString());
+        JSONObject orig = JSONObject.fromObject(originalToUpdate);
+        String mbox = "Not Provided";
+        String label = "Not Provided";
+        String homepage = "Not Provided";
+        if(legacyUserObj.containsKey("name") && !"".equals(legacyUserObj.getString("name"))){
+            label = legacyUserObj.getString("name");
+        }
+        if(legacyUserObj.containsKey("contact") && !"".equals(legacyUserObj.getString("contact"))){
+            mbox = legacyUserObj.getString("contact");
+        }
+        if(legacyUserObj.containsKey("website") && !"".equals(legacyUserObj.getString("website"))){
+            homepage = legacyUserObj.getString("website");
+        }
+        newAgent.element("@type", "foaf:Agent");
+        newAgent.element("@context", "http://store.rerum.io/v1/context.json");
+        newAgent.element("mbox", mbox); 
+        newAgent.element("label", label); 
+        newAgent.element("homepage", homepage); 
+        DBObject dbo = (DBObject) JSON.parse(newAgent.toString());
+        String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
+        orig.element("agent", "http://devstore.rerum.io/rerumserver/id/"+newObjectID);
+        newAgent.element("@id", "http://devstore.rerum.io/rerumserver/id/"+newObjectID);
+        newAgent.element("agent", "http://devstore.rerum.io/rerumserver/id/"+newObjectID);
+        generatorID = "http://devstore.rerum.io/rerumserver/id/"+newObjectID;
+        DBObject updatedOrig = (DBObject) JSON.parse(orig.toString());
+        mongoDBService.update(Constant.COLLECTION_ACCEPTEDSERVER, originalToUpdate, updatedOrig);
+        return newAgent;
+    }
+    
 
     @Override
     public void setServletRequest(HttpServletRequest hsr) {
