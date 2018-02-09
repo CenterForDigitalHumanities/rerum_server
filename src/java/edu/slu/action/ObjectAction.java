@@ -366,7 +366,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     public Boolean methodApproval(HttpServletRequest http_request, String request_type) throws Exception{
         String requestMethod = http_request.getMethod();
         String access_token = "123";
-        System.out.println("In method approval where I will verify.");
         boolean auth_verified = false;
         boolean restful = false;
         // FIXME @webanno if you notice, OPTIONS is not supported here and MUST be 
@@ -447,7 +446,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             break;
             case "create":
                 auth_verified =  verifyAccess(access_token);
-                System.out.println("back in create and I know whether or not we were verified: "+auth_verified);
                 if(auth_verified){
                     if(requestMethod.equals("POST")){
                         restful = true;
@@ -999,16 +997,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     public void saveNewObject() throws IOException, ServletException, Exception{
         System.out.println("Save an object!");
         if(null != processRequestBody(request, false) && methodApproval(request, "create")){
-            System.out.println("I did all the work to figure out if this request can happen.  Continuing to save object");
             JSONObject received = JSONObject.fromObject(content);
             if(received.containsKey("@id")){
                 writeErrorResponse("Object already contains an @id "+received.containsKey("@id")+".  Either remove this property for saving or if it is a REERUM object update instead.", HttpServletResponse.SC_BAD_REQUEST);
             }
             else{
-                System.out.println("check iiif compliance");
                 JSONObject iiif_validation_response = checkIIIFCompliance(received, true); //This boolean should be provided by the user somehow.  It is a intended-to-be-iiif flag
-                System.out.println("Add iiif response to user response");
-                System.out.println("Configure the __rerum property for the new object");
                 configureRerumOptions(received, false);
                 DBObject dbo = (DBObject) JSON.parse(received.toString());
                 if(null!=request.getHeader("Slug")){
@@ -1016,15 +1010,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     // cubap: if we want, we can just copy the Slug to @id, warning
                     // if there was some mismatch, since versions are fine with that.
                 }
-                System.out.println("perform mongo save");
                 String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
                 //set @id from _id and update the annotation
                 BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
-                System.out.println("Mongo update the object saved just now with an @id");
                 String uid = "http://devstore.rerum.io/rerumserver/id/"+newObjectID;
                 dboWithObjectID.append("@id", uid);
                 mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
-                System.out.println("Respond to user.");
                 JSONObject jo = new JSONObject();
                 JSONObject newObjWithID = JSONObject.fromObject(dboWithObjectID);
                 jo.element("code", HttpServletResponse.SC_CREATED);
@@ -1938,7 +1929,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             {
               stringBuilder.append(line);
             }
-            System.out.println("disconnect from iiif because we got the response");
             connection.disconnect();
         
             if(stringBuilder.length() > 0){
@@ -1995,7 +1985,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      }
     
     private JSONObject getJWKS() throws MalformedURLException, ProtocolException, IOException{
-        System.out.println("To verify a token I received, I need to get the cubap jwks.json document");
         JSONObject jwksFile = new JSONObject();
         String jwksLocation = "https://cubap.auth0.com/.well-known/jwks.json";
         URL jwksURL = new URL(jwksLocation);
@@ -2014,8 +2003,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         }
         connection.disconnect();
         jwksFile = JSONObject.fromObject(stringBuilder.toString());
-        System.out.println("Got the jwks file, going back into verification process with doc...");
-        System.out.println(jwksFile);
         return jwksFile;
     }
     
@@ -2087,10 +2074,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         System.out.println(access_token);
         boolean getUser = true;
         try {
-            System.out.println("Try to verify the access_code JWT");
             DecodedJWT recievedToken = JWT.decode(access_token);
             String KID = recievedToken.getKeyId();
-            System.out.println(KID);
             //FIXME catch a timeout or fail to get jwks.json and handle gracefully.
             JwkProvider provider = new UrlJwkProvider("https://cubap.auth0.com/.well-known/jwks.json");
             Jwk jwk = provider.get(KID); //throws Exception when not found or can't get one
@@ -2103,7 +2088,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             verified = true;
             userInfo = getRerumUserInfo(access_token);
             if(userInfo.containsKey("agent")){
-                System.out.println("Since it was verified, I got user info to get agent from "+generatorID);
                 generatorID = userInfo.getString("agent"); 
             }
             else{
@@ -2112,7 +2096,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         } 
         catch (Exception exception){
             //Invalid signature/claims.  Try to authenticate the old way
-            System.out.println("Verification failed.  We were given a bad token.");
+            System.out.println("Verification failed.  We were given a bad token.  IP fallback");
             String requestIP = request.getRemoteAddr();
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
             //check if the domain name and ip is in database
@@ -2125,7 +2109,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             if(ls_results.size() > 0){
                 System.out.println("[Modifying Data Request]: ip ========== " + requestIP + "@" + sdf.format(new Date()) + " +++++ From Registered Server");
                 DBObject result = ls_results.get(0);
-                System.out.println(result);
                 if(null!=result.get("agent") && !"".equals(result.get("agent"))){
                     //The user registered their IP with the new system
                     System.out.println("The registered server had an agent ID with it, so it must be from the new system.");
