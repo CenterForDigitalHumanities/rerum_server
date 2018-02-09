@@ -75,59 +75,33 @@
             display: none;
         }
         
-        #register{
-            margin-top: 10px;
+        .panel-body{
+            color: initial;
         }
-        
-        .sep{
-            margin-bottom: 35px;
-            border: 1px solid #979A9E;
-            padding: 14px 12px;
-            word-wrap: break-word;
-        }
-        
-        .statusHeader {
-            font-size: 14pt;
-            margin-bottom: 5px;
-        }
-        
-        .statusNotice{
-            margin-bottom: 10px;
-        }
-        
-        .linkOut{
-            
-        }
-        
-        #a_t{
-            width: 490px;
-            height: 90px;
-        }
-        
-        #rerumPrinciples{
-            margin-top: 15px;
-            margin-bottom: 55px;
-        }
+
         
     </style>
-    <body>
+    <body class="container">
         <h1 onclick="window.location='http://rerum.io'" target="_blank" class="navbar-brand"><i class="fa fa-cubes"></i> rerum</h1>
-        <div class='container col-xs-10 col-sm-10 col-md-10 col-lg-10' id="intro">
-            We are so glad you are interested in using Saint Louis University's public object store, RERUM! Want to know what RERUM is all about?<br>
+        <div class='' id="intro">
+            <p>
+                We are so glad you are interested in using Saint Louis University's public object store, RERUM! Want to know what RERUM is all about?
+            </p>
             <ol type="1" id='rerumPrinciples'>
-                <li>As RESTful as is reasonable—  accept and respond to a broad range of requests without losing the map</li>
-                <li>As compliant as is practical—  take advantage of standards and harmonize conflicts</li>
-                <li>Save an object, retrieve an object—  store metadata in private (__rerum) property, rather than wrap all data transactions</li>
-                <li>Trust the application, not the user—  avoid multiple login and authentication requirements and honor open data attributions</li>
-                <li>Open and Free—  expose all contributions immediately without charge to write or read</li>
-                <li>Attributed and Versioned—  always include asserted ownership and transaction metadata so consumers can evaluate trustworthiness and relevance</li>
+                <li><strong>As RESTful as is reasonable—</strong>accept and respond to a broad range of requests without losing the map</li>
+                <li><strong>As compliant as is practical—</strong>take advantage of standards and harmonize conflicts</li>
+                <li><strong>Save an object, retrieve an object—</strong>store metadata in private (__rerum) property, rather than wrap all data transactions</li>
+                <li><strong>Trust the application, not the user—</strong>avoid multiple login and authentication requirements and honor open data attributions</li>
+                <li><strong>Open and Free—</strong>expose all contributions immediately without charge to write or read</li>
+                <li><strong>Attributed and Versioned—</strong>always include asserted ownership and transaction metadata so consumers can evaluate trustworthiness and relevance</li>
             </ol>
         </div>
-        <div class='sep container col-xs-10 col-sm-10 col-md-10 col-lg-10' name="block" >
-            <div class="statusHeader"> Application Registration </div>
+        <div class='panel panel-info' name="block" >
+            <div class="panel-heading"> <span class="panel-title">Application Registration</span> </div>
+            <div class="panel-body">
             <p>
-                To get set up with RERUM will require some technical understanding, so we suggest that you be application owner, developer or academic in a computer literate field.  
-                If you are not one of these, you may want to 
+                Interacting with RERUM requires server-to-server communication, so we suggest the registrant be the application developer.  
+                You may want to 
                 <a target="_blank" href="http://centerfordigitalhumanities.github.io/rerum/web/#/future" class="linkOut">learn more about the concepts around RERUM</a> 
                 before reading the API.
             </p>
@@ -138,40 +112,51 @@
             
             <p>
                 If you like what you read in <a target="_blank" href="https://github.com/CenterForDigitalHumanities/rerum_server/blob/master/API.md" class="linkOut">our API documentation</a> 
-                and want to begin using RERUM please register by clicking below.  If you already registered, this will create a new access token and overwrite your old one.<br>
-                Be prepared to be routed to Auth0 (don't know why?
-                <a target="_blank" href="https://github.com/CenterForDigitalHumanities/rerum_server/blob/master/API.md" class="linkOut">Read the API</a>).<br>
-                
-                <input class='btn btn-primary btn-large' type="button" id="register" value=" Register With RERUM At Auth0" /> 
+                and want to begin using RERUM please register by clicking below.  If you already registered, this will create a new access token and overwrite your old one.
             </p>
+            <p>Be prepared to be routed to Auth0 (don't know why?
+                <a target="_blank" href="https://github.com/CenterForDigitalHumanities/rerum_server/blob/master/API.md" class="linkOut">Read the API</a>).
+            </p>
+            </div>
+            <div class="panel-footer">
+            <input class='btn btn-primary btn-large' type="button" id="register" value="Register With RERUM At Auth0" /> 
+            </div>
         </div>
 
-        <div class='sep container col-xs-10 col-sm-10 col-md-10 col-lg-10' name="block">
+        <div class='panel panel-info' name="block" >
+            <div class="panel-body">
             <p>
                 If you believe are already registered and want to check on your status with RERUM, follow the prompts below.  You may be routed to Auth0 so we can verify who you are.  
             </p>
-            <div class="statusNotice">
-                <div class="statusHeader"> Auth0 Status </div>
-                <span  class="status" id="authorizationStatus">UNKNOWN</span>
+            <div>
+                <span> Auth0 Status </span> 
+                <kbd class="status" id="authorizationStatus">UNKNOWN</kbd>
             </div>
-            <input class='btn btn-primary btn-large' type="button" id="check_status" value=" Check my Authorization Status With Auth0" />
-            <input class='btn btn-primary btn-large' type="button" id="login" value=" Refresh Authorization With Auth0/Login " />
-            <input class='btn btn-primary btn-large' type="button" id="request_token" value=" Get A New Access Token " />
+            </div>
+            <div class="panel-footer">
+            <input class='btn btn-primary btn-large' type="button" id="check_status" value="Check my Authorization Status With Auth0" />
+            <input class='btn btn-primary btn-large' type="button" id="login" value="efresh Authorization With Auth0/Login" />
+            <input class='btn btn-primary btn-large' type="button" id="request_token" value="Get A New Access Token" />
+            </div>
         </div>
         
-        <div class='sep container col-xs-10 col-sm-10 col-md-10 col-lg-10' name="block">
+        <div class='panel panel-info' name="block" >
+            <div class="panel-body">
             <p> 
                 If you would like to check your ability to use RERUM, first check your status with Auth0 to reveal the button.  If you are known by Auth0, 
                 please enter the access token you were provided when you registered for RERUM or requested a new token then click 'Check Access To RERUM API'. 
                 If you do not know your access token, you can request a new one after you check your authorization status with Auth0.
                 (Note: Your old token may no longer work in certain situations if you re register or request a new token, even if RERUM accepts it here).  
             </p>
-            <textarea id="a_t" placeholder="Enter your access token here to check your access to RERUM."> </textarea>
-            <div class="statusNotice">
-                <div class="statusHeader"> RERUM status </div>
-                <span class="status" id="rerumStatus">UNKNOWN</span>
+            <textarea class="form-control" id="a_t" placeholder="Enter your access token here to check your access to RERUM."></textarea>
             </div>
-            <input class='btn btn-primary btn-large' type="button" onclick="testAPI()" id="test_api" value=" Check Access To RERUM API " />
+            <div class="panel-footer">
+            <div>
+                <span> RERUM status </span> 
+                <kbd class="status" id="rerumStatus">UNKNOWN</kbd>
+            </div>
+                <input class='btn btn-primary btn-large' type="button" onclick="testAPI()" id="test_api" value="Check Access To RERUM API " />
+            </div>
         </div>
         
     </body>
