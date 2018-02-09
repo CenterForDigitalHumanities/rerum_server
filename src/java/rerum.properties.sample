@@ -1,0 +1,26 @@
+# update builds and dates, if desired
+VERSION=0.9
+BUILD=100
+DATE=2/07/18
+
+###############
+# You may remove these settings if you do not use a third-party oAuth provider.
+
+# This is the RERUM API client id
+clientID=[YOUR CLIENT ID]
+
+#This is the secret.  
+
+#   !!!            DO NOT COMMIT WITH THE SECRET SET                !!
+#       !!!        DO NOT COMMIT WITH THE SECRET SET           !!
+#           !!!    DO NOT COMMIT WITH THE SECRET SET       !!
+
+rerumSecret=[YOUR APP SECRET]
+
+#           !!!    DO NOT COMMIT WITH THE SECRET SET      !!
+#       !!!        DO NOT COMMIT WITH THE SECRET SET          !!
+#   !!!            DO NOT COMMIT WITH THE SECRET SET               !!
+
+#auth0 access_token
+rerumBot=[YOUR ACCESS TOKEN]
+###############
