@@ -265,8 +265,7 @@
                 "client_id":"jwkd5YE0YA5tFxGxaLW9ALPxAyA6Qw1v",
                 "redirect_uri":"http://devstore.rerum.io?access=false",
                 "state":"statious123",
-                "prompt" : "none",
-                "acceess" : "false"
+                "prompt" : "none"
             };
             var getURL = "https://cubap.auth0.com/authorize?" + $.param(params);
             console.log(getURL);
@@ -339,7 +338,6 @@
                 $("#a_t").css("border", "2px solid yellow");
             }
         }
-        
 
     </script>
 </html>
