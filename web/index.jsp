@@ -135,7 +135,7 @@
             </div>
             <div class="panel-footer">
             <input class='btn btn-primary btn-large' type="button" id="check_status" value="Check my Authorization Status With Auth0" />
-            <input class='btn btn-primary btn-large' type="button" id="login" value="efresh Authorization With Auth0/Login" />
+            <input class='btn btn-primary btn-large' type="button" id="login" value="Refresh Authorization With Auth0/Login" />
             <input class='btn btn-primary btn-large' type="button" id="request_token" value="Get A New Access Token" />
             </div>
         </div>
@@ -181,9 +181,16 @@
            if(auth_code !== ""){
                if(accessSwitch == "true"){
                     access_token = "<% out.write(access_token); %>";
-                    $("#authorizationStatus").html("Thanks for registering!  A token was created for you.  Keep this token in a safe place, you will need it to use RERUM. \n\
-                        You can test that your access token will work with RERUM by clicking the 'Test API' button below.  <br> token="+access_token);
-                    $("#test_api").show();
+                    if(access_token.indexOf("Auth0") > -1){
+                        //Then it was one of our errors from the back end.
+                        $("#authorizationStatus").html("There was an issue getting an access token from auth 0.  Review the message below. \n\
+                            <br> message="+access_token);
+                    }
+                    else{
+                        $("#authorizationStatus").html("Thanks for choosing RERUM!  A new token was created for you.  Keep this token in a safe place, you will need it for our API. \n\
+                            You can test that your access token will work with RERUM by clicking the 'Test API' button below.  <br> token="+access_token);
+                        $("#test_api").show();
+                    }
                }
                else{
                     $("#authorizationStatus").html("AUTHORIZED: auth code="+auth_code)+".<br> You cannot ask for your current access token, but you can generate a new one by\n\
@@ -233,7 +240,7 @@
         });
         
          $("#request_token").click(function(){
-        //This means they want to authorize and get a new access code, so access is true.
+        //This means they want to authorize and get a new access token, so access is true.
             var params = {
                 "audience":"http://rerum.io/api",
                 "scope":"name email openid",
@@ -258,8 +265,7 @@
                 "client_id":"jwkd5YE0YA5tFxGxaLW9ALPxAyA6Qw1v",
                 "redirect_uri":"http://devstore.rerum.io?access=false",
                 "state":"statious123",
-                "prompt" : "none",
-                "acceess" : "false"
+                "prompt" : "none"
             };
             var getURL = "https://cubap.auth0.com/authorize?" + $.param(params);
             console.log(getURL);
@@ -332,7 +338,6 @@
                 $("#a_t").css("border", "2px solid yellow");
             }
         }
-        
 
     </script>
 </html>

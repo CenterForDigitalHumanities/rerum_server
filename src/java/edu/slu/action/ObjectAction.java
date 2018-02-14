@@ -2007,15 +2007,19 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     }
     
     public static String getAccessTokenWithAuth(String auth_code) throws UnsupportedEncodingException {
-            System.out.println("Getting an access token for auth");
+            System.out.println("Getting an access token");
             String token="";
+            int rcode = 0;
             String tokenURL="https://cubap.auth0.com/oauth/token";
             JSONObject body = new JSONObject();
+            
             body.element("grant_type", "authorization_code");
             body.element("client_id", "jwkd5YE0YA5tFxGxaLW9ALPxAyA6Qw1v");
             body.element("client_secret", getRerumProperty("rerumSecret"));
             body.element("code", auth_code);
             body.element("redirect_uri", "http://devstore.rerum.io/");
+            System.out.println("I will be using this body: ");
+            System.out.println(body);
         try {           
             URL tURL = new URL(tokenURL);
             HttpURLConnection connection;
@@ -2025,35 +2029,53 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             connection.setDoInput(true);
             connection.setRequestProperty("Content-Type", "application/json");
             connection.connect();
-            DataOutputStream jsonString = new DataOutputStream(connection.getOutputStream());
-            jsonString.writeBytes(body.toString());
-            jsonString.flush();
-            jsonString.close();
-            BufferedReader input = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-            StringBuilder responseBlob = new StringBuilder();
-            String line;
-            while ((line = input.readLine()) != null) {
-                responseBlob.append(line);
+            rcode = connection.getResponseCode();
+            System.out.println("response code from auth0: "+connection.getResponseCode());
+            System.out.println("Message to go along with code:");
+            System.out.println(connection.getResponseMessage());
+            if(connection.getResponseCode() == 401 ){
+                //One of the values used was wrong.  The secret may have expired, the clientID may be wrong, the auth_code may be wrong or the user may not be a part of the RERUM client.
+                token = "Auth0 responded 401.  Contact RERUM.";
             }
-            input.close();
-            connection.disconnect();
-            JSONObject responseObj = new JSONObject();
-            if(responseBlob.length() > 0){
-                try{
-                    responseObj = JSONObject.fromObject(responseBlob.toString());
-                }
-                catch(Exception e){
-                    //response was not JSON, so let it an empty object.
-                    //responseObj = new JSONObject();
-                }
+            else if(connection.getResponseCode() >= 500){
+                token = "Auth0 had an internal error.  Try again later. "+rcode;
             }
-            if(responseObj.containsKey("access_token")){
-                token = responseObj.getString("access_token");
+            else if(connection.getResponseCode() == 200){
+                DataOutputStream jsonString = new DataOutputStream(connection.getOutputStream());
+                jsonString.writeBytes(body.toString());
+                jsonString.flush();
+                jsonString.close();
+                BufferedReader input = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                StringBuilder responseBlob = new StringBuilder();
+                String line;
+                while ((line = input.readLine()) != null) {
+                    responseBlob.append(line);
+                }
+                input.close();
+                connection.disconnect();
+                JSONObject responseObj = new JSONObject();
+                if(responseBlob.length() > 0){
+                    try{
+                        responseObj = JSONObject.fromObject(responseBlob.toString());
+                    }
+                    catch(Exception e){
+                        //response was not JSON, so let it an empty object.
+                    }
+                }
+                if(responseObj.containsKey("access_token")){
+                    token = responseObj.getString("access_token");
+                    if("".equals(token)){
+                        token = "Auth0 did not respond with a token.";
+                    }
+                }
+                else{
+                    token = "Auth0 did not respond with a token.  ";
+                } 
             }
             else{
-                token = "Auth0 rejected the request for a token.  Your authentication code may have expired.  Please try again.";
-                //writeErrorResponse("Auth0 rejected the request for a token.  Your authentication code may have expired.  Please try again.", HttpServletResponse.SC_CONFLICT);
+                token = "There was an issue contacting Auth0. "+rcode+".  Contact RERUM.";
             }
+
         } catch (ProtocolException ex) {
             Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
         } catch (IOException ex) {
