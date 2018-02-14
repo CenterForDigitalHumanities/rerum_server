@@ -393,7 +393,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         }
         
         if("".equals(access_token)){
-            writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}.", HttpServletResponse.SC_UNAUTHORIZED);
+            writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
         }
         else{
             switch(request_type){
