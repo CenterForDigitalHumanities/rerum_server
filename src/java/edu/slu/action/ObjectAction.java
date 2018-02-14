@@ -354,6 +354,23 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     }
     
     /**
+     * Given an Authorization:Bearer {token} header, pull out the {token} and return it. 
+     * 
+     * @param authorizationHeader The 'Bearer {token}' String value to pull the {token} from.  If it does not contain 'Bearer', we have a bad header.
+    */
+    private String getTokenFromHeader(String authorizationHeader){
+        String tokenToReturn = "";
+        if(authorizationHeader.contains("Bearer")){
+            tokenToReturn = authorizationHeader.replace("Bearer", "");
+            tokenToReturn = tokenToReturn.trim();
+        }
+        else{
+            //Bad Authorization header.  How should we handle?  Right now, the token will be returned as an empty String.
+        }
+        return tokenToReturn;
+    }
+    
+    /**
      * Checks for appropriate RESTful method being used.
      * The action first comes to this function.  It says what type of request it 
      * is and checks the the method is appropriately RESTful.  Returns false if not and
@@ -365,125 +382,131 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     */
     public Boolean methodApproval(HttpServletRequest http_request, String request_type) throws Exception{
         String requestMethod = http_request.getMethod();
-        String access_token = "123";
+        String access_token = "";
         boolean auth_verified = false;
         boolean restful = false;
         // FIXME @webanno if you notice, OPTIONS is not supported here and MUST be 
         // for Web Annotation standards compliance.  
-        if(null!=http_request.getHeader("Bearer") && !"".equals(http_request.getHeader("Bearer"))){
-            access_token = http_request.getHeader("Bearer");
+        if(null!=http_request.getHeader("Authorization") && !"".equals(http_request.getHeader("Authorization"))){
+            access_token = getTokenFromHeader(http_request.getHeader("Authorization"));
         }
-        switch(request_type){
-            case "update":
-                auth_verified =  verifyAccess(access_token);
-                if(auth_verified){
-                    if(requestMethod.equals("PUT")){
+        
+        if("".equals(access_token)){
+            writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}.", HttpServletResponse.SC_UNAUTHORIZED);
+        }
+        else{
+            switch(request_type){
+                case "update":
+                    auth_verified =  verifyAccess(access_token);
+                    if(auth_verified){
+                        if(requestMethod.equals("PUT")){
+                            restful = true;
+                        }
+                        else{
+                            writeErrorResponse("Improper request method for updating, please use PUT to replace this object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                        }
+                    }
+                    else{
+                        writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                    }
+                break;
+                case "patch":
+                    auth_verified =  verifyAccess(access_token);
+                    if(auth_verified){
+                        if(requestMethod.equals("PATCH")){
+                            restful = true;
+                        }
+                        else{
+                            writeErrorResponse("Improper request method for updating, please use PATCH to alter this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                        }
+                    }
+                    else{
+                        writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                    }
+                break;
+                case "set":
+                    auth_verified =  verifyAccess(access_token);
+                    if(auth_verified){
+                        if(requestMethod.equals("PATCH")){
+                            restful = true;
+                        }
+                        else{
+                            writeErrorResponse("Improper request method for updating, PATCH to add keys to this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                        }
+                    }
+                    else{
+                        writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                    }
+                break;
+                case "unset":
+                    auth_verified =  verifyAccess(access_token);
+                    if(auth_verified){
+                        if(requestMethod.equals("PATCH")){
+                            restful = true;
+                        }
+                        else{
+                            writeErrorResponse("Improper request method for updating, PATCH to remove keys from this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                        }
+                    }
+                    else{
+                        writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                    }
+                break;
+                case "release":
+                    auth_verified =  verifyAccess(access_token);
+                    if(auth_verified){
+                        if(requestMethod.equals("PATCH")){
+                            restful = true;
+                        }
+                        else{
+                            writeErrorResponse("Improper request method for updating, please use PATCH to alter this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                        }
+                    }
+                    else{
+                        writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                    }
+                break;
+                case "create":
+                    auth_verified =  verifyAccess(access_token);
+                    if(auth_verified){
+                        if(requestMethod.equals("POST")){
+                            restful = true;
+                        }
+                        else{
+                            writeErrorResponse("Improper request method for creating, please use POST.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                        }
+                    }
+                    else{
+                        writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                    }
+                break;
+                case "delete":
+                    auth_verified =  verifyAccess(access_token);
+                    if(auth_verified){
+                        if(requestMethod.equals("DELETE")){
+                            restful = true;
+                        }
+                        else{
+                            writeErrorResponse("Improper request method for deleting, please use DELETE.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                        }
+                    }
+                    else{
+                        writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                    }
+                break;
+                case "get":
+                    auth_verified = true;
+                    if(requestMethod.equals("GET") || requestMethod.equals("HEAD")){
                         restful = true;
                     }
                     else{
-                        writeErrorResponse("Improper request method for updating, please use PUT to replace this object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                        writeErrorResponse("Improper request method for reading, please use GET or receive headers with HEAD.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
                     }
-                }
-                else{
-                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
-                }
-            break;
-            case "patch":
-                auth_verified =  verifyAccess(access_token);
-                if(auth_verified){
-                    if(requestMethod.equals("PATCH")){
-                        restful = true;
-                    }
-                    else{
-                        writeErrorResponse("Improper request method for updating, please use PATCH to alter this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-                    }
-                }
-                else{
-                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
-                }
-            break;
-            case "set":
-                auth_verified =  verifyAccess(access_token);
-                if(auth_verified){
-                    if(requestMethod.equals("PATCH")){
-                        restful = true;
-                    }
-                    else{
-                        writeErrorResponse("Improper request method for updating, PATCH to add keys to this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-                    }
-                }
-                else{
-                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
-                }
-            break;
-            case "unset":
-                auth_verified =  verifyAccess(access_token);
-                if(auth_verified){
-                    if(requestMethod.equals("PATCH")){
-                        restful = true;
-                    }
-                    else{
-                        writeErrorResponse("Improper request method for updating, PATCH to remove keys from this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-                    }
-                }
-                else{
-                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
-                }
-            break;
-            case "release":
-                auth_verified =  verifyAccess(access_token);
-                if(auth_verified){
-                    if(requestMethod.equals("PATCH")){
-                        restful = true;
-                    }
-                    else{
-                        writeErrorResponse("Improper request method for updating, please use PATCH to alter this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-                    }
-                }
-                else{
-                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
-                }
-            break;
-            case "create":
-                auth_verified =  verifyAccess(access_token);
-                if(auth_verified){
-                    if(requestMethod.equals("POST")){
-                        restful = true;
-                    }
-                    else{
-                        writeErrorResponse("Improper request method for creating, please use POST.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-                    }
-                }
-                else{
-                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
-                }
-            break;
-            case "delete":
-                auth_verified =  verifyAccess(access_token);
-                if(auth_verified){
-                    if(requestMethod.equals("DELETE")){
-                        restful = true;
-                    }
-                    else{
-                        writeErrorResponse("Improper request method for deleting, please use DELETE.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-                    }
-                }
-                else{
-                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
-                }
-            break;
-            case "get":
-                auth_verified = true;
-                if(requestMethod.equals("GET") || requestMethod.equals("HEAD")){
-                    restful = true;
-                }
-                else{
-                    writeErrorResponse("Improper request method for reading, please use GET or receive headers with HEAD.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-                }
-            break;
-            default:
-                writeErrorResponse("Improper request method for this type of request (unknown).", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-        }  
+                break;
+                default:
+                    writeErrorResponse("Improper request method for this type of request (unknown).", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+            }   
+        }
         System.out.println("I know whether or not we are restful: "+restful);
         return restful;
     }
@@ -1351,12 +1374,18 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 JSONObject originalJSONObj = JSONObject.fromObject(originalObject);
                 boolean alreadyDeleted = checkIfDeleted(JSONObject.fromObject(originalObject));
                 boolean isReleased = checkIfReleased(JSONObject.fromObject(originalObject));
+                String origObjGenerator = originalJSONObj.getJSONObject("__rerum").getString("generatedBy");
+                boolean isGenerator = (origObjGenerator.equals(generatorID));
                 if(alreadyDeleted){
                     writeErrorResponse("The object you are trying to update is deleted.", HttpServletResponse.SC_BAD_REQUEST);
                 }
                 else if(isReleased){
                     writeErrorResponse("The object you are trying to update is released.  Fork to make changes.", HttpServletResponse.SC_BAD_REQUEST);
                 }
+                //else if(!isGenerator){
+                    //@cubap we don't want to do this here, correct?  This is for a "replace object without making a new history node" function which is not what putUpdate does.
+                    //writeErrorResponse("The object you are trying to overwrite was not created by you.  Fork to make changes.", HttpServletResponse.SC_UNAUTHORIZED);
+               // }
                 else{
                     if(null != originalObject){
                         JSONObject newObject = JSONObject.fromObject(updatedObject);//The edited original object meant to be saved as a new object (versioning)
@@ -1416,6 +1445,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      */
     public void releaseObject() throws IOException, ServletException, Exception{
         boolean treeHealed = false;
+        boolean isGenerator = false;
         if(null!= processRequestBody(request, true) && methodApproval(request, "release")){
             BasicDBObject query = new BasicDBObject();
             JSONObject received = JSONObject.fromObject(content);
@@ -1433,42 +1463,50 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 }
                 else{
                     if(null != originalObject){
-                        safe_original.getJSONObject("__rerum").element("isReleased", System.currentTimeMillis()+"");
-                        safe_original.getJSONObject("__rerum").getJSONObject("releases").element("replaces", previousReleasedID);
-                        releasedObject = (BasicDBObject) JSON.parse(safe_original.toString());
-                        if(!"".equals(previousReleasedID)){// A releases tree exists and an acestral object is being released.  
-                            treeHealed  = healReleasesTree(safe_original); 
-                        }
-                        else{ //There was no releases previous value. 
-                            if(nextReleases.size() > 0){ //The release tree has been established and a descendent object is now being released.
-                                treeHealed  = healReleasesTree(safe_original);
+                        String origObjGenerator = safe_original.getJSONObject("__rerum").getString("generatedBy");
+                        isGenerator = (origObjGenerator.equals(generatorID));
+                        if(isGenerator){
+                            safe_original.getJSONObject("__rerum").element("isReleased", System.currentTimeMillis()+"");
+                            safe_original.getJSONObject("__rerum").getJSONObject("releases").element("replaces", previousReleasedID);
+                            releasedObject = (BasicDBObject) JSON.parse(safe_original.toString());
+                            if(!"".equals(previousReleasedID)){// A releases tree exists and an acestral object is being released.  
+                                treeHealed  = healReleasesTree(safe_original); 
                             }
-                            else{ //The release tree has not been established
-                                treeHealed = establishReleasesTree(safe_original);
+                            else{ //There was no releases previous value. 
+                                if(nextReleases.size() > 0){ //The release tree has been established and a descendent object is now being released.
+                                    treeHealed  = healReleasesTree(safe_original);
+                                }
+                                else{ //The release tree has not been established
+                                    treeHealed = establishReleasesTree(safe_original);
+                                }
                             }
-                        }
-                        if(treeHealed){ //If the tree was established/healed
-                            //perform the update to isReleased of the object being released.  Its releases.next[] and releases.previous are already correct.
-                            mongoDBService.update(Constant.COLLECTION_ANNOTATION, originalObject, releasedObject);
-                            JSONObject jo = new JSONObject();
-                            jo.element("code", HttpServletResponse.SC_OK);
-                            jo.element("new_obj_state", releasedObject); //FIXME: @webanno standards say this should be the response.
-                            jo.element("previously_released_id", previousReleasedID); 
-                            jo.element("next_releases_ids", nextReleases);                           
-                            try {
-                                addWebAnnotationHeaders(updateToReleasedID, isContainerType(safe_original), isLD(safe_original));
-                                response.addHeader("Access-Control-Allow-Origin", "*");
-                                response.setStatus(HttpServletResponse.SC_OK);
-                                out = response.getWriter();
-                                out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
-                            } 
-                            catch (IOException ex) {
-                                Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
+                            if(treeHealed){ //If the tree was established/healed
+                                //perform the update to isReleased of the object being released.  Its releases.next[] and releases.previous are already correct.
+                                mongoDBService.update(Constant.COLLECTION_ANNOTATION, originalObject, releasedObject);
+                                JSONObject jo = new JSONObject();
+                                jo.element("code", HttpServletResponse.SC_OK);
+                                jo.element("new_obj_state", releasedObject); //FIXME: @webanno standards say this should be the response.
+                                jo.element("previously_released_id", previousReleasedID); 
+                                jo.element("next_releases_ids", nextReleases);                           
+                                try {
+                                    addWebAnnotationHeaders(updateToReleasedID, isContainerType(safe_original), isLD(safe_original));
+                                    response.addHeader("Access-Control-Allow-Origin", "*");
+                                    response.setStatus(HttpServletResponse.SC_OK);
+                                    out = response.getWriter();
+                                    out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
+                                } 
+                                catch (IOException ex) {
+                                    Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
+                                }
+                            }
+                            else{
+                                //The error is already written to response.out, do nothing.
                             }
                         }
                         else{
-                            //The error is already written to response.out, do nothing.
+                            writeErrorResponse("You are not the generator of this object.  Only the agent who created this object can release it.  Agent= "+generatorID, HttpServletResponse.SC_UNAUTHORIZED);
                         }
+                        
                     }
                     else{
                         //This could mean it was an external object, but the release action fails on those.
@@ -1698,12 +1736,13 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         writeErrorResponse("This object is in a released state and cannot be deleted.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);  
                     }
                     else{
-                        permission = checkApplicationPermission(safe_received);
-                        if(permission){
+                        String origObjGenerator = safe_received.getJSONObject("__rerum").getString("generatedBy");
+                        boolean isGenerator = (origObjGenerator.equals(generatorID));
+                        if(isGenerator){
                            passedAllChecks = true;
                         }
                         else{
-                           writeErrorResponse("Only the application that created this object can delete it.", HttpServletResponse.SC_UNAUTHORIZED);   
+                           writeErrorResponse("Only the agent that created this object can delete it.  Agent= "+generatorID, HttpServletResponse.SC_UNAUTHORIZED);   
                         }
                     }
                 }
