@@ -357,6 +357,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * Given an Authorization:Bearer {token} header, pull out the {token} and return it. 
      * 
      * @param authorizationHeader The 'Bearer {token}' String value to pull the {token} from.  If it does not contain 'Bearer', we have a bad header.
+     * @return tokenToReturn the {token} that was extracted or "" for a bad header.
     */
     private String getTokenFromHeader(String authorizationHeader){
         String tokenToReturn = "";
