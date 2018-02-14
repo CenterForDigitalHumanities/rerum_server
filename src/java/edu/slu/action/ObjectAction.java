@@ -391,10 +391,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         if(null!=http_request.getHeader("Authorization") && !"".equals(http_request.getHeader("Authorization"))){
             access_token = getTokenFromHeader(http_request.getHeader("Authorization"));
         }
-        
-        if("".equals(access_token)){
-            writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
-        }
         else{
             switch(request_type){
                 case "update":
@@ -408,7 +404,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         }
                     }
                     else{
-                        writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                        if("".equals(access_token)){
+                            writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
+                        }
+                        else{
+                            writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                        }
                     }
                 break;
                 case "patch":
@@ -422,7 +423,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         }
                     }
                     else{
-                        writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                        if("".equals(access_token)){
+                            writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
+                        }
+                        else{
+                            writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                        }
                     }
                 break;
                 case "set":
@@ -436,7 +442,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         }
                     }
                     else{
-                        writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                        if("".equals(access_token)){
+                            writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
+                        }
+                        else{
+                            writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                        }
                     }
                 break;
                 case "unset":
@@ -450,7 +461,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         }
                     }
                     else{
-                        writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                        if("".equals(access_token)){
+                            writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
+                        }
+                        else{
+                            writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                        }
                     }
                 break;
                 case "release":
@@ -464,7 +480,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         }
                     }
                     else{
-                        writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                        if("".equals(access_token)){
+                            writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
+                        }
+                        else{
+                            writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                        }
                     }
                 break;
                 case "create":
@@ -478,7 +499,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         }
                     }
                     else{
-                        writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                        if("".equals(access_token)){
+                            writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
+                        }
+                        else{
+                            writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                        }
                     }
                 break;
                 case "delete":
@@ -492,7 +518,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         }
                     }
                     else{
-                        writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                        if("".equals(access_token)){
+                            writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
+                        }
+                        else{
+                            writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                        }
                     }
                 break;
                 case "get":
@@ -508,7 +539,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     writeErrorResponse("Improper request method for this type of request (unknown).", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
             }   
         }
-        System.out.println("I know whether or not we are restful: "+restful);
+        System.out.println("I know whether or not we are approved: "+restful);
         return restful;
     }
     
