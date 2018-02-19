@@ -2085,7 +2085,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             JSONObject body = new JSONObject();
             
             body.element("grant_type", "authorization_code");
-            body.element("client_id", "jwkd5YE0YA5tFxGxaLW9ALPxAyA6Qw1v");
+            body.element("client_id", "62Jsa9MxHuqhRbO20gTHs9KpKr7Ue7sl");
             body.element("client_secret", getRerumProperty("rerumSecret"));
             body.element("code", auth_code);
             body.element("redirect_uri", "http://devstore.rerum.io/");
