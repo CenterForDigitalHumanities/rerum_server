@@ -140,7 +140,7 @@ so `{ "@type" : "sc:Canvas", "label" : "page 46" }` will match
 
 ~~~ (json)
 [{
-  "@id": "https://rerum.io/rerumserver/id/ae33ffee5656789",
+  "@id": "https://rerum.io/v1/id/ae33ffee5656789",
   "otherContent": [],
   "label": "page 46",
   "width": 730,
@@ -164,7 +164,7 @@ so `{ "@type" : "sc:Canvas", "label" : "page 46" }` will match
 ~~~ (json)
 {
   "code" : 200,
-  "original_object_id" : "http://rerum.io/rerumserver/id/5a57a30fe4b09163a80a0a67",
+  "original_object_id" : "http://rerum.io/v1/id/5a57a30fe4b09163a80a0a67",
   "new_obj_state" : {
     @id: newID
     .
@@ -279,10 +279,10 @@ A deleted object is easily recognized:
 
 ~~~ (json)
 {
-  "@id" : "http://rerum.io/rerumserver/id/5a57a30fe4b09163a80a0a67",
+  "@id" : "http://rerum.io/v1/id/5a57a30fe4b09163a80a0a67",
   "__deleted" : {
     "object" : {
-      "@id" : "http://rerum.io/rerumserver/id/5a57a30fe4b09163a80a0a67",
+      "@id" : "http://rerum.io/v1/id/5a57a30fe4b09163a80a0a67",
       "@type": "sc:Canvas"
       "label": "page 46",
       "width": 730,

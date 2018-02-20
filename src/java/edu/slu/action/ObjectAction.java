@@ -393,6 +393,25 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         }
         else{
             switch(request_type){
+                case "overwrite":
+                    auth_verified =  verifyAccess(access_token);
+                    if(auth_verified){
+                        if(requestMethod.equals("PUT")){
+                            restful = true;
+                        }
+                        else{
+                            writeErrorResponse("Improper request method for overwriting, please use PUT to overwrite this object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                        }
+                    }
+                    else{
+                        if("".equals(access_token)){
+                            writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
+                        }
+                        else{
+                            writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                        }
+                    }
+                break;
                 case "update":
                     auth_verified =  verifyAccess(access_token);
                     if(auth_verified){
@@ -1068,7 +1087,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
                 //set @id from _id and update the annotation
                 BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
-                String uid = "http://devstore.rerum.io/rerumserver/id/"+newObjectID;
+                String uid = "http://devstore.rerum.io/v1/id/"+newObjectID;
                 dboWithObjectID.append("@id", uid);
                 mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
                 JSONObject jo = new JSONObject();
@@ -1110,10 +1129,10 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 boolean alreadyDeleted = checkIfDeleted(JSONObject.fromObject(originalObject));
                 boolean isReleased = checkIfReleased(JSONObject.fromObject(originalObject));
                 if(alreadyDeleted){
-                    writeErrorResponse("The object you are trying to update is deleted.", HttpServletResponse.SC_BAD_REQUEST);
+                    writeErrorResponse("The object you are trying to update is deleted.", HttpServletResponse.SC_FORBIDDEN);
                 }
                 else if(isReleased){
-                    writeErrorResponse("The object you are trying to update is released.  Fork to make changes.", HttpServletResponse.SC_BAD_REQUEST);
+                    writeErrorResponse("The object you are trying to update is released. Fork to make changes.", HttpServletResponse.SC_FORBIDDEN);
                 }
                 else{
                     if(null != originalObject){
@@ -1136,7 +1155,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                             //Since we ignore changes to __rerum for existing objects, we do no configureRerumOptions(updatedObject);
                             DBObject dbo = (DBObject) JSON.parse(newObject.toString());
                             String newNextID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
-                            String newNextAtID = "http://devstore.rerum.io/rerumserver/id/"+newNextID;
+                            String newNextAtID = "http://devstore.rerum.io/v1/id/"+newNextID;
                             BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
                             dboWithObjectID.append("@id", newNextAtID);
                             newObject.element("@id", newNextAtID);
@@ -1202,10 +1221,10 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 boolean alreadyDeleted = checkIfDeleted(JSONObject.fromObject(originalObject));
                 boolean isReleased = checkIfReleased(JSONObject.fromObject(originalObject));
                 if(alreadyDeleted){
-                    writeErrorResponse("The object you are trying to update is deleted.", HttpServletResponse.SC_BAD_REQUEST);
+                    writeErrorResponse("The object you are trying to update is deleted.", HttpServletResponse.SC_FORBIDDEN);
                 }
                 else if(isReleased){
-                    writeErrorResponse("The object you are trying to update is released.  Fork to make changes.", HttpServletResponse.SC_BAD_REQUEST);
+                    writeErrorResponse("The object you are trying to update is released.  Fork to make changes.", HttpServletResponse.SC_FORBIDDEN);
                 }
                 else{
                     if(null != originalObject){
@@ -1238,7 +1257,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                             //Since we ignore changes to __rerum for existing objects, we do no configureRerumOptions(updatedObject);
                             DBObject dbo = (DBObject) JSON.parse(newObject.toString());
                             String newNextID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
-                            String newNextAtID = "http://devstore.rerum.io/rerumserver/id/"+newNextID;
+                            String newNextAtID = "http://devstore.rerum.io/v1/id/"+newNextID;
                             BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
                             dboWithObjectID.append("@id", newNextAtID);
                             newObject.element("@id", newNextAtID);
@@ -1302,10 +1321,10 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 boolean alreadyDeleted = checkIfDeleted(JSONObject.fromObject(originalObject));
                 boolean isReleased = checkIfReleased(JSONObject.fromObject(originalObject));
                 if(alreadyDeleted){
-                    writeErrorResponse("The object you are trying to update is deleted.", HttpServletResponse.SC_BAD_REQUEST);
+                    writeErrorResponse("The object you are trying to update is deleted.", HttpServletResponse.SC_FORBIDDEN);
                 }
                 else if(isReleased){
-                    writeErrorResponse("The object you are trying to update is released.  Fork to make changes.", HttpServletResponse.SC_BAD_REQUEST);
+                    writeErrorResponse("The object you are trying to update is released.  Fork to make changes.", HttpServletResponse.SC_FORBIDDEN);
                 }
                 else{
                     if(null != originalObject){
@@ -1343,7 +1362,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                             //Since we ignore changes to __rerum for existing objects, we do no configureRerumOptions(updatedObject);
                             DBObject dbo = (DBObject) JSON.parse(newObject.toString());
                             String newNextID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
-                            String newNextAtID = "http://devstore.rerum.io/rerumserver/id/"+newNextID;
+                            String newNextAtID = "http://devstore.rerum.io/v1/id/"+newNextID;
                             BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
                             dboWithObjectID.append("@id", newNextAtID);
                             newObject.element("@id", newNextAtID);
@@ -1407,17 +1426,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 boolean alreadyDeleted = checkIfDeleted(JSONObject.fromObject(originalObject));
                 boolean isReleased = checkIfReleased(JSONObject.fromObject(originalObject));
                 String origObjGenerator = originalJSONObj.getJSONObject("__rerum").getString("generatedBy");
-                boolean isGenerator = (origObjGenerator.equals(generatorID));
                 if(alreadyDeleted){
-                    writeErrorResponse("The object you are trying to update is deleted.", HttpServletResponse.SC_BAD_REQUEST);
+                    writeErrorResponse("The object you are trying to update is deleted.", HttpServletResponse.SC_FORBIDDEN);
                 }
                 else if(isReleased){
-                    writeErrorResponse("The object you are trying to update is released.  Fork to make changes.", HttpServletResponse.SC_BAD_REQUEST);
+                    writeErrorResponse("The object you are trying to update is released.  Fork to make changes.", HttpServletResponse.SC_FORBIDDEN);
                 }
-                //else if(!isGenerator){
-                    //@cubap we don't want to do this here, correct?  This is for a "replace object without making a new history node" function which is not what putUpdate does.
-                    //writeErrorResponse("The object you are trying to overwrite was not created by you.  Fork to make changes.", HttpServletResponse.SC_UNAUTHORIZED);
-               // }
                 else{
                     if(null != originalObject){
                         JSONObject newObject = JSONObject.fromObject(updatedObject);//The edited original object meant to be saved as a new object (versioning)
@@ -1428,7 +1442,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         newObject.remove("@id"); //This is being saved as a new object, so remove this @id for the new one to be set.
                         DBObject dbo = (DBObject) JSON.parse(newObject.toString());
                         String newNextID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
-                        String newNextAtID = "http://devstore.rerum.io/rerumserver/id/"+newNextID;
+                        String newNextAtID = "http://devstore.rerum.io/v1/id/"+newNextID;
                         BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
                         dboWithObjectID.append("@id", newNextAtID);
                         newObject.element("@id", newNextAtID);
@@ -1467,6 +1481,69 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         }
     }
     
+    /**
+     * Public facing servlet to PUT overwrite an existing object.  Can set and unset keys.  There will be no reference to the node as it originally existed
+     * because this intentionally avoids any versioning around the action.  It is a pure overwrite and should only be allowed for the generator of the object.
+     * Do NOT overwrite __rerum, keep the original no matter what __rerum is provided by the user.
+     * 
+     * 
+     * @respond with new state of the object in the body.
+     * @throws java.io.IOException
+     * @throws javax.servlet.ServletException
+     */
+    public void overwriteObject()throws IOException, ServletException, Exception{
+        if(null!= processRequestBody(request, true) && methodApproval(request, "overwrite")){
+            BasicDBObject query = new BasicDBObject();
+            JSONObject received = JSONObject.fromObject(content); 
+            if(received.containsKey("@id")){
+                String receivedID = received.getString("@id");
+                query.append("@id", receivedID);
+                BasicDBObject originalObject = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The originalObject DB object
+                JSONObject originalJSONObj = JSONObject.fromObject(originalObject);
+                boolean alreadyDeleted = checkIfDeleted(JSONObject.fromObject(originalObject));
+                boolean isReleased = checkIfReleased(JSONObject.fromObject(originalObject));
+                String origObjGenerator = originalJSONObj.getJSONObject("__rerum").getString("generatedBy");
+                boolean isGenerator = (origObjGenerator.equals(generatorID));
+                if(alreadyDeleted){
+                    writeErrorResponse("The object you are trying to overwrite is deleted.", HttpServletResponse.SC_FORBIDDEN);
+                }
+                else if(isReleased){
+                    writeErrorResponse("The object you are trying to overwrite is released.  Fork to make changes.", HttpServletResponse.SC_FORBIDDEN);
+                }
+                else if(!isGenerator){
+                    writeErrorResponse("The object you are trying to overwrite was not created by you.  Fork to make changes.", HttpServletResponse.SC_UNAUTHORIZED);
+                }
+                else{
+                    if(null != originalObject){
+                        JSONObject newObject = received;//The edited original object meant to be saved as a new object (versioning)
+                        JSONObject originalProperties = originalJSONObj.getJSONObject("__rerum");
+                        newObject.element("__rerum", originalProperties);
+                        DBObject udbo = (DBObject) JSON.parse(newObject.toString());
+                        mongoDBService.update(Constant.COLLECTION_ANNOTATION, originalObject, udbo);
+                        JSONObject jo = new JSONObject();
+                        JSONObject iiif_validation_response = checkIIIFCompliance(receivedID, "2.1");
+                        jo.element("code", HttpServletResponse.SC_OK);
+                        jo.element("new_obj_state", newObject); //FIXME: @webanno standards say this should be the response.
+                        jo.element("iiif_validation", iiif_validation_response);
+                        try {
+                            addWebAnnotationHeaders(receivedID, isContainerType(newObject), isLD(newObject));
+                            response.addHeader("Access-Control-Allow-Origin", "*");
+                            response.setStatus(HttpServletResponse.SC_OK);
+                            out = response.getWriter();
+                            out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
+                        }
+                        catch (IOException ex) {
+                            Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+                    }
+                }
+            }
+            else{
+                writeErrorResponse("Object did not contain an @id, could not update.", HttpServletResponse.SC_BAD_REQUEST);
+            }
+        }
+    }
+    
      /**
      * Public facing servlet to release an existing RERUM object.  This will not perform history tree updates, but rather releases tree updates.
      * (AKA a new node in the history tree is NOT CREATED here.)
@@ -1491,7 +1568,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 JSONArray nextReleases = safe_original.getJSONObject("__rerum").getJSONObject("releases").getJSONArray("next");
                 boolean alreadyReleased = checkIfReleased(safe_original);
                 if(alreadyReleased){
-                    writeErrorResponse("This object is already released.  You must fork this annotation as one of your own to release it.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    writeErrorResponse("This object is already released.  You must fork this annotation as one of your own to release it.", HttpServletResponse.SC_FORBIDDEN);
                 }
                 else{
                     if(null != originalObject){
@@ -1943,7 +2020,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         DBObject dbo = (DBObject) JSON.parse(objectToCheck.toString());
         BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
         String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
-        String uid = "http://devstore.rerum.io/rerumserver/id/"+newObjectID;
+        String uid = "http://devstore.rerum.io/v1/id/"+newObjectID;
         dboWithObjectID.append("@id", uid);
         mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
         iiif_return = checkIIIFCompliance(uid, "2.1"); //If it is an object we are creating, this line means @context must point to Presentation API 2 or 2.1
@@ -2034,7 +2111,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
             //set @id from _id and update the annotation
             BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
-            newRootID = "http://devstore.rerum.io/rerumserver/id/"+newObjectID;
+            newRootID = "http://devstore.rerum.io/v1/id/"+newObjectID;
             dboWithObjectID.append("@id", newRootID);
             newObjState.element("@id", newRootID);
             mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
@@ -2276,10 +2353,10 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         newAgent.element("homepage", homepage); 
         DBObject dbo = (DBObject) JSON.parse(newAgent.toString());
         String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
-        orig.element("agent", "http://devstore.rerum.io/rerumserver/id/"+newObjectID);
-        newAgent.element("@id", "http://devstore.rerum.io/rerumserver/id/"+newObjectID);
-        newAgent.element("agent", "http://devstore.rerum.io/rerumserver/id/"+newObjectID);
-        generatorID = "http://devstore.rerum.io/rerumserver/id/"+newObjectID;
+        orig.element("agent", "http://devstore.rerum.io/v1/id/"+newObjectID);
+        newAgent.element("@id", "http://devstore.rerum.io/v1/id/"+newObjectID);
+        newAgent.element("agent", "http://devstore.rerum.io/v1/id/"+newObjectID);
+        generatorID = "http://devstore.rerum.io/v1/id/"+newObjectID;
         DBObject updatedOrig = (DBObject) JSON.parse(orig.toString());
         mongoDBService.update(Constant.COLLECTION_ACCEPTEDSERVER, originalToUpdate, updatedOrig);
         return newAgent;

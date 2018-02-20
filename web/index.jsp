@@ -314,7 +314,7 @@
                     }, 
                     "on" : "" 
                 }; 
-                var postURL = "http://devstore.rerum.io/rerumserver/v1/create.action"; 
+                var postURL = "http://devstore.rerum.io/v1/api/create.action"; 
                 var xhr = new XMLHttpRequest();
                 xhr.onreadystatechange = function() {
                     if (this.readyState === XMLHttpRequest.DONE) {
