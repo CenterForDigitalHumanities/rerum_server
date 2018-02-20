@@ -551,7 +551,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         restful = true;
                     }
                     else{
-                        writeErrorResponse("Improper request method for reading, please use GET or receive headers with HEAD.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                        writeErrorResponse("Improper request method for reading, please use GET or request for headers with HEAD.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
                     }
                 break;
                 default:
