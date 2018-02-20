@@ -2272,10 +2272,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             //check if the domain name and ip is in database
             BasicDBObject query = new BasicDBObject();
             query.append("ip", requestIP);
-            DB db = MongoDBUtil.getDb();
-            DBCollection coll = db.getCollection(Constant.COLLECTION_ACCEPTEDSERVER);
-            DBCursor cursor = coll.find(query);
-            List<DBObject> ls_results = cursor.toArray();
+            List<DBObject> ls_results = mongoDBService.findByExample(Constant.COLLECTION_ACCEPTEDSERVER, query);
             if(ls_results.size() > 0){
                 System.out.println("[Modifying Data Request]: ip ========== " + requestIP + "@" + sdf.format(new Date()) + " +++++ From Registered Server");
                 DBObject result = ls_results.get(0);
