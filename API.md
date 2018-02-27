@@ -44,6 +44,7 @@ you do), the base URL is `http://rerum.io/v1`.
 | `/id/_id` | `empty` | 200: `{JSON}`
 
 - **`_id`**—the id of the object in RERUM.
+- **`{JSON}`**—The object with id `_id`
 
 Call over HTTP can be made through GET request to their
 unique URI Ex. http://rerum.io/v1/id/aee33434bbc333444ff
@@ -139,7 +140,7 @@ so `{ "@type" : "sc:Canvas", "label" : "page 46" }` will match
 
 ~~~ (json)
 [{
-  "@id": "https://rerum.io/rerumserver/id/ae33ffee5656789",
+  "@id": "https://rerum.io/v1/id/ae33ffee5656789",
   "otherContent": [],
   "label": "page 46",
   "width": 730,
@@ -163,7 +164,7 @@ so `{ "@type" : "sc:Canvas", "label" : "page 46" }` will match
 ~~~ (json)
 {
   "code" : 200,
-  "original_object_id" : "http://rerum.io/rerumserver/id/5a57a30fe4b09163a80a0a67",
+  "original_object_id" : "http://rerum.io/v1/id/5a57a30fe4b09163a80a0a67",
   "new_obj_state" : {
     @id: newID
     .
@@ -260,6 +261,7 @@ RERUM allows for the `generator` of a version of an object to assign a `released
 
 ## DELETE
 
+RERUM allows the `generator` of an object to delete that object.  
 Requests can be made by the string `@id` or a JSON object containing the `@id`.
 RERUM DELETE does not remove anything from the server. Deleted objects are only marked as deleted.
 Objects marked as deleted do not return in query results and may only be directly retreived by `@id`.
@@ -277,10 +279,10 @@ A deleted object is easily recognized:
 
 ~~~ (json)
 {
-  "@id" : "http://rerum.io/rerumserver/id/5a57a30fe4b09163a80a0a67",
+  "@id" : "http://rerum.io/v1/id/5a57a30fe4b09163a80a0a67",
   "__deleted" : {
     "object" : {
-      "@id" : "http://rerum.io/rerumserver/id/5a57a30fe4b09163a80a0a67",
+      "@id" : "http://rerum.io/v1/id/5a57a30fe4b09163a80a0a67",
       "@type": "sc:Canvas"
       "label": "page 46",
       "width": 730,
@@ -312,7 +314,7 @@ object about the version retrieved.
 | history.prime    | String    | The URI of the object initializing this history.
 | history.next     | [String]  | An array of URIs for the immediate derivatives of this version. A length > 1 indicates a branch.
 | history.previous | String    | The URI of the immediately previous version.
-| generator      | String    | Reference to the authenticated application which committed this version.
+| generatedBy      | String    | Reference to the authenticated application which committed this version.
 | createdAt        | timestamp | Though the object may also assert this about itself, RERUM controls this value.
 | isOverwritten    | timestamp | Written when PUT update is used. Does not expose the delta, just the time of the change.
 | isReleased       | boolean   | Simple reference for locked versions of this object.
@@ -334,9 +336,9 @@ Deleted objects are not present in any B-Tree, but do exist as separate nodes th
 
 ### `generator` Attribution
 
-RERUM associates a `foaf:Agent` with each action performed on an item in `__rerum.generator`. An API key authenticated applications for overwriting, releasing, and deleting actions so that only the `generator` may perform these alterations. If an unauthorized application attempts one of these actions a `403 Forbidden` response is returned with an explanation on how to branch versions instead.
+RERUM associates a `foaf:Agent` with each action performed on an item in `__rerum.generatedBy`. An API key authenticated application requesting an overwrite, release, or delete action can only do so if they are the `generator` of the object the action is performed on. If an unauthorized application attempts one of these actions a `401 Unauthorized` response is returned with an explanation on how to branch versions instead.
 
-Applications are _strongly_ encouraged to record their own assertions within the objects, as consuming applications may reliably use a combination of the authoritative `generator` property and an intrinsic `creator` to establish a reliable attribution.
+Applications are _strongly_ encouraged to record their own assertions within the objects, as consuming applications may reliably use a combination of the authoritative `generatedBy` property and an intrinsic `creator` to establish a reliable attribution.
 
 ## Authentication
 

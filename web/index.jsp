@@ -230,7 +230,7 @@
                 "audience":"http://rerum.io/api",
                 "scope":"name email openid",
                 "response_type":"code",
-                "client_id":"jwkd5YE0YA5tFxGxaLW9ALPxAyA6Qw1v",
+                "client_id":"62Jsa9MxHuqhRbO20gTHs9KpKr7Ue7sl",
                 "redirect_uri":"http://devstore.rerum.io?access=true",
                 "state":"statious123"           
             };
@@ -245,7 +245,7 @@
                 "audience":"http://rerum.io/api",
                 "scope":"name email openid",
                 "response_type":"code",
-                "client_id":"jwkd5YE0YA5tFxGxaLW9ALPxAyA6Qw1v",
+                "client_id":"62Jsa9MxHuqhRbO20gTHs9KpKr7Ue7sl",
                 "redirect_uri":"http://devstore.rerum.io?access=true",
                 "state":"statious123",
                 "prompt" : "none"
@@ -262,7 +262,7 @@
                 "audience":"http://rerum.io/api",
                 "scope":"name email openid",
                 "response_type":"code",
-                "client_id":"jwkd5YE0YA5tFxGxaLW9ALPxAyA6Qw1v",
+                "client_id":"62Jsa9MxHuqhRbO20gTHs9KpKr7Ue7sl",
                 "redirect_uri":"http://devstore.rerum.io?access=false",
                 "state":"statious123",
                 "prompt" : "none"
@@ -281,7 +281,7 @@
                 "audience":"http://rerum.io/api",
                 "scope":"name email openid",
                 "response_type":"code",
-                "client_id":"jwkd5YE0YA5tFxGxaLW9ALPxAyA6Qw1v",
+                "client_id":"62Jsa9MxHuqhRbO20gTHs9KpKr7Ue7sl",
                 "redirect_uri":"http://devstore.rerum.io?access=false",
                 "state":"statious123"
             };
@@ -314,7 +314,7 @@
                     }, 
                     "on" : "" 
                 }; 
-                var postURL = "http://devstore.rerum.io/rerumserver/v1/create.action"; 
+                var postURL = "http://devstore.rerum.io/v1/api/create.action"; 
                 var xhr = new XMLHttpRequest();
                 xhr.onreadystatechange = function() {
                     if (this.readyState === XMLHttpRequest.DONE) {

@@ -354,6 +354,24 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     }
     
     /**
+     * Given an Authorization:Bearer {token} header, pull out the {token} and return it. 
+     * 
+     * @param authorizationHeader The 'Bearer {token}' String value to pull the {token} from.  If it does not contain 'Bearer', we have a bad header.
+     * @return tokenToReturn the {token} that was extracted or "" for a bad header.
+    */
+    private String getTokenFromHeader(String authorizationHeader){
+        String tokenToReturn = "";
+        if(authorizationHeader.contains("Bearer")){
+            tokenToReturn = authorizationHeader.replace("Bearer", "");
+            tokenToReturn = tokenToReturn.trim();
+        }
+        else{
+            //Bad Authorization header.  How should we handle?  Right now, the token will be returned as an empty String.
+        }
+        return tokenToReturn;
+    }
+    
+    /**
      * Checks for appropriate RESTful method being used.
      * The action first comes to this function.  It says what type of request it 
      * is and checks the the method is appropriately RESTful.  Returns false if not and
@@ -365,126 +383,182 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     */
     public Boolean methodApproval(HttpServletRequest http_request, String request_type) throws Exception{
         String requestMethod = http_request.getMethod();
-        String access_token = "123";
+        String access_token = "";
         boolean auth_verified = false;
         boolean restful = false;
         // FIXME @webanno if you notice, OPTIONS is not supported here and MUST be 
         // for Web Annotation standards compliance.  
-        if(null!=http_request.getHeader("Bearer") && !"".equals(http_request.getHeader("Bearer"))){
-            access_token = http_request.getHeader("Bearer");
+        if(null!=http_request.getHeader("Authorization") && !"".equals(http_request.getHeader("Authorization"))){
+            access_token = getTokenFromHeader(http_request.getHeader("Authorization"));
         }
-        switch(request_type){
-            case "update":
-                auth_verified =  verifyAccess(access_token);
-                if(auth_verified){
-                    if(requestMethod.equals("PUT")){
+        else{
+            switch(request_type){
+                case "overwrite":
+                    auth_verified =  verifyAccess(access_token);
+                    if(auth_verified){
+                        if(requestMethod.equals("PUT")){
+                            restful = true;
+                        }
+                        else{
+                            writeErrorResponse("Improper request method for overwriting, please use PUT to overwrite this object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                        }
+                    }
+                    else{
+                        if("".equals(access_token)){
+                            writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
+                        }
+                        else{
+                            writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                        }
+                    }
+                break;
+                case "update":
+                    auth_verified =  verifyAccess(access_token);
+                    if(auth_verified){
+                        if(requestMethod.equals("PUT")){
+                            restful = true;
+                        }
+                        else{
+                            writeErrorResponse("Improper request method for updating, please use PUT to replace this object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                        }
+                    }
+                    else{
+                        if("".equals(access_token)){
+                            writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
+                        }
+                        else{
+                            writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                        }
+                    }
+                break;
+                case "patch":
+                    auth_verified =  verifyAccess(access_token);
+                    if(auth_verified){
+                        if(requestMethod.equals("PATCH")){
+                            restful = true;
+                        }
+                        else{
+                            writeErrorResponse("Improper request method for updating, please use PATCH to alter this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                        }
+                    }
+                    else{
+                        if("".equals(access_token)){
+                            writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
+                        }
+                        else{
+                            writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                        }
+                    }
+                break;
+                case "set":
+                    auth_verified =  verifyAccess(access_token);
+                    if(auth_verified){
+                        if(requestMethod.equals("PATCH")){
+                            restful = true;
+                        }
+                        else{
+                            writeErrorResponse("Improper request method for updating, PATCH to add keys to this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                        }
+                    }
+                    else{
+                        if("".equals(access_token)){
+                            writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
+                        }
+                        else{
+                            writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                        }
+                    }
+                break;
+                case "unset":
+                    auth_verified =  verifyAccess(access_token);
+                    if(auth_verified){
+                        if(requestMethod.equals("PATCH")){
+                            restful = true;
+                        }
+                        else{
+                            writeErrorResponse("Improper request method for updating, PATCH to remove keys from this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                        }
+                    }
+                    else{
+                        if("".equals(access_token)){
+                            writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
+                        }
+                        else{
+                            writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                        }
+                    }
+                break;
+                case "release":
+                    auth_verified =  verifyAccess(access_token);
+                    if(auth_verified){
+                        if(requestMethod.equals("PATCH")){
+                            restful = true;
+                        }
+                        else{
+                            writeErrorResponse("Improper request method for updating, please use PATCH to alter this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                        }
+                    }
+                    else{
+                        if("".equals(access_token)){
+                            writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
+                        }
+                        else{
+                            writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                        }
+                    }
+                break;
+                case "create":
+                    auth_verified =  verifyAccess(access_token);
+                    if(auth_verified){
+                        if(requestMethod.equals("POST")){
+                            restful = true;
+                        }
+                        else{
+                            writeErrorResponse("Improper request method for creating, please use POST.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                        }
+                    }
+                    else{
+                        if("".equals(access_token)){
+                            writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
+                        }
+                        else{
+                            writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                        }
+                    }
+                break;
+                case "delete":
+                    auth_verified =  verifyAccess(access_token);
+                    if(auth_verified){
+                        if(requestMethod.equals("DELETE")){
+                            restful = true;
+                        }
+                        else{
+                            writeErrorResponse("Improper request method for deleting, please use DELETE.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                        }
+                    }
+                    else{
+                        if("".equals(access_token)){
+                            writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
+                        }
+                        else{
+                            writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                        }
+                    }
+                break;
+                case "get":
+                    auth_verified = true;
+                    if(requestMethod.equals("GET") || requestMethod.equals("HEAD")){
                         restful = true;
                     }
                     else{
-                        writeErrorResponse("Improper request method for updating, please use PUT to replace this object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                        writeErrorResponse("Improper request method for reading, please use GET or request for headers with HEAD.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
                     }
-                }
-                else{
-                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
-                }
-            break;
-            case "patch":
-                auth_verified =  verifyAccess(access_token);
-                if(auth_verified){
-                    if(requestMethod.equals("PATCH")){
-                        restful = true;
-                    }
-                    else{
-                        writeErrorResponse("Improper request method for updating, please use PATCH to alter this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-                    }
-                }
-                else{
-                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
-                }
-            break;
-            case "set":
-                auth_verified =  verifyAccess(access_token);
-                if(auth_verified){
-                    if(requestMethod.equals("PATCH")){
-                        restful = true;
-                    }
-                    else{
-                        writeErrorResponse("Improper request method for updating, PATCH to add keys to this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-                    }
-                }
-                else{
-                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
-                }
-            break;
-            case "unset":
-                auth_verified =  verifyAccess(access_token);
-                if(auth_verified){
-                    if(requestMethod.equals("PATCH")){
-                        restful = true;
-                    }
-                    else{
-                        writeErrorResponse("Improper request method for updating, PATCH to remove keys from this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-                    }
-                }
-                else{
-                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
-                }
-            break;
-            case "release":
-                auth_verified =  verifyAccess(access_token);
-                if(auth_verified){
-                    if(requestMethod.equals("PATCH")){
-                        restful = true;
-                    }
-                    else{
-                        writeErrorResponse("Improper request method for updating, please use PATCH to alter this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-                    }
-                }
-                else{
-                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
-                }
-            break;
-            case "create":
-                auth_verified =  verifyAccess(access_token);
-                if(auth_verified){
-                    if(requestMethod.equals("POST")){
-                        restful = true;
-                    }
-                    else{
-                        writeErrorResponse("Improper request method for creating, please use POST.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-                    }
-                }
-                else{
-                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
-                }
-            break;
-            case "delete":
-                auth_verified =  verifyAccess(access_token);
-                if(auth_verified){
-                    if(requestMethod.equals("DELETE")){
-                        restful = true;
-                    }
-                    else{
-                        writeErrorResponse("Improper request method for deleting, please use DELETE.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-                    }
-                }
-                else{
-                    writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
-                }
-            break;
-            case "get":
-                auth_verified = true;
-                if(requestMethod.equals("GET") || requestMethod.equals("HEAD")){
-                    restful = true;
-                }
-                else{
-                    writeErrorResponse("Improper request method for reading, please use GET or receive headers with HEAD.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-                }
-            break;
-            default:
-                writeErrorResponse("Improper request method for this type of request (unknown).", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-        }  
-        System.out.println("I know whether or not we are restful: "+restful);
+                break;
+                default:
+                    writeErrorResponse("Improper request method for this type of request (unknown).", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+            }   
+        }
+        System.out.println("I know whether or not we are approved: "+restful);
         return restful;
     }
     
@@ -1013,7 +1087,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
                 //set @id from _id and update the annotation
                 BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
-                String uid = "http://devstore.rerum.io/rerumserver/id/"+newObjectID;
+                String uid = "http://devstore.rerum.io/v1/id/"+newObjectID;
                 dboWithObjectID.append("@id", uid);
                 mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
                 JSONObject jo = new JSONObject();
@@ -1055,10 +1129,10 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 boolean alreadyDeleted = checkIfDeleted(JSONObject.fromObject(originalObject));
                 boolean isReleased = checkIfReleased(JSONObject.fromObject(originalObject));
                 if(alreadyDeleted){
-                    writeErrorResponse("The object you are trying to update is deleted.", HttpServletResponse.SC_BAD_REQUEST);
+                    writeErrorResponse("The object you are trying to update is deleted.", HttpServletResponse.SC_FORBIDDEN);
                 }
                 else if(isReleased){
-                    writeErrorResponse("The object you are trying to update is released.  Fork to make changes.", HttpServletResponse.SC_BAD_REQUEST);
+                    writeErrorResponse("The object you are trying to update is released. Fork to make changes.", HttpServletResponse.SC_FORBIDDEN);
                 }
                 else{
                     if(null != originalObject){
@@ -1081,7 +1155,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                             //Since we ignore changes to __rerum for existing objects, we do no configureRerumOptions(updatedObject);
                             DBObject dbo = (DBObject) JSON.parse(newObject.toString());
                             String newNextID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
-                            String newNextAtID = "http://devstore.rerum.io/rerumserver/id/"+newNextID;
+                            String newNextAtID = "http://devstore.rerum.io/v1/id/"+newNextID;
                             BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
                             dboWithObjectID.append("@id", newNextAtID);
                             newObject.element("@id", newNextAtID);
@@ -1147,10 +1221,10 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 boolean alreadyDeleted = checkIfDeleted(JSONObject.fromObject(originalObject));
                 boolean isReleased = checkIfReleased(JSONObject.fromObject(originalObject));
                 if(alreadyDeleted){
-                    writeErrorResponse("The object you are trying to update is deleted.", HttpServletResponse.SC_BAD_REQUEST);
+                    writeErrorResponse("The object you are trying to update is deleted.", HttpServletResponse.SC_FORBIDDEN);
                 }
                 else if(isReleased){
-                    writeErrorResponse("The object you are trying to update is released.  Fork to make changes.", HttpServletResponse.SC_BAD_REQUEST);
+                    writeErrorResponse("The object you are trying to update is released.  Fork to make changes.", HttpServletResponse.SC_FORBIDDEN);
                 }
                 else{
                     if(null != originalObject){
@@ -1183,7 +1257,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                             //Since we ignore changes to __rerum for existing objects, we do no configureRerumOptions(updatedObject);
                             DBObject dbo = (DBObject) JSON.parse(newObject.toString());
                             String newNextID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
-                            String newNextAtID = "http://devstore.rerum.io/rerumserver/id/"+newNextID;
+                            String newNextAtID = "http://devstore.rerum.io/v1/id/"+newNextID;
                             BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
                             dboWithObjectID.append("@id", newNextAtID);
                             newObject.element("@id", newNextAtID);
@@ -1247,10 +1321,10 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 boolean alreadyDeleted = checkIfDeleted(JSONObject.fromObject(originalObject));
                 boolean isReleased = checkIfReleased(JSONObject.fromObject(originalObject));
                 if(alreadyDeleted){
-                    writeErrorResponse("The object you are trying to update is deleted.", HttpServletResponse.SC_BAD_REQUEST);
+                    writeErrorResponse("The object you are trying to update is deleted.", HttpServletResponse.SC_FORBIDDEN);
                 }
                 else if(isReleased){
-                    writeErrorResponse("The object you are trying to update is released.  Fork to make changes.", HttpServletResponse.SC_BAD_REQUEST);
+                    writeErrorResponse("The object you are trying to update is released.  Fork to make changes.", HttpServletResponse.SC_FORBIDDEN);
                 }
                 else{
                     if(null != originalObject){
@@ -1288,7 +1362,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                             //Since we ignore changes to __rerum for existing objects, we do no configureRerumOptions(updatedObject);
                             DBObject dbo = (DBObject) JSON.parse(newObject.toString());
                             String newNextID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
-                            String newNextAtID = "http://devstore.rerum.io/rerumserver/id/"+newNextID;
+                            String newNextAtID = "http://devstore.rerum.io/v1/id/"+newNextID;
                             BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
                             dboWithObjectID.append("@id", newNextAtID);
                             newObject.element("@id", newNextAtID);
@@ -1351,11 +1425,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 JSONObject originalJSONObj = JSONObject.fromObject(originalObject);
                 boolean alreadyDeleted = checkIfDeleted(JSONObject.fromObject(originalObject));
                 boolean isReleased = checkIfReleased(JSONObject.fromObject(originalObject));
+                String origObjGenerator = originalJSONObj.getJSONObject("__rerum").getString("generatedBy");
                 if(alreadyDeleted){
-                    writeErrorResponse("The object you are trying to update is deleted.", HttpServletResponse.SC_BAD_REQUEST);
+                    writeErrorResponse("The object you are trying to update is deleted.", HttpServletResponse.SC_FORBIDDEN);
                 }
                 else if(isReleased){
-                    writeErrorResponse("The object you are trying to update is released.  Fork to make changes.", HttpServletResponse.SC_BAD_REQUEST);
+                    writeErrorResponse("The object you are trying to update is released.  Fork to make changes.", HttpServletResponse.SC_FORBIDDEN);
                 }
                 else{
                     if(null != originalObject){
@@ -1367,7 +1442,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         newObject.remove("@id"); //This is being saved as a new object, so remove this @id for the new one to be set.
                         DBObject dbo = (DBObject) JSON.parse(newObject.toString());
                         String newNextID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
-                        String newNextAtID = "http://devstore.rerum.io/rerumserver/id/"+newNextID;
+                        String newNextAtID = "http://devstore.rerum.io/v1/id/"+newNextID;
                         BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
                         dboWithObjectID.append("@id", newNextAtID);
                         newObject.element("@id", newNextAtID);
@@ -1406,6 +1481,69 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         }
     }
     
+    /**
+     * Public facing servlet to PUT overwrite an existing object.  Can set and unset keys.  There will be no reference to the node as it originally existed
+     * because this intentionally avoids any versioning around the action.  It is a pure overwrite and should only be allowed for the generator of the object.
+     * Do NOT overwrite __rerum, keep the original no matter what __rerum is provided by the user.
+     * 
+     * 
+     * @respond with new state of the object in the body.
+     * @throws java.io.IOException
+     * @throws javax.servlet.ServletException
+     */
+    public void overwriteObject()throws IOException, ServletException, Exception{
+        if(null!= processRequestBody(request, true) && methodApproval(request, "overwrite")){
+            BasicDBObject query = new BasicDBObject();
+            JSONObject received = JSONObject.fromObject(content); 
+            if(received.containsKey("@id")){
+                String receivedID = received.getString("@id");
+                query.append("@id", receivedID);
+                BasicDBObject originalObject = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The originalObject DB object
+                JSONObject originalJSONObj = JSONObject.fromObject(originalObject);
+                boolean alreadyDeleted = checkIfDeleted(JSONObject.fromObject(originalObject));
+                boolean isReleased = checkIfReleased(JSONObject.fromObject(originalObject));
+                String origObjGenerator = originalJSONObj.getJSONObject("__rerum").getString("generatedBy");
+                boolean isGenerator = (origObjGenerator.equals(generatorID));
+                if(alreadyDeleted){
+                    writeErrorResponse("The object you are trying to overwrite is deleted.", HttpServletResponse.SC_FORBIDDEN);
+                }
+                else if(isReleased){
+                    writeErrorResponse("The object you are trying to overwrite is released.  Fork to make changes.", HttpServletResponse.SC_FORBIDDEN);
+                }
+                else if(!isGenerator){
+                    writeErrorResponse("The object you are trying to overwrite was not created by you.  Fork to make changes.", HttpServletResponse.SC_UNAUTHORIZED);
+                }
+                else{
+                    if(null != originalObject){
+                        JSONObject newObject = received;//The edited original object meant to be saved as a new object (versioning)
+                        JSONObject originalProperties = originalJSONObj.getJSONObject("__rerum");
+                        newObject.element("__rerum", originalProperties);
+                        DBObject udbo = (DBObject) JSON.parse(newObject.toString());
+                        mongoDBService.update(Constant.COLLECTION_ANNOTATION, originalObject, udbo);
+                        JSONObject jo = new JSONObject();
+                        JSONObject iiif_validation_response = checkIIIFCompliance(receivedID, "2.1");
+                        jo.element("code", HttpServletResponse.SC_OK);
+                        jo.element("new_obj_state", newObject); //FIXME: @webanno standards say this should be the response.
+                        jo.element("iiif_validation", iiif_validation_response);
+                        try {
+                            addWebAnnotationHeaders(receivedID, isContainerType(newObject), isLD(newObject));
+                            response.addHeader("Access-Control-Allow-Origin", "*");
+                            response.setStatus(HttpServletResponse.SC_OK);
+                            out = response.getWriter();
+                            out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
+                        }
+                        catch (IOException ex) {
+                            Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+                    }
+                }
+            }
+            else{
+                writeErrorResponse("Object did not contain an @id, could not update.", HttpServletResponse.SC_BAD_REQUEST);
+            }
+        }
+    }
+    
      /**
      * Public facing servlet to release an existing RERUM object.  This will not perform history tree updates, but rather releases tree updates.
      * (AKA a new node in the history tree is NOT CREATED here.)
@@ -1416,6 +1554,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      */
     public void releaseObject() throws IOException, ServletException, Exception{
         boolean treeHealed = false;
+        boolean isGenerator = false;
         if(null!= processRequestBody(request, true) && methodApproval(request, "release")){
             BasicDBObject query = new BasicDBObject();
             JSONObject received = JSONObject.fromObject(content);
@@ -1429,46 +1568,54 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 JSONArray nextReleases = safe_original.getJSONObject("__rerum").getJSONObject("releases").getJSONArray("next");
                 boolean alreadyReleased = checkIfReleased(safe_original);
                 if(alreadyReleased){
-                    writeErrorResponse("This object is already released.  You must fork this annotation as one of your own to release it.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    writeErrorResponse("This object is already released.  You must fork this annotation as one of your own to release it.", HttpServletResponse.SC_FORBIDDEN);
                 }
                 else{
                     if(null != originalObject){
-                        safe_original.getJSONObject("__rerum").element("isReleased", System.currentTimeMillis()+"");
-                        safe_original.getJSONObject("__rerum").getJSONObject("releases").element("replaces", previousReleasedID);
-                        releasedObject = (BasicDBObject) JSON.parse(safe_original.toString());
-                        if(!"".equals(previousReleasedID)){// A releases tree exists and an acestral object is being released.  
-                            treeHealed  = healReleasesTree(safe_original); 
-                        }
-                        else{ //There was no releases previous value. 
-                            if(nextReleases.size() > 0){ //The release tree has been established and a descendent object is now being released.
-                                treeHealed  = healReleasesTree(safe_original);
+                        String origObjGenerator = safe_original.getJSONObject("__rerum").getString("generatedBy");
+                        isGenerator = (origObjGenerator.equals(generatorID));
+                        if(isGenerator){
+                            safe_original.getJSONObject("__rerum").element("isReleased", System.currentTimeMillis()+"");
+                            safe_original.getJSONObject("__rerum").getJSONObject("releases").element("replaces", previousReleasedID);
+                            releasedObject = (BasicDBObject) JSON.parse(safe_original.toString());
+                            if(!"".equals(previousReleasedID)){// A releases tree exists and an acestral object is being released.  
+                                treeHealed  = healReleasesTree(safe_original); 
                             }
-                            else{ //The release tree has not been established
-                                treeHealed = establishReleasesTree(safe_original);
+                            else{ //There was no releases previous value. 
+                                if(nextReleases.size() > 0){ //The release tree has been established and a descendent object is now being released.
+                                    treeHealed  = healReleasesTree(safe_original);
+                                }
+                                else{ //The release tree has not been established
+                                    treeHealed = establishReleasesTree(safe_original);
+                                }
                             }
-                        }
-                        if(treeHealed){ //If the tree was established/healed
-                            //perform the update to isReleased of the object being released.  Its releases.next[] and releases.previous are already correct.
-                            mongoDBService.update(Constant.COLLECTION_ANNOTATION, originalObject, releasedObject);
-                            JSONObject jo = new JSONObject();
-                            jo.element("code", HttpServletResponse.SC_OK);
-                            jo.element("new_obj_state", releasedObject); //FIXME: @webanno standards say this should be the response.
-                            jo.element("previously_released_id", previousReleasedID); 
-                            jo.element("next_releases_ids", nextReleases);                           
-                            try {
-                                addWebAnnotationHeaders(updateToReleasedID, isContainerType(safe_original), isLD(safe_original));
-                                response.addHeader("Access-Control-Allow-Origin", "*");
-                                response.setStatus(HttpServletResponse.SC_OK);
-                                out = response.getWriter();
-                                out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
-                            } 
-                            catch (IOException ex) {
-                                Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
+                            if(treeHealed){ //If the tree was established/healed
+                                //perform the update to isReleased of the object being released.  Its releases.next[] and releases.previous are already correct.
+                                mongoDBService.update(Constant.COLLECTION_ANNOTATION, originalObject, releasedObject);
+                                JSONObject jo = new JSONObject();
+                                jo.element("code", HttpServletResponse.SC_OK);
+                                jo.element("new_obj_state", releasedObject); //FIXME: @webanno standards say this should be the response.
+                                jo.element("previously_released_id", previousReleasedID); 
+                                jo.element("next_releases_ids", nextReleases);                           
+                                try {
+                                    addWebAnnotationHeaders(updateToReleasedID, isContainerType(safe_original), isLD(safe_original));
+                                    response.addHeader("Access-Control-Allow-Origin", "*");
+                                    response.setStatus(HttpServletResponse.SC_OK);
+                                    out = response.getWriter();
+                                    out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
+                                } 
+                                catch (IOException ex) {
+                                    Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
+                                }
+                            }
+                            else{
+                                //The error is already written to response.out, do nothing.
                             }
                         }
                         else{
-                            //The error is already written to response.out, do nothing.
+                            writeErrorResponse("You are not the generator of this object.  Only the agent who created this object can release it.  Agent= "+generatorID, HttpServletResponse.SC_UNAUTHORIZED);
                         }
+                        
                     }
                     else{
                         //This could mean it was an external object, but the release action fails on those.
@@ -1698,12 +1845,13 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         writeErrorResponse("This object is in a released state and cannot be deleted.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);  
                     }
                     else{
-                        permission = checkApplicationPermission(safe_received);
-                        if(permission){
+                        String origObjGenerator = safe_received.getJSONObject("__rerum").getString("generatedBy");
+                        boolean isGenerator = (origObjGenerator.equals(generatorID));
+                        if(isGenerator){
                            passedAllChecks = true;
                         }
                         else{
-                           writeErrorResponse("Only the application that created this object can delete it.", HttpServletResponse.SC_UNAUTHORIZED);   
+                           writeErrorResponse("Only the agent that created this object can delete it.  Agent= "+generatorID, HttpServletResponse.SC_UNAUTHORIZED);   
                         }
                     }
                 }
@@ -1872,7 +2020,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         DBObject dbo = (DBObject) JSON.parse(objectToCheck.toString());
         BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
         String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
-        String uid = "http://devstore.rerum.io/rerumserver/id/"+newObjectID;
+        String uid = "http://devstore.rerum.io/v1/id/"+newObjectID;
         dboWithObjectID.append("@id", uid);
         mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
         iiif_return = checkIIIFCompliance(uid, "2.1"); //If it is an object we are creating, this line means @context must point to Presentation API 2 or 2.1
@@ -1963,7 +2111,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
             //set @id from _id and update the annotation
             BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
-            newRootID = "http://devstore.rerum.io/rerumserver/id/"+newObjectID;
+            newRootID = "http://devstore.rerum.io/v1/id/"+newObjectID;
             dboWithObjectID.append("@id", newRootID);
             newObjState.element("@id", newRootID);
             mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
@@ -2014,7 +2162,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             JSONObject body = new JSONObject();
             
             body.element("grant_type", "authorization_code");
-            body.element("client_id", "jwkd5YE0YA5tFxGxaLW9ALPxAyA6Qw1v");
+            body.element("client_id", "62Jsa9MxHuqhRbO20gTHs9KpKr7Ue7sl");
             body.element("client_secret", getRerumProperty("rerumSecret"));
             body.element("code", auth_code);
             body.element("redirect_uri", "http://devstore.rerum.io/");
@@ -2124,10 +2272,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             //check if the domain name and ip is in database
             BasicDBObject query = new BasicDBObject();
             query.append("ip", requestIP);
-            DB db = MongoDBUtil.getDb();
-            DBCollection coll = db.getCollection(Constant.COLLECTION_ACCEPTEDSERVER);
-            DBCursor cursor = coll.find(query);
-            List<DBObject> ls_results = cursor.toArray();
+            List<DBObject> ls_results = mongoDBService.findByExample(Constant.COLLECTION_ACCEPTEDSERVER, query);
             if(ls_results.size() > 0){
                 System.out.println("[Modifying Data Request]: ip ========== " + requestIP + "@" + sdf.format(new Date()) + " +++++ From Registered Server");
                 DBObject result = ls_results.get(0);
@@ -2205,10 +2350,10 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         newAgent.element("homepage", homepage); 
         DBObject dbo = (DBObject) JSON.parse(newAgent.toString());
         String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
-        orig.element("agent", "http://devstore.rerum.io/rerumserver/id/"+newObjectID);
-        newAgent.element("@id", "http://devstore.rerum.io/rerumserver/id/"+newObjectID);
-        newAgent.element("agent", "http://devstore.rerum.io/rerumserver/id/"+newObjectID);
-        generatorID = "http://devstore.rerum.io/rerumserver/id/"+newObjectID;
+        orig.element("agent", "http://devstore.rerum.io/v1/id/"+newObjectID);
+        newAgent.element("@id", "http://devstore.rerum.io/v1/id/"+newObjectID);
+        newAgent.element("agent", "http://devstore.rerum.io/v1/id/"+newObjectID);
+        generatorID = "http://devstore.rerum.io/v1/id/"+newObjectID;
         DBObject updatedOrig = (DBObject) JSON.parse(orig.toString());
         mongoDBService.update(Constant.COLLECTION_ACCEPTEDSERVER, originalToUpdate, updatedOrig);
         return newAgent;
