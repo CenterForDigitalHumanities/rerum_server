@@ -6,21 +6,12 @@
 
 <%@page import="edu.slu.action.ObjectAction"%>
 <%@page contentType="text/html" pageEncoding="UTF-8" buffer="1000kb"%>
-<% String basePath = request.getContextPath(); %>
-<%
-    String access_token = "",
-    auth_code = "";
-    //Only generate a new access token if the user specifically said they wanted a new one.  Otherwise, just track the auth_code which tells us they were authorized at Auth0.
-    if (request.getParameter("code") != null && !request.getParameter("code").equals("") &&
-        request.getParameter("access") != null && request.getParameter("access").equals("true")) 
-    {
-        auth_code = request.getParameter("code");
-        access_token = ObjectAction.getAccessTokenWithAuth(auth_code);
-    }
-    else if(request.getParameter("code") != null && !request.getParameter("code").equals("")){
-        auth_code = request.getParameter("code");
-    }
+<% 
+    String basePath = request.getContextPath(); 
+    String access_token = "";
+    String auth_code = "";
 %>
+
 <!DOCTYPE html>
 <html>
     <head>
@@ -78,6 +69,10 @@
         .panel-body{
             color: initial;
         }
+        
+        .panel{
+            word-break: break-all;
+        }
 
         
     </style>
@@ -126,7 +121,7 @@
         <div class='panel panel-info' name="block" >
             <div class="panel-body">
             <p>
-                If you believe are already registered and want to check on your status with RERUM, follow the prompts below.  You may be routed to Auth0 so we can verify who you are.  
+                If you believe are already registered and want to check on your status with Auth0, follow the prompts below.  You may be routed to Auth0 so we can verify who you are.  
             </p>
             <div>
                 <span> Auth0 Status </span> 
@@ -135,7 +130,7 @@
             </div>
             <div class="panel-footer">
             <input class='btn btn-primary btn-large' type="button" id="check_status" value="Check my Authorization Status With Auth0" />
-            <input class='btn btn-primary btn-large' type="button" id="login" value="Refresh Authorization With Auth0/Login" />
+            <input class='btn btn-primary btn-large' type="button" id="login" value="Login To Get Auth Status" />
             <input class='btn btn-primary btn-large' type="button" id="request_token" value="Get A New Access Token" />
             </div>
         </div>
@@ -162,56 +157,52 @@
     </body>
     <script type="text/javascript">
         /*
-         * The process we are mimicking here is https://auth0.com/docs/api-auth/grant/authorization-code
-         * Further info here https://auth0.com/docs/api-auth/tutorials/authorization-code-grant
-         * Further info here https://auth0.com/docs/api/authentication#authorization-code-grant
-         * 
+         * The process we are mimicking here is https://auth0.com/docs/api-auth/grant/authorization-code and  https://auth0.com/docs/api-auth/tutorials/client-credentials
+         * https://auth0.com/docs/api-auth/tutorials/authorization-code-grant
+         * https://auth0.com/docs/api/authentication#authorization-code-grant
+         * https://auth0.com/docs/api-auth/grant/implicit
+         * https://auth0.com/docs/api-auth/grant/authorization-code
+         * https://auth0.com/docs/api-auth/tutorials/client-credentials
          */
-        var accessSwitch = false;
         var access_token = "";
         var auth_code = "";
         var error_code = "";
         var responseJSON = {};
         var myURL = document.location.href;
 
-
-        if(myURL.indexOf("code=") > -1){ //User is logged in and consented to use RERUM.  They have an authorization code
+        if(myURL.indexOf("access_token=") > -1){
+            //The user registered or asked for a new token through the Client Credentials Grant flow https://auth0.com/docs/api-auth/tutorials/client-credentials
+            //Presumably, they had to come to rerum to do this.  They cannot ask for new access tokens through their servers or front end.
+            access_token = getURLHash("access_token");
+            $("#test_api").show();
+            $("#a_t").val(access_token);
+            $("#check_status").hide();
+            $("#request_token").hide();
+            $("#authorizationStatus").html("Thanks for choosing RERUM!  A new token was created for you.  Keep this token in a safe place, you will need it for our API. \n\
+                You can test that your access token will work with RERUM by clicking the 'Test API' button below.  <br> token="+access_token);
+        }
+        else if(myURL.indexOf("code=") > -1){
+           //The user simply checked if they were registered.  If so, they get a code.  If not, they get an error.
            auth_code = getURLVariable("code");
-           accessSwitch = getURLVariable("access");
            if(auth_code !== ""){
-               if(accessSwitch == "true"){
-                    access_token = "<% out.write(access_token); %>";
-                    if(access_token.indexOf("Auth0") > -1){
-                        //Then it was one of our errors from the back end.
-                        $("#authorizationStatus").html("There was an issue getting an access token from auth 0.  Review the message below. \n\
-                            <br> message="+access_token);
-                    }
-                    else{
-                        $("#authorizationStatus").html("Thanks for choosing RERUM!  A new token was created for you.  Keep this token in a safe place, you will need it for our API. \n\
-                            You can test that your access token will work with RERUM by clicking the 'Test API' button below.  <br> token="+access_token);
-                        $("#test_api").show();
-                    }
-               }
-               else{
-                    $("#authorizationStatus").html("AUTHORIZED: auth code="+auth_code)+".<br> You cannot ask for your current access token, but you can generate a new one by\n\
-                    requesting one below.  If you have not yet registered with RERUM at Auth0, you will need to do that to get your first access token. ";
-                    $("#request_token").show();
-                    $("#test_api").show();
-               }
+                $("#authorizationStatus").html("AUTHORIZED: auth code="+auth_code)+".<br> You cannot ask for your current access token, but you can generate a new one by\n\
+                requesting one below.  If you have not yet registered with RERUM at Auth0, you will need to do that to get your first access token. ";
+                $("#request_token").show();
+                $("#test_api").show();
            }
            else{ //Weird
                $("#authorizationStatus").html("UNAUTHORIZED");
            }
            $("#check_status").hide();
        }
-       else if (myURL.indexOf("error=") > -1){ //Status check says unauthorized
+       else if (myURL.indexOf("error=") > -1){ 
+       //The user registered, checked their status or asked for a new access token and there was a problem. 
            error_code = getURLVariable("error");  
-           
-           if(error_code == "login_required"){ //Could not get authorization code.  Do a loud login
+           if(error_code == "login_required"){ //What they are asking for requires authentication against their user inside the RERUM Server Auth0 client.
                 $("#authorizationStatus").html("You must login with Auth0 for this check.");
                 $("#login").show();
            }
-           else if (error_code == "consent_required"){ //User has not consented and has never gotten an access token.  Request the authorization code to get access token
+           else if (error_code == "consent_required"){ //The user is logged in with auth0 but has not registered with the Rerum Server Auth0 client.
                 $("#authorizationStatus").html("You have never consented to use the API, so you do not have an access token.  Get one to test access to RERUM.");
                 $("#request_token").show();
            }
@@ -225,13 +216,13 @@
        }
 
         $("#register").click(function(){
-        //Register means sign up at auth0 and authorize to get an auth code.  Then use that auth code to generate a token, so access=true to generate an access token.
+        //Register means register with the RERUM Server Auth0 client and get an access token.  
             var params = {
                 "audience":"http://rerum.io/api",
                 "scope":"name email openid",
-                "response_type":"code",
+                "response_type":"token",
                 "client_id":"62Jsa9MxHuqhRbO20gTHs9KpKr7Ue7sl",
-                "redirect_uri":"http://devstore.rerum.io?access=true",
+                "redirect_uri":"http://devstore.rerum.io",
                 "state":"statious123"           
             };
             var getURL = "https://cubap.auth0.com/authorize?" + $.param(params);
@@ -239,50 +230,46 @@
             document.location.href = getURL;
         });
         
-         $("#request_token").click(function(){
-        //This means they want to authorize and get a new access token, so access is true.
+        $("#request_token").click(function(){
             var params = {
-                "audience":"http://rerum.io/api",
-                "scope":"name email openid",
-                "response_type":"code",
-                "client_id":"62Jsa9MxHuqhRbO20gTHs9KpKr7Ue7sl",
-                "redirect_uri":"http://devstore.rerum.io?access=true",
-                "state":"statious123",
-                "prompt" : "none"
-            };
+                    "audience":"http://rerum.io/api",
+                    "scope":"name email openid",
+                    "response_type":"token",
+                    "client_id":"62Jsa9MxHuqhRbO20gTHs9KpKr7Ue7sl",
+                    "redirect_uri":"http://devstore.rerum.io",
+                    "state":"statious123",
+                    "prompt": "none"
+                };
             var getURL = "https://cubap.auth0.com/authorize?" + $.param(params);
             console.log(getURL);
             document.location.href = getURL;
-
         });
         
         $("#check_status").click(function(){
-        //This means they just want to see if they are authorized (AKA get an auth code) but DO NOT want to generate a new access token. 
+        //This means they just want to see if they are registered with the RERUM Server Auth0 client (just need an auth code)
            var params = {
                 "audience":"http://rerum.io/api",
                 "scope":"name email openid",
                 "response_type":"code",
                 "client_id":"62Jsa9MxHuqhRbO20gTHs9KpKr7Ue7sl",
-                "redirect_uri":"http://devstore.rerum.io?access=false",
+                "redirect_uri":"http://devstore.rerum.io",
                 "state":"statious123",
-                "prompt" : "none"
+                "prompt":"none"
             };
             var getURL = "https://cubap.auth0.com/authorize?" + $.param(params);
             console.log(getURL);
             document.location.href = getURL;
         });
         
-       
-        
+
         $("#login").click(function(){
-            //This means silent auth failed and they could not get a code because they werent logged in.  Send them off to login and get an auth code, but DO NOT
-            //generate a new access token.  
+            //This means they want to register (or prove they are registered) with the RERUM Server Auth0 client.  They do not want an access token.
             var params = {
                 "audience":"http://rerum.io/api",
                 "scope":"name email openid",
                 "response_type":"code",
                 "client_id":"62Jsa9MxHuqhRbO20gTHs9KpKr7Ue7sl",
-                "redirect_uri":"http://devstore.rerum.io?access=false",
+                "redirect_uri":"http://devstore.rerum.io",
                 "state":"statious123"
             };
             var getURL = "https://cubap.auth0.com/authorize?" + $.param(params);
@@ -292,6 +279,17 @@
                 
         function getURLVariable(variable){
             var query = window.location.search.substring(1);
+            var vars = query.split("&");
+            for (var i=0;i<vars.length;i++) {
+                    var pair = vars[i].split("=");
+                    if(pair[0] == variable){return pair[1];}
+            }
+            return false;
+        }
+        
+        function getURLHash(variable){
+            var query = document.location.hash;
+            query = query.substr(1);
             var vars = query.split("&");
             for (var i=0;i<vars.length;i++) {
                     var pair = vars[i].split("=");

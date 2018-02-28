@@ -2161,10 +2161,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             String tokenURL="https://cubap.auth0.com/oauth/token";
             JSONObject body = new JSONObject();
             
-            body.element("grant_type", "authorization_code");
+            //body.element("grant_type", "authorization_code");
+            body.element("grant_type", "client_credentials");
             body.element("client_id", "62Jsa9MxHuqhRbO20gTHs9KpKr7Ue7sl");
             body.element("client_secret", getRerumProperty("rerumSecret"));
-            body.element("code", auth_code);
+            body.element("audience", "http://rerum.io/api");
+            //body.element("code", auth_code);
             body.element("redirect_uri", "http://devstore.rerum.io/");
             System.out.println("I will be using this body: ");
             System.out.println(body);
