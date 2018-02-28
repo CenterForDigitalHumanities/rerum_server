@@ -328,7 +328,7 @@
                 };
                 xhr.open("POST", postURL, true); 
                 xhr.setRequestHeader("Content-type", "application/json"); 
-                xhr.setRequestHeader("Bearer", userProvidedToken); 
+                xhr.setRequestHeader("Authorization", "Bearer "+userProvidedToken); 
                 xhr.send(JSON.stringify(params));
             }
             else{
