@@ -83,6 +83,7 @@
         }
         
         #a_t{
+            height: 170px;
             margin-bottom: 8px;
         }
 
