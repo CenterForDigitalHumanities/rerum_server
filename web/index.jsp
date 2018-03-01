@@ -209,8 +209,7 @@
            //The user simply checked if they were registered.  If so, they get a code.  If not, they get an error.
            auth_code = getURLVariable("code");
            if(auth_code !== ""){
-                $("#authorizationStatus").html("AUTHORIZED: auth code="+auth_code)+".<br> You cannot ask for your current access token, but you can generate a new one by\n\
-                requesting one below.  If you have not yet registered with RERUM at Auth0, you will need to do that to get your first access token. ";
+                $("#authorizationStatus").html("AUTHORIZED: auth code="+auth_code+".  You are registered with the Auth0 RERUM client.");
            }
            else{ //Weird
                $("#authorizationStatus").html("UNAUTHORIZED");
@@ -238,6 +237,7 @@
 
         $("#register").click(function(){
         //Register means register with the RERUM Server Auth0 client and get an access token.  
+        //See https://auth0.com/docs/libraries/custom-signup
             var params = {
                 "audience":"http://rerum.io/api",
                 "scope":"name email openid",
@@ -276,6 +276,7 @@
                 "redirect_uri":"http://devstore.rerum.io",
                 "state":"statious123"            
             };
+            //You can add prompt:none here to use the user stored with the cookie, but this forces login so our rules work better.
             var getURL = "https://cubap.auth0.com/authorize?" + $.param(params);
             console.log(getURL);
             document.location.href = getURL;
