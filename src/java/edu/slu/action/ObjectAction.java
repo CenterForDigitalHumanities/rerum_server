@@ -2060,6 +2060,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     public JSONObject checkIIIFCompliance(String objURL, String version) throws MalformedURLException, IOException{
         JSONObject iiif_return = new JSONObject();
         String iiif_validation_url = "https://iiif.io/api/presentation/validator/service/validate?format=json&version="+version+"&url="+objURL;
+        System.out.println("IIIF validate URL");
+        System.out.println(iiif_validation_url);
         try{
             URL validator = new URL(iiif_validation_url);
             BufferedReader reader = null;
