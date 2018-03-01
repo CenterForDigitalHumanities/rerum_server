@@ -62,7 +62,7 @@
             margin-bottom: 20px;
         }
         
-        #test_api, #login, #request_token{
+        #login{
             display: none;
         }
         
@@ -71,7 +71,19 @@
         }
         
         .panel{
-            word-break: break-all;
+            word-break: break-word;
+        }
+        
+        .handHoldy{
+            
+        }
+        
+        .status_header{
+            color: gray;
+        }
+        
+        #a_t{
+            margin-bottom: 8px;
         }
 
         
@@ -94,22 +106,22 @@
         <div class='panel panel-info' name="block" >
             <div class="panel-heading"> <span class="panel-title">Application Registration</span> </div>
             <div class="panel-body">
-            <p>
+            <p class="handHoldy">
                 Interacting with RERUM requires server-to-server communication, so we suggest the registrant be the application developer.  
                 You may want to 
                 <a target="_blank" href="http://centerfordigitalhumanities.github.io/rerum/web/#/future" class="linkOut">learn more about the concepts around RERUM</a> 
                 before reading the API.
             </p>
-            <p>
+            <p class="handHoldy">
                 If you are here for the first time and think you want to use RERUM, please 
                 <a target="_blank" href="https://github.com/CenterForDigitalHumanities/rerum_server/blob/master/API.md" class="linkOut">read the API</a> first.
             </p>
             
-            <p>
+            <p class="handHoldy">
                 If you like what you read in <a target="_blank" href="https://github.com/CenterForDigitalHumanities/rerum_server/blob/master/API.md" class="linkOut">our API documentation</a> 
                 and want to begin using RERUM please register by clicking below.  If you already registered, this will create a new access token and overwrite your old one.
             </p>
-            <p>Be prepared to be routed to Auth0 (don't know why?
+            <p class="handHoldy">Be prepared to be routed to Auth0 (don't know why?
                 <a target="_blank" href="https://github.com/CenterForDigitalHumanities/rerum_server/blob/master/API.md" class="linkOut">Read the API</a>).
             </p>
             </div>
@@ -119,38 +131,50 @@
         </div>
 
         <div class='panel panel-info' name="block" >
+            <div class="panel-heading"> <span class="panel-title">Auth0 Authorization Status</span> </div>
             <div class="panel-body">
-            <p>
+            <p class="handHoldy">
                 If you believe are already registered and want to check on your status with Auth0, follow the prompts below.  You may be routed to Auth0 so we can verify who you are.  
             </p>
             <div>
-                <span> Auth0 Status </span> 
+                <span class="status_header"> Auth0 Status </span> 
                 <kbd class="status" id="authorizationStatus">UNKNOWN</kbd>
             </div>
             </div>
             <div class="panel-footer">
             <input class='btn btn-primary btn-large' type="button" id="check_status" value="Check my Authorization Status With Auth0" />
             <input class='btn btn-primary btn-large' type="button" id="login" value="Login To Get Auth Status" />
-            <input class='btn btn-primary btn-large' type="button" id="request_token" value="Get A New Access Token" />
             </div>
         </div>
         
         <div class='panel panel-info' name="block" >
+            <div class="panel-heading"> <span class="panel-title">Test RERUM API Access</span> </div>
             <div class="panel-body">
-            <p> 
-                If you would like to check your ability to use RERUM, first check your status with Auth0 to reveal the button.  If you are known by Auth0, 
-                please enter the access token you were provided when you registered for RERUM or requested a new token then click 'Check Access To RERUM API'. 
-                If you do not know your access token, you can request a new one after you check your authorization status with Auth0.
-                (Note: Your old token may no longer work in certain situations if you re register or request a new token, even if RERUM accepts it here).  
+            <p class="handHoldy"> 
+                If you would like to check your ability to use RERUM you can provide your access token below and test access.  
+                If the token you have is not working, it may be because access tokens expire every year.  You can choose to get a new
+                access token or register again under an alias.  
             </p>
             <textarea class="form-control" id="a_t" placeholder="Enter your access token here to check your access to RERUM."></textarea>
-            </div>
-            <div class="panel-footer">
             <div>
-                <span> RERUM status </span> 
+                <span class="status_header"> RERUM status </span> 
                 <kbd class="status" id="rerumStatus">UNKNOWN</kbd>
             </div>
-                <input class='btn btn-primary btn-large' type="button" onclick="testAPI()" id="test_api" value="Check Access To RERUM API " />
+            </div>
+            <div class="panel-footer">
+                <input class='btn btn-primary btn-large' type="button" onclick="testAPI()" id="test_api" value="Check Access To RERUM API" />
+            </div>
+        </div>
+        
+        <div class='panel panel-info' name="block" >
+            <div class="panel-heading"> <span class="panel-title">Get A New Token</span> </div>
+            <div class="panel-body">
+            <p class="handHoldy">
+                Your access token to use RERUM expires every year.  Has it been a year already?  You can get a new token below.
+            </p>
+            </div>
+            <div class="panel-footer">
+            <input class='btn btn-primary btn-large' type="button" id="request_token" value="Get A New Access Token" />
             </div>
         </div>
         
@@ -177,7 +201,6 @@
             $("#test_api").show();
             $("#a_t").val(access_token);
             $("#check_status").hide();
-            $("#request_token").hide();
             $("#authorizationStatus").html("Thanks for choosing RERUM!  A new token was created for you.  Keep this token in a safe place, you will need it for our API. \n\
                 You can test that your access token will work with RERUM by clicking the 'Test API' button below.  <br> token="+access_token);
         }
@@ -187,8 +210,6 @@
            if(auth_code !== ""){
                 $("#authorizationStatus").html("AUTHORIZED: auth code="+auth_code)+".<br> You cannot ask for your current access token, but you can generate a new one by\n\
                 requesting one below.  If you have not yet registered with RERUM at Auth0, you will need to do that to get your first access token. ";
-                $("#request_token").show();
-                $("#test_api").show();
            }
            else{ //Weird
                $("#authorizationStatus").html("UNAUTHORIZED");
@@ -204,7 +225,6 @@
            }
            else if (error_code == "consent_required"){ //The user is logged in with auth0 but has not registered with the Rerum Server Auth0 client.
                 $("#authorizationStatus").html("You have never consented to use the API, so you do not have an access token.  Get one to test access to RERUM.");
-                $("#request_token").show();
            }
            else if (error_code == "interaction_required"){
               $("#authorizationStatus").html("There are strange happenings afoot in the void of the web...");
@@ -231,14 +251,14 @@
         });
         
         $("#request_token").click(function(){
+            //The user would like to request a new token.  Send them off to log in.  
             var params = {
                     "audience":"http://rerum.io/api",
                     "scope":"name email openid",
                     "response_type":"token",
                     "client_id":"62Jsa9MxHuqhRbO20gTHs9KpKr7Ue7sl",
                     "redirect_uri":"http://devstore.rerum.io",
-                    "state":"statious123",
-                    "prompt": "none"
+                    "state":"statious123"
                 };
             var getURL = "https://cubap.auth0.com/authorize?" + $.param(params);
             console.log(getURL);
@@ -246,22 +266,20 @@
         });
         
         $("#check_status").click(function(){
-        //This means they just want to see if they are registered with the RERUM Server Auth0 client (just need an auth code)
+          //This means they just want to see if they are registered with the RERUM Server Auth0 client (just need an auth code).  If they are no logged in, they will see a prompt to log in.
            var params = {
                 "audience":"http://rerum.io/api",
                 "scope":"name email openid",
                 "response_type":"code",
                 "client_id":"62Jsa9MxHuqhRbO20gTHs9KpKr7Ue7sl",
                 "redirect_uri":"http://devstore.rerum.io",
-                "state":"statious123",
-                "prompt":"none"
+                "state":"statious123"            
             };
             var getURL = "https://cubap.auth0.com/authorize?" + $.param(params);
             console.log(getURL);
             document.location.href = getURL;
         });
         
-
         $("#login").click(function(){
             //This means they want to register (or prove they are registered) with the RERUM Server Auth0 client.  They do not want an access token.
             var params = {
