@@ -391,173 +391,172 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         if(null!=http_request.getHeader("Authorization") && !"".equals(http_request.getHeader("Authorization"))){
             access_token = getTokenFromHeader(http_request.getHeader("Authorization"));
         }
-        else{
-            switch(request_type){
-                case "overwrite":
-                    auth_verified =  verifyAccess(access_token);
-                    if(auth_verified){
-                        if(requestMethod.equals("PUT")){
-                            restful = true;
-                        }
-                        else{
-                            writeErrorResponse("Improper request method for overwriting, please use PUT to overwrite this object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-                        }
-                    }
-                    else{
-                        if("".equals(access_token)){
-                            writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
-                        }
-                        else{
-                            writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
-                        }
-                    }
-                break;
-                case "update":
-                    auth_verified =  verifyAccess(access_token);
-                    if(auth_verified){
-                        if(requestMethod.equals("PUT")){
-                            restful = true;
-                        }
-                        else{
-                            writeErrorResponse("Improper request method for updating, please use PUT to replace this object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-                        }
-                    }
-                    else{
-                        if("".equals(access_token)){
-                            writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
-                        }
-                        else{
-                            writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
-                        }
-                    }
-                break;
-                case "patch":
-                    auth_verified =  verifyAccess(access_token);
-                    if(auth_verified){
-                        if(requestMethod.equals("PATCH")){
-                            restful = true;
-                        }
-                        else{
-                            writeErrorResponse("Improper request method for updating, please use PATCH to alter this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-                        }
-                    }
-                    else{
-                        if("".equals(access_token)){
-                            writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
-                        }
-                        else{
-                            writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
-                        }
-                    }
-                break;
-                case "set":
-                    auth_verified =  verifyAccess(access_token);
-                    if(auth_verified){
-                        if(requestMethod.equals("PATCH")){
-                            restful = true;
-                        }
-                        else{
-                            writeErrorResponse("Improper request method for updating, PATCH to add keys to this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-                        }
-                    }
-                    else{
-                        if("".equals(access_token)){
-                            writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
-                        }
-                        else{
-                            writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
-                        }
-                    }
-                break;
-                case "unset":
-                    auth_verified =  verifyAccess(access_token);
-                    if(auth_verified){
-                        if(requestMethod.equals("PATCH")){
-                            restful = true;
-                        }
-                        else{
-                            writeErrorResponse("Improper request method for updating, PATCH to remove keys from this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-                        }
-                    }
-                    else{
-                        if("".equals(access_token)){
-                            writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
-                        }
-                        else{
-                            writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
-                        }
-                    }
-                break;
-                case "release":
-                    auth_verified =  verifyAccess(access_token);
-                    if(auth_verified){
-                        if(requestMethod.equals("PATCH")){
-                            restful = true;
-                        }
-                        else{
-                            writeErrorResponse("Improper request method for updating, please use PATCH to alter this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-                        }
-                    }
-                    else{
-                        if("".equals(access_token)){
-                            writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
-                        }
-                        else{
-                            writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
-                        }
-                    }
-                break;
-                case "create":
-                    auth_verified =  verifyAccess(access_token);
-                    if(auth_verified){
-                        if(requestMethod.equals("POST")){
-                            restful = true;
-                        }
-                        else{
-                            writeErrorResponse("Improper request method for creating, please use POST.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-                        }
-                    }
-                    else{
-                        if("".equals(access_token)){
-                            writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
-                        }
-                        else{
-                            writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
-                        }
-                    }
-                break;
-                case "delete":
-                    auth_verified =  verifyAccess(access_token);
-                    if(auth_verified){
-                        if(requestMethod.equals("DELETE")){
-                            restful = true;
-                        }
-                        else{
-                            writeErrorResponse("Improper request method for deleting, please use DELETE.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-                        }
-                    }
-                    else{
-                        if("".equals(access_token)){
-                            writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
-                        }
-                        else{
-                            writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
-                        }
-                    }
-                break;
-                case "get":
-                    auth_verified = true;
-                    if(requestMethod.equals("GET") || requestMethod.equals("HEAD")){
+        switch(request_type){
+            case "overwrite":
+                auth_verified =  verifyAccess(access_token);
+                if(auth_verified){
+                    if(requestMethod.equals("PUT")){
                         restful = true;
                     }
                     else{
-                        writeErrorResponse("Improper request method for reading, please use GET or request for headers with HEAD.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                        writeErrorResponse("Improper request method for overwriting, please use PUT to overwrite this object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
                     }
-                break;
-                default:
-                    writeErrorResponse("Improper request method for this type of request (unknown).", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
-            }   
-        }
+                }
+                else{
+                    if("".equals(access_token)){
+                        writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
+                    }
+                    else{
+                        writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                    }
+                }
+            break;
+            case "update":
+                auth_verified =  verifyAccess(access_token);
+                if(auth_verified){
+                    if(requestMethod.equals("PUT")){
+                        restful = true;
+                    }
+                    else{
+                        writeErrorResponse("Improper request method for updating, please use PUT to replace this object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    }
+                }
+                else{
+                    if("".equals(access_token)){
+                        writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
+                    }
+                    else{
+                        writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                    }
+                }
+            break;
+            case "patch":
+                auth_verified =  verifyAccess(access_token);
+                if(auth_verified){
+                    if(requestMethod.equals("PATCH")){
+                        restful = true;
+                    }
+                    else{
+                        writeErrorResponse("Improper request method for updating, please use PATCH to alter this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    }
+                }
+                else{
+                    if("".equals(access_token)){
+                        writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
+                    }
+                    else{
+                        writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                    }
+                }
+            break;
+            case "set":
+                auth_verified =  verifyAccess(access_token);
+                if(auth_verified){
+                    if(requestMethod.equals("PATCH")){
+                        restful = true;
+                    }
+                    else{
+                        writeErrorResponse("Improper request method for updating, PATCH to add keys to this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    }
+                }
+                else{
+                    if("".equals(access_token)){
+                        writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
+                    }
+                    else{
+                        writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                    }
+                }
+            break;
+            case "unset":
+                auth_verified =  verifyAccess(access_token);
+                if(auth_verified){
+                    if(requestMethod.equals("PATCH")){
+                        restful = true;
+                    }
+                    else{
+                        writeErrorResponse("Improper request method for updating, PATCH to remove keys from this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    }
+                }
+                else{
+                    if("".equals(access_token)){
+                        writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
+                    }
+                    else{
+                        writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                    }
+                }
+            break;
+            case "release":
+                auth_verified =  verifyAccess(access_token);
+                if(auth_verified){
+                    if(requestMethod.equals("PATCH")){
+                        restful = true;
+                    }
+                    else{
+                        writeErrorResponse("Improper request method for updating, please use PATCH to alter this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    }
+                }
+                else{
+                    if("".equals(access_token)){
+                        writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
+                    }
+                    else{
+                        writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                    }
+                }
+            break;
+            case "create":
+                auth_verified =  verifyAccess(access_token);
+                if(auth_verified){
+                    if(requestMethod.equals("POST")){
+                        restful = true;
+                    }
+                    else{
+                        writeErrorResponse("Improper request method for creating, please use POST.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    }
+                }
+                else{
+                    if("".equals(access_token)){
+                        writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
+                    }
+                    else{
+                        writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                    }
+                }
+            break;
+            case "delete":
+                auth_verified =  verifyAccess(access_token);
+                if(auth_verified){
+                    if(requestMethod.equals("DELETE")){
+                        restful = true;
+                    }
+                    else{
+                        writeErrorResponse("Improper request method for deleting, please use DELETE.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    }
+                }
+                else{
+                    if("".equals(access_token)){
+                        writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
+                    }
+                    else{
+                        writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                    }
+                }
+            break;
+            case "get":
+                auth_verified = true;
+                if(requestMethod.equals("GET") || requestMethod.equals("HEAD")){
+                    restful = true;
+                }
+                else{
+                    writeErrorResponse("Improper request method for reading, please use GET or request for headers with HEAD.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                }
+            break;
+            default:
+                writeErrorResponse("Improper request method for this type of request (unknown).", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+        }   
+        
         System.out.println("I know whether or not we are approved: "+restful);
         return restful;
     }
@@ -2304,6 +2303,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     }
     
     private JSONObject getRerumUserInfo(String access_token) throws MalformedURLException, ProtocolException, IOException{
+        // Had to write into a rule to get metadata to come back with /userinfo
+        // https://auth0.com/docs/metadata/apis
         System.out.println("I need to get user info from auth0 to get the rerum agent ID");
         JSONObject userInfo = new JSONObject();
         String userInfoLocation = "https://cubap.auth0.com/userinfo?access_token="+access_token;

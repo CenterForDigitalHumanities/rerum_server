@@ -303,20 +303,14 @@
             if(userProvidedToken !== ""){
                 $("#a_t").css("border", "none");
                 var params = { 
-                    "@type" : "oa:Annotation", 
-                    "motivation" : "sc:painting", 
-                    "label" : "Access Test", 
-                    "resource" : { 
-                        "@type" : "cnt:ContentAsText", 
-                        "cnt:chars" : "This is a test!" 
-                    }, 
-                    "on" : "" 
+                    "@id" : "http://devstore.rerum.io/v1/id/5a982054e4b0e868d5cf075e", 
+                    "tester" : "test_"+Date.now()
                 }; 
-                var postURL = "http://devstore.rerum.io/v1/api/create.action"; 
+                var postURL = "http://devstore.rerum.io/v1/api/update.action"; 
                 var xhr = new XMLHttpRequest();
                 xhr.onreadystatechange = function() {
                     if (this.readyState === XMLHttpRequest.DONE) {
-                       if(this.status === 201){
+                       if(this.status === 200){
                            $("#rerumStatus").html("AUTHORIZED");
                            $("#test_api").show();
                        }
@@ -326,7 +320,7 @@
                        }
                     }
                 };
-                xhr.open("POST", postURL, true); 
+                xhr.open("PUT", postURL, true); 
                 xhr.setRequestHeader("Content-type", "application/json"); 
                 xhr.setRequestHeader("Authorization", "Bearer "+userProvidedToken); 
                 xhr.send(JSON.stringify(params));
