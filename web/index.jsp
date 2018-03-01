@@ -319,6 +319,7 @@
         }
         
         function testAPI(){
+            $("#rerumStatus").html("WORKING...");
             var userProvidedToken = $("#a_t").val();
             if(userProvidedToken !== ""){
                 $("#a_t").css("border", "none");
