@@ -324,7 +324,7 @@
             if(userProvidedToken !== ""){
                 $("#a_t").css("border", "none");
                 var params = { 
-                    "@id" : "http://devstore.rerum.io/v1/id/5a982054e4b0e868d5cf075e", 
+                    "@id" : "http://devstore.rerum.io/v1/id/5aa17cdae4b09d664d424d1c", 
                     "tester" : "test_"+Date.now()
                 }; 
                 var postURL = "http://devstore.rerum.io/v1/api/update.action"; 
