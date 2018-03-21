@@ -17,7 +17,7 @@ public class Constant {
     public static final int PERMISSION_PUBLIC = 2;
     
     //collection name
-    public static final String COLLECTION_ANNOTATION = "annotation";
+    public static final String COLLECTION_ANNOTATION = "alpha"; // for RERUM alpha
     public static final String COLLECTION_ACCEPTEDSERVER = "acceptedServer";
     public static final String COLLECTION_USER = "user";
     public static final String COLLECTION_PROJECT_USER_PROFILE = "projectUserProfile";
