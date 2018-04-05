@@ -8,11 +8,11 @@
     - [History tree since this version](#history-tree-since-this-version)
   - [POST](#post)
     - [Create](#create)
-    - [Batch Create](#batch-create)
-    - [Custom Query](#custom-query)
+    - [Batch Create (proposed)](#batch-create-proposed)
+    - [Custom Query (beta)](#custom-query-beta)
   - [PUT](#put)
     - [Update](#update)
-    - [Batch Update](#batch-update)
+    - [Batch Update (proposed)](#batch-update-proposed)
   - [PATCH](#patch)
     - [Patch Update](#patch-update)
     - [Add Properties](#add-properties)
@@ -33,7 +33,7 @@
 All the following interactions will take place between
 the server running RERUM and the application server. If
 you prefer to use the public RERUM server (which I hope
-you do), the base URL is `http://rerum.io/v1`. 
+you do), the base URL is `http://store.rerum.io/v1`. 
 
 ## GET
 
@@ -44,10 +44,9 @@ you do), the base URL is `http://rerum.io/v1`.
 | `/id/_id` | `empty` | 200: `{JSON}`
 
 - **`_id`**—the id of the object in RERUM.
-- **`{JSON}`**—The object with id `_id`
+- **Response: `{JSON}`**—The object at `_id`
 
-Call over HTTP can be made through GET request to their
-unique URI Ex. http://rerum.io/v1/id/aee33434bbc333444ff
+Example: http://store.rerum.io/v1/id/aee33434bbc333444ff
 
 ### History tree before this version
 
@@ -56,12 +55,12 @@ unique URI Ex. http://rerum.io/v1/id/aee33434bbc333444ff
 | `/history/_id` | `empty` | 200: `[{JSON}]`
 
 - **`_id`**—the id of the object in RERUM.
-- **`[{JSON}]`**—an array of the resolved objects of all parent history objects
+- **Response: `[{JSON}]`**—an array of the resolved objects of all parent history objects
 
-As objects in RERUM are altered, their previous state is saved through
-a history tree.  Users can ask for all ancestors of a given  version.
-Call over HTTP can be made through GET request to their
-unique URI Ex. http://rerum.io/v1/history/aee33434bbc333444ff
+As objects in RERUM are altered, the previous state is retained in
+a history tree. Request returns all ancestors of a given version.
+
+Example: http://store.rerum.io/v1/history/aee33434bbc333444ff
 
 ### History tree since this version
 
@@ -70,12 +69,12 @@ unique URI Ex. http://rerum.io/v1/history/aee33434bbc333444ff
 | `/since/_id` | `empty` | 200: `[{JSON}]`
 
 - **`_id`**—the id of the object in RERUM.
-- **`[{JSON}]`**—an array of the resolved objects of all child history objects
+- **Response: `[{JSON}]`**—an array of the resolved objects of all child history objects
 
-As objects in RERUM are altered, their previous state is saved through
-a history tree.  You can ask for all descendants of a given version.
-Call over HTTP can be made through GET request to their
-unique URI Ex. http://rerum.io/v1/since/aee33434bbc333444ff
+As objects in RERUM are altered, the previous state is retained in
+a history tree.  Request returns all descendants of a given version.
+
+Example:  http://store.rerum.io/v1/since/aee33434bbc333444ff
 
 ## POST
 
@@ -83,38 +82,42 @@ unique URI Ex. http://rerum.io/v1/since/aee33434bbc333444ff
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/v1/create.action` | `{JSON}` | 201: `header.Location` "Created @ `[@id]`" `{JSON}`
+| `/v1/create` | `{JSON}` | 201: `header.Location` "Created @ `[@id]`", `{JSON}`
 
 - **`{JSON}`**—The object to create
-- **`{JSON}`**—Containing various bits of information about the create.  The object looks like
+- **Response: `{JSON}`**—Containing various bits of information about the create.
+
+Add a completely new object to RERUM and receive the location
+in response.  Accepts only single JSON objects for RERUM storage.
+Mints a new URI and returns the object's `Location` as a header.
+If the object already contains an `@id` that matches an object in RERUM,
+the API will direct the user to use [update](#update) instead.
+
+Example Response:
+
+- **Header:** `Location: Created @ http://store.rerum.io/v1/id/aee33434bbc333444ff`
+- **Body:**
 
 ~~~ (json)
 {
   "code" : 201,
-  "@id" : "http://rerum.io/v1/id/5a5f6f06e4b02339378b8976",
+  "@id" : "http://store.rerum.io/v1/since/aee33434bbc333444ff",
   "iiif_validation" : {
     "warnings" : ["Array of warnings from IIIF validator"],
     "error" : "Error for why this object failed validation",
     "okay" : 1 // 0 or 1 as to whether or not it passed IIIF validation
   }
 }
-
 ~~~
 
-Add a completely new object to RERUM and receive the location
-in response.  Accepts only single JSON objects for RERUM storage. 
-Mints a new URI and returns the object's location as a header. 
-If the object already contains an `@id` that matches an object in RERUM,
-the API will direct the user to use [update](#update) instead.
-
-### Batch Create
+### Batch Create (proposed)
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/v1/batchCreate.action` | `[{JSON}]` | 200: `[{JSON}]`
+| `/v1/batchCreate` | `[{JSON}]` | 200: `[{JSON}]`
 
 - **`[{JSON}]`**—an array of objects to create in RERUM
-- **`[{JSON}]`**—an array of the resolved objects from the creation process
+- **Response: `[{JSON}]`**—an array of the resolved objects from the creation process
 
 The array of JSON objects passed in will be created in the
 order submitted and the response will have the URI of the new
@@ -122,15 +125,14 @@ resource or an error message in the body as an array in the
 same order.  When errors are encountered, the batch process
 will attempt to continue for all submitted items.
 
-
-### Custom Query
+### Custom Query (beta)
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/getByProperties.action` | `{JSON}` | 200: `[{JSON}]`
+| `/getByProperties` | `{JSON}` | 200: `[{JSON}]`
 
 - **`{JSON}`**—the properties in JSON format for the query
-- **`[{JSON}]`**—an array of the resolved objects of all objects that match the query
+- **Response: `[{JSON}]`**—an array of the resolved objects of all objects that match the query
 
 This simple format will be made more complex
 in the future, but should serve the basic needs as it is.
@@ -154,22 +156,31 @@ so `{ "@type" : "sc:Canvas", "label" : "page 46" }` will match
 
 ### Update
 
+Replace an existing record through reference to its internal
+RERUM id.  This will have the effects of update, set, and unset actions.
+New keys will be created and keys not present in the request will be dropped.
+When an object is updated, the `@id` will change, as the previous
+version will maintain its place in the history of that object.
+
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/update.action` | `{JSON}` | 200: `header.Location` New state `{JSON}`
+| `/update` | `{JSON}` | 200: `header.Location` New state `{JSON}`
 
 - **`{JSON}`**—The requested new state for the object.
-- **`{JSON}`**—Containing various bits of information about the PUT update.  The object looks like
+- **Response Body: `{JSON}`**—Containing various bits of information about the PUT update.
+
+Example Response:
+
+- **Header:** `Location: Updated @ http://store.rerum.io/v1/id/aee33434bbc333444ff`
+- **Body:**
 
 ~~~ (json)
 {
   "code" : 200,
-  "original_object_id" : "http://rerum.io/v1/id/5a57a30fe4b09163a80a0a67",
+  "original_object_id" : "http://rerum.io/v1/id/aee33434bbc333444ff",
   "new_obj_state" : {
-    @id: newID
-    .
-    .
-    .
+    @id: http://rerum.io/v1/id/aee33434bbc33344500
+    ...
   },
   "iiif_validation" : {
     "warnings" : ["Array of warnings from IIIF validator"],
@@ -179,22 +190,14 @@ so `{ "@type" : "sc:Canvas", "label" : "page 46" }` will match
 }
 ~~~
 
-Replace an existing record through reference to its internal
-RERUM id.  This will have the effects of update, set, and unset actions.
-New keys will be created and keys not present in the request will be dropped.
-When an object is updated, the `@id` will change, as the previous 
-version will maintain its place in the history of that object.
-
-### Batch Update
-
-***Undergoing Development**
+### Batch Update (proposed)
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/batch_update.action` | `[{JSON}]` | 200: "[header.Location]" New state `[{JSON}]`
+| `/batch_update` | `[{JSON}]` | 200: "[header.Location]" New state `[{JSON}]`
 
 - **`[{JSON}]`**—an array of objects to update in RERUM.  Each object MUST contain an `@id`.
-- **`[{JSON}]`**—an array of the resolved objects in their new state from the update process
+- **Response: `[{JSON}]`**—an array of the resolved objects in their new state from the update process
 
 The array of JSON objects passed in will be updated in the
 order submitted and the response will have the URI of the
@@ -205,32 +208,30 @@ same order.
 
  >**NB:** `__rerum`, `@id` and `_id` updates are ignored.
  >
- > Updates to released or deleted
- objects fail with an error.
- 
+ > Updates to released or deleted objects fail with an error.
+
 ### Patch Update
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/patch.action` | `{JSON}` | 200: `header.Location` New state `{JSON}`
+| `/patch` | `{JSON}` | 200: `header.Location` New state `{JSON}`
 
 - **`{JSON}`**—The requested new state for the object.  MUST contain an `@id`
-- **`{JSON}`**—Containing various bits of information about the PATCH update.
+- **Response Body: `{JSON}`**—Containing various bits of information about the PATCH update.
 
 A single object is updated by altering the set or subset of properties in the JSON
 payload. This method only updates existing keys. If a property submitted in the payload which does not exist, an error will be returned to the user. If
-`{key:null}` is submitted, the key will not be removed.  Instead, the value will be set to `null`.
+`{key:null}` is submitted, the value will be set to `null`.
 Properties not mentioned in the payload object remain unaltered.
-
 
 ### Add Properties
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/set.action` | `{JSON}` | 200: `header.Location` New state `{JSON}`
+| `/set` | `{JSON}` | 200: `header.Location` New state `{JSON}`
 
 - **`{JSON}`**—The requested new state for the object MUST contain an `@id`
-- **`{JSON}`**—Containing various bits of information about the PATCH update.
+- **Response: `{JSON}`**—Containing various bits of information about the PATCH update. (see PUT Update for example)
 
 A single object is updated by adding all properties in the JSON
 payload. If a property already exists, a warning is returned to the user. 
@@ -239,10 +240,10 @@ payload. If a property already exists, a warning is returned to the user.
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/unset.action` | `{JSON}` | 202: `header.Location` New state `{JSON}`
+| `/unset` | `{JSON}` | 202: `header.Location` New state `{JSON}`
 
 - **`{JSON}`**—The requested new state for the object.  Must contain an `@id`.
-- **`{JSON}`**—Containing various bits of information about the PATCH update.
+- **`{JSON}`**—Containing various bits of information about the PATCH update. (see PUT Update for example)
 
 A single object is updated by dropping all properties
 in the JSON payload list like `{key:null}`. Keys must match
@@ -252,7 +253,7 @@ to be dropped otherwise a warning is returned to the user.
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/release.action` | `String @id` or `{JSON}` | 200: `header.Location` New state `{JSON}`
+| `/release` | `String @id` or `{JSON}` | 200: `header.Location` New state `{JSON}`
 
 - **`String @id`**—The @id of the object.
 - **`{JSON}`**—The object.  Must contain `@id`. 
