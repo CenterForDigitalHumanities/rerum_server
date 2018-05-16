@@ -2260,7 +2260,9 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             DecodedJWT d_jwt = verifier.verify(access_token);
             System.out.println("We were able to verify it. ");
             verified = true;
-            generatorID = recievedToken.getClaim("http://devstore.rerum.io/v1/agent").toString();
+            generatorID = recievedToken.getClaim("http://devstore.rerum.io/v1/agent").asString();
+            System.out.println("Was I able to pull the agent claim from the token directly without userinfo?  Value below");
+            System.out.println("Value: "+generatorID);
         } 
         catch (Exception exception){
             //Invalid signature/claims.  Try to authenticate the old way
