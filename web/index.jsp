@@ -11,12 +11,6 @@
     String basePath = request.getContextPath(); 
     String access_token = "";
     String auth_code = "";
-    ResourceBundle rb = ResourceBundle.getBundle("rerum");
-    String sec = rb.getString("rerumSecret");
-    /*
-    If you are requesting a refresh_token for a mobile app using the corresponding Native Client (which is public) then you don't need to send the client_secret in the request 
-    since it's only needed for confidential applications.   Our application type right now is Machine to Machine, which is confidential.
-    */
 %>
 
 <!DOCTYPE html>
@@ -281,30 +275,18 @@
         });
         
         $("#request_token").click(function(){
-            //The user would like to request a new access token using the refresh token.  Send them off to log in.  
-//            var params = {
-//                    "audience":"http://rerum.io/api",
-//                    "scope":"name email openid",
-//                    "response_type":"token",
-//                    "client_id":"62Jsa9MxHuqhRbO20gTHs9KpKr7Ue7sl",
-//                    "redirect_uri":"http://devstore.rerum.io",
-//                    "state":"statious123"
-//                };
             var r_t = $("#r_t_4_a_t").val();
-            var params = {
-                "grant_type":"refresh_token",
-                "client_id":"62Jsa9MxHuqhRbO20gTHs9KpKr7Ue7sl",
-                "client_secret": "<%=sec%>",
+            var params={
                 "refresh_token":r_t
             };
-            var postURL = "https://cubap.auth0.com/oauth/token"; 
+            var postURL = "http;//devstore.rerum.io/v1/api/accessToken"; 
             var xhr = new XMLHttpRequest();
             xhr.onreadystatechange = function() {
                 if (this.readyState === XMLHttpRequest.DONE) {
-                   var resp = this.response;
-                   if(typeof resp == "string"){
-                       resp = JSON.parse(resp);
-                   }
+                    var resp = this.response;
+                    if(typeof resp=="string"){
+                        resp = JSON.parse(resp);
+                    }
                    $("#a_t").val(resp.access_token);
                 }
             };
@@ -318,22 +300,22 @@
             var authCode = $("#code_for_refresh_token").val();
             if(authCode){
                 var params = {
-                    "redirect_uri": "http://devstore.rerum.io",
-                    "grant_type": "authorization_code",
-                    "client_id": "62Jsa9MxHuqhRbO20gTHs9KpKr7Ue7sl",
-                    "client_secret": "<%=sec%>",
-                    "code" : authCode
+                    "authorization_code":authCode
                 };
-                var postURL = "https://cubap.auth0.com/oauth/token"; 
+                /*
+                * TODO hit rerum token management to do this
+                * User must pass the authorization code.
+                * Servlet will respond with Auth0 response.
+                */
+                var postURL = "https://devstore.rerum.io/refreshToken"; 
                 var xhr = new XMLHttpRequest();
                 xhr.onreadystatechange = function(){
                     if (this.readyState === XMLHttpRequest.DONE) {
-                       var resp = this.response;
-                       if(typeof resp == "string"){
-                           resp = JSON.parse(resp);
-                       }
-                       $("#new_refresh_token").val(resp.refresh_token);
-                       $("#a_t").val(resp.access_token);
+                        var resp = this.response;
+                        if(typeof resp=="string"){
+                            resp = JSON.parse(resp);
+                        }
+                       $("#new_refresh_token").val(resp.refresh_token); 
                     }
                 };
                 xhr.open("POST", postURL, true); 
