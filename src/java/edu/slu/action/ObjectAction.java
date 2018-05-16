@@ -2243,7 +2243,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     private boolean verifyAccess(String access_token) throws IOException, ServletException, Exception{
         System.out.println("verify a JWT access toekn");
         boolean verified = false;
-        JSONObject userInfo = new JSONObject();
+        JSONObject userInfo;
         System.out.println("The token is");
         System.out.println(access_token);
         boolean getUser = true;
@@ -2260,13 +2260,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             DecodedJWT d_jwt = verifier.verify(access_token);
             System.out.println("We were able to verify it. ");
             verified = true;
-            userInfo = getRerumUserInfo(access_token);
-            if(userInfo.containsKey("agent")){
-                generatorID = userInfo.getString("agent"); 
-            }
-            else{
-                System.out.println("It was verified, but the user connected with the key did not have the field 'agent'.  When the user signed up, they were not created correctly.");
-            }
+            generatorID = recievedToken.getClaim("http://devstore.rerum.io/v1/agent").toString();
         } 
         catch (Exception exception){
             //Invalid signature/claims.  Try to authenticate the old way
@@ -2304,34 +2298,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         System.out.println("I need a generator out of all this.  Did I get it: "+generatorID);
         return verified;
     }
-    
-    private JSONObject getRerumUserInfo(String access_token) throws MalformedURLException, ProtocolException, IOException{
-        // Had to write into a rule to get metadata to come back with /userinfo
-        // https://auth0.com/docs/metadata/apis
-        System.out.println("I need to get user info from auth0 to get the rerum agent ID");
-        JSONObject userInfo = new JSONObject();
-        String userInfoLocation = "https://cubap.auth0.com/userinfo?access_token="+access_token;
-        URL infoURL = new URL(userInfoLocation);
-        BufferedReader reader = null;
-        StringBuilder stringBuilder;
-        HttpURLConnection connection = (HttpURLConnection) infoURL.openConnection();
-        connection.setRequestMethod("GET"); 
-        connection.setReadTimeout(15*1000);
-        connection.connect();
-        reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-        stringBuilder = new StringBuilder();
-        String line = null;
-        while ((line = reader.readLine()) != null)
-        {
-          stringBuilder.append(line);
-        }
-        connection.disconnect();
-        userInfo = JSONObject.fromObject(stringBuilder.toString());
-        System.out.println("Got the user info");
-        System.out.println(userInfo);
-        return userInfo;
-    }
-    
+       
     private JSONObject generateAgentForLegacyUser(JSONObject legacyUserObj){
         System.out.println("Detected a legacy registration.  Creating an agent and storing it with this legacy object.");
         JSONObject newAgent = new JSONObject();
