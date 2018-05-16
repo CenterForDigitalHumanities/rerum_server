@@ -255,10 +255,13 @@ to be dropped otherwise a warning is returned to the user.
 | ---     | ---     | ---
 | `/release` | `String @id` or `{JSON}` | 200: `header.Location` New state `{JSON}`
 
-- **`String @id`**—The @id of the object.
-- **`{JSON}`**—The object.  Must contain `@id`. 
+- **`String @id`**—The `@id` of the version to be released.
+- **`{JSON}`**—The object.  Must contain `@id`.
 
 RERUM allows for the `generator` of a version of an object to assign a `released` state. Objects in released states are locked such that further changes are refused. Calling any update or delete action on a released object will result in an error response. The release action will perform an update to the `__rerum.isReleased` of the version identified and update `__rerum.releases` properties throughout the object's history. Any version of an object with an `oa:Motivation` containing `rr:releasing` will be released as soon as it is saved.
+
+Example Response:
+%)($NF)D*NS_$
 
 ## DELETE
 
