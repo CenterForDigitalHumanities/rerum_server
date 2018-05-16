@@ -156,10 +156,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             JSONObject jsonReturn = new JSONObject();
             String authTokenURL = "https://cubap.auth0.com/oauth/token";
             JSONObject tokenRequestParams = new JSONObject();
+            System.out.println("Generate new refresh token");
             tokenRequestParams.element("grant_type", "authorization_code");
             tokenRequestParams.element("client_id", getRerumProperty("clientID"));
             tokenRequestParams.element("code" , received.getString("authorization_code"));
             tokenRequestParams.element("client_secret", getRerumProperty("rerumSecret"));
+            tokenRequestParams.element("redirect_uri", "http://devstore.rerum.io");
             try{
                 URL auth0 = new URL(authTokenURL);
                 HttpURLConnection connection = (HttpURLConnection) auth0.openConnection();
@@ -219,10 +221,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             JSONObject jsonReturn = new JSONObject();
             String authTokenURL = "https://cubap.auth0.com/oauth/token";
             JSONObject tokenRequestParams = new JSONObject(); 
+            System.out.println("Generate new access token");
             tokenRequestParams.element("grant_type","refresh_token");
             tokenRequestParams.element("client_id",getRerumProperty("clientID"));
             tokenRequestParams.element("client_secret",getRerumProperty("rerumSecret"));
             tokenRequestParams.element("refresh_token",received.getString("refresh_token"));
+            tokenRequestParams.element("redirect_uri", "http://devstore.rerum.io");
             try{
                 URL auth0 = new URL(authTokenURL);
                 HttpURLConnection connection = (HttpURLConnection) auth0.openConnection();
@@ -682,11 +686,19 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     writeErrorResponse("Improper request method for reading, please use GET or request for headers with HEAD.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
                 }
             break;
+            case "token":
+                auth_verified = true;
+                if(requestMethod.equals("POST")){
+                    restful = true;
+                }
+                else{
+                    writeErrorResponse("Improper request method for the Auth0 proxy, please use post.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                }
+            break;
             default:
                 writeErrorResponse("Improper request method for this type of request (unknown).", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
         }   
-        
-        System.out.println("I know whether or not we are approved: "+restful);
+        System.out.println("Method approved? "+restful);
         return restful;
     }
     

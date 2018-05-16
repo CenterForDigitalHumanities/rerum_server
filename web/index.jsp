@@ -276,23 +276,25 @@
         
         $("#request_token").click(function(){
             var r_t = $("#r_t_4_a_t").val();
-            var params={
-                "refresh_token":r_t
-            };
-            var postURL = "http;//devstore.rerum.io/v1/api/accessToken"; 
-            var xhr = new XMLHttpRequest();
-            xhr.onreadystatechange = function() {
-                if (this.readyState === XMLHttpRequest.DONE) {
-                    var resp = this.response;
-                    if(typeof resp=="string"){
-                        resp = JSON.parse(resp);
+            if(r_t){
+                var params={
+                    "refresh_token":r_t
+                };
+                var postURL = "http://devstore.rerum.io/v1/api/accessToken.action"; 
+                var xhr = new XMLHttpRequest();
+                xhr.onreadystatechange = function() {
+                    if (this.readyState === XMLHttpRequest.DONE) {
+                        var resp = this.response;
+                        if(typeof resp=="string"){
+                            resp = JSON.parse(resp);
+                        }
+                       $("#a_t").val(resp.access_token);
                     }
-                   $("#a_t").val(resp.access_token);
-                }
-            };
-            xhr.open("POST", postURL, true); 
-            xhr.setRequestHeader("Content-type", "application/json"); 
-            xhr.send(JSON.stringify(params));
+                };
+                xhr.open("POST", postURL, true); 
+                xhr.setRequestHeader("Content-type", "application/json"); 
+                xhr.send(JSON.stringify(params));
+            }
         });
         
         $("#refresh_token").click(function(){
@@ -307,7 +309,7 @@
                 * User must pass the authorization code.
                 * Servlet will respond with Auth0 response.
                 */
-                var postURL = "https://devstore.rerum.io/refreshToken"; 
+                var postURL = "http://devstore.rerum.io/v1/api/refreshToken.action"; 
                 var xhr = new XMLHttpRequest();
                 xhr.onreadystatechange = function(){
                     if (this.readyState === XMLHttpRequest.DONE) {
@@ -316,6 +318,7 @@
                             resp = JSON.parse(resp);
                         }
                        $("#new_refresh_token").val(resp.refresh_token); 
+                       $("#a_t").val(resp.access_token);
                     }
                 };
                 xhr.open("POST", postURL, true); 
