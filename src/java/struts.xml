@@ -94,6 +94,8 @@
         <action name="unset" class="objectAction" method="patchUnsetUpdate"></action>
         <action name="delete" class="objectAction" method="deleteObject"></action>
         <action name="ask" class="objectAction" method="askAuth0"></action>
+        <action name="refreshToken" class="objectAction" method="generateNewRefreshToken"></action>
+        <action name="accessToken" class="objectAction" method="generateNewAccessToken"></action>
     </package>
     
     <!-- ACCEPTED SERVER -->

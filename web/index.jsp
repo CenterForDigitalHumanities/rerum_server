@@ -4,6 +4,7 @@
     Author     : hanyan
 --%>
 
+<%@page import="java.util.ResourceBundle"%>
 <%@page import="edu.slu.action.ObjectAction"%>
 <%@page contentType="text/html" pageEncoding="UTF-8" buffer="1000kb"%>
 <% 
@@ -125,6 +126,10 @@
             <p class="handHoldy">Be prepared to be routed to Auth0 (don't know why?
                 <a target="_blank" href="https://github.com/CenterForDigitalHumanities/rerum_server/blob/master/API.md" class="linkOut">Read the API</a>).
             </p>
+            <p class="handHoldy">
+                After registering, you will be returned to this page with a code.  Scroll down to use that code to get a refresh token and an access token so you can use the API.
+                As the page gathers information from requests, it will populate these fields for you.  You can always
+            </p>
             </div>
             <div class="panel-footer">
             <input class='btn btn-primary btn-large' type="button" id="register" value="Register With RERUM At Auth0" /> 
@@ -144,7 +149,7 @@
             </div>
             <div class="panel-footer">
             <input class='btn btn-primary btn-large' type="button" id="check_status" value="Check my Authorization Status With Auth0" />
-            <input class='btn btn-primary btn-large' type="button" id="login" value="Login To Get Auth Status" />
+            <!--<input class='btn btn-primary btn-large' type="button" id="login" value="Login To Get Auth Status" />-->
             </div>
         </div>
         
@@ -153,10 +158,9 @@
             <div class="panel-body">
             <p class="handHoldy"> 
                 If you would like to check your ability to use RERUM you can provide your access token below and test access.  
-                If the token you have is not working, it may be because access tokens expire every year.  You can choose to get a new
-                access token or register again under an alias.  
+                If the token you have is not working, it may be because access tokens expire every 2 hours.  You can use your refresh token to get a new access token.
             </p>
-            <textarea class="form-control" id="a_t" placeholder="Enter your access token here to check your access to RERUM."></textarea>
+            <textarea class="form-control" id="a_t" placeholder="Your access token goes here."></textarea>
             <div>
                 <span class="status_header"> RERUM status </span> 
                 <kbd class="status" id="rerumStatus">UNKNOWN</kbd>
@@ -168,14 +172,30 @@
         </div>
         
         <div class='panel panel-info' name="block" >
-            <div class="panel-heading"> <span class="panel-title">Get A New Token</span> </div>
+            <div class="panel-heading"> <span class="panel-title">Get A New Access Token</span> </div>
             <div class="panel-body">
-            <p class="handHoldy">
-                Your access token to use RERUM expires every year.  Has it been a year already?  You can get a new token below.
-            </p>
+                <p class="handHoldy">
+                    Your access token to use RERUM expires every 2 hours.  Has it been that long or longer? Provide your refresh token below to get a new access token.
+                </p>
+                <textarea class="form-control" placeholder="Your refresh token goes here." id="r_t_4_a_t"></textarea>
             </div>
             <div class="panel-footer">
-            <input class='btn btn-primary btn-large' type="button" id="request_token" value="Get A New Access Token" />
+                <input class='btn btn-primary btn-large' type="button" id="request_token" value="Get A New Access Token" />
+            </div>
+        </div>
+        
+        <div class='panel panel-info' name="block" >
+            <div class="panel-heading"> <span class="panel-title">Get A New Refresh Token</span> </div>
+            <div class="panel-body">
+                <p class="handHoldy">
+                    You can supply a valid access code to get a new refresh token.  Use "Check my Authorization Statys with Auth0" to get a valid code.    
+                </p>
+                Enter your code: <input class="form-control" type="text" id="code_for_refresh_token"/>
+                <br>
+                <textarea readonly class="form-control" id="new_refresh_token" placeholder="Your refresh token will appear here."></textarea>
+            </div>
+            <div class="panel-footer">
+                <input class='btn btn-primary btn-large' type="button" id="refresh_token" value="Get A New Refresh Token" />
             </div>
         </div>
         
@@ -208,8 +228,9 @@
         else if(myURL.indexOf("code=") > -1){
            //The user simply checked if they were registered.  If so, they get a code.  If not, they get an error.
            auth_code = getURLVariable("code");
+           $("#code_for_refresh_token").val(auth_code);
            if(auth_code !== ""){
-                $("#authorizationStatus").html("AUTHORIZED: auth code="+auth_code+".  You are registered with the Auth0 RERUM client.");
+                $("#authorizationStatus").html("AUTHORIZED: auth code="+auth_code+".  You are registered with the Auth0 RERUM client.  Get a new refresh token using this code.");
            }
            else{ //Weird
                $("#authorizationStatus").html("UNAUTHORIZED");
@@ -236,12 +257,14 @@
        }
 
         $("#register").click(function(){
-        //Register means register with the RERUM Server Auth0 client and get an access token.  
+        //Register means register with the RERUM Server Auth0 client and get a new code for a refresh token.
         //See https://auth0.com/docs/libraries/custom-signup
             var params = {
                 "audience":"http://rerum.io/api",
-                "scope":"name email openid",
-                "response_type":"token",
+                "scope":"openid name email offline_access",
+                //"scope":"name email openid offline_access",
+                "response_type":"code",
+                //"response_type":"token",
                 "client_id":"62Jsa9MxHuqhRbO20gTHs9KpKr7Ue7sl",
                 "redirect_uri":"http://devstore.rerum.io",
                 "state":"statious123"           
@@ -252,25 +275,63 @@
         });
         
         $("#request_token").click(function(){
-            //The user would like to request a new token.  Send them off to log in.  
-            var params = {
-                    "audience":"http://rerum.io/api",
-                    "scope":"name email openid",
-                    "response_type":"token",
-                    "client_id":"62Jsa9MxHuqhRbO20gTHs9KpKr7Ue7sl",
-                    "redirect_uri":"http://devstore.rerum.io",
-                    "state":"statious123"
+            var r_t = $("#r_t_4_a_t").val();
+            if(r_t){
+                var params={
+                    "refresh_token":r_t
                 };
-            var getURL = "https://cubap.auth0.com/authorize?" + $.param(params);
-            console.log(getURL);
-            document.location.href = getURL;
+                var postURL = "http://devstore.rerum.io/v1/api/accessToken.action"; 
+                var xhr = new XMLHttpRequest();
+                xhr.onreadystatechange = function() {
+                    if (this.readyState === XMLHttpRequest.DONE) {
+                        var resp = this.response;
+                        if(typeof resp=="string"){
+                            resp = JSON.parse(resp);
+                        }
+                       $("#a_t").val(resp.access_token);
+                    }
+                };
+                xhr.open("POST", postURL, true); 
+                xhr.setRequestHeader("Content-type", "application/json"); 
+                xhr.send(JSON.stringify(params));
+            }
+        });
+        
+        $("#refresh_token").click(function(){
+            //The user would like to request a new access token using the refresh token.  Send them off to log in. 
+            var authCode = $("#code_for_refresh_token").val();
+            if(authCode){
+                var params = {
+                    "authorization_code":authCode
+                };
+                /*
+                * TODO hit rerum token management to do this
+                * User must pass the authorization code.
+                * Servlet will respond with Auth0 response.
+                */
+                var postURL = "http://devstore.rerum.io/v1/api/refreshToken.action"; 
+                var xhr = new XMLHttpRequest();
+                xhr.onreadystatechange = function(){
+                    if (this.readyState === XMLHttpRequest.DONE) {
+                        var resp = this.response;
+                        if(typeof resp=="string"){
+                            resp = JSON.parse(resp);
+                        }
+                       $("#new_refresh_token").val(resp.refresh_token); 
+                       $("#a_t").val(resp.access_token);
+                    }
+                };
+                xhr.open("POST", postURL, true); 
+                xhr.setRequestHeader("Content-type", "application/json"); 
+                xhr.send(JSON.stringify(params));
+            }
         });
         
         $("#check_status").click(function(){
           //This means they just want to see if they are registered with the RERUM Server Auth0 client (just need an auth code).  If they are no logged in, they will see a prompt to log in.
            var params = {
                 "audience":"http://rerum.io/api",
-                "scope":"name email openid",
+                "scope":"openid name email offline_access",
                 "response_type":"code",
                 "client_id":"62Jsa9MxHuqhRbO20gTHs9KpKr7Ue7sl",
                 "redirect_uri":"http://devstore.rerum.io",
@@ -282,20 +343,19 @@
             document.location.href = getURL;
         });
         
-        $("#login").click(function(){
-            //This means they want to register (or prove they are registered) with the RERUM Server Auth0 client.  They do not want an access token.
-            var params = {
-                "audience":"http://rerum.io/api",
-                "scope":"name email openid",
-                "response_type":"code",
-                "client_id":"62Jsa9MxHuqhRbO20gTHs9KpKr7Ue7sl",
-                "redirect_uri":"http://devstore.rerum.io",
-                "state":"statious123"
-            };
-            var getURL = "https://cubap.auth0.com/authorize?" + $.param(params);
-            document.location.href = getURL;
-
-        });
+//        $("#login").click(function(){
+//            //This means they want to register (or prove they are registered) with the RERUM Server Auth0 client.  They do not want an access token.
+//            var params = {
+//                "audience":"http://rerum.io/api",
+//                "scope":"name email openid",
+//                "response_type":"code",
+//                "client_id":"62Jsa9MxHuqhRbO20gTHs9KpKr7Ue7sl",
+//                "redirect_uri":"http://devstore.rerum.io",
+//                "state":"statious123"
+//            };
+//            var getURL = "https://cubap.auth0.com/authorize?" + $.param(params);
+//            document.location.href = getURL;
+//        });
                 
         function getURLVariable(variable){
             var query = window.location.search.substring(1);
