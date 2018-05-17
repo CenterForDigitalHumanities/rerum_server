@@ -304,11 +304,6 @@
                 var params = {
                     "authorization_code":authCode
                 };
-                /*
-                * TODO hit rerum token management to do this
-                * User must pass the authorization code.
-                * Servlet will respond with Auth0 response.
-                */
                 var postURL = "http://devstore.rerum.io/v1/api/refreshToken.action"; 
                 var xhr = new XMLHttpRequest();
                 xhr.onreadystatechange = function(){

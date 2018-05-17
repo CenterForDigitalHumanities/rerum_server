@@ -221,7 +221,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             JSONObject jsonReturn = new JSONObject();
             String authTokenURL = "https://cubap.auth0.com/oauth/token";
             JSONObject tokenRequestParams = new JSONObject(); 
-            System.out.println("Generate new access token");
             tokenRequestParams.element("grant_type","refresh_token");
             tokenRequestParams.element("client_id",getRerumProperty("clientID"));
             tokenRequestParams.element("client_secret",getRerumProperty("rerumSecret"));
