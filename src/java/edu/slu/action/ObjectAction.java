@@ -2200,38 +2200,39 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     public JSONObject checkIIIFCompliance(String objURL, String version) throws MalformedURLException, IOException{
         JSONObject iiif_return = new JSONObject();
         String iiif_validation_url = "https://iiif.io/api/presentation/validator/service/validate?format=json&version="+version+"&url="+objURL;
-        System.out.println("IIIF validate URL");
+        System.out.println("IIIF validate URL wil be bypassed as it is timing out a lot.");
         System.out.println(iiif_validation_url);
-        try{
-            URL validator = new URL(iiif_validation_url);
-            BufferedReader reader = null;
-            StringBuilder stringBuilder;
-            HttpURLConnection connection = (HttpURLConnection) validator.openConnection();
-            connection.setRequestMethod("GET"); 
-            connection.setConnectTimeout(5*1000); //This tends to choke sometimes...should i handle a timeout better?
-            System.out.println("Connect to iiif validator...");
-            connection.connect();
-            reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-            stringBuilder = new StringBuilder();
-            String line = null;
-            while ((line = reader.readLine()) != null)
-            {
-              stringBuilder.append(line);
-            }
-            connection.disconnect();
+//        try{
+//            URL validator = new URL(iiif_validation_url);
+//            BufferedReader reader = null;
+//            StringBuilder stringBuilder;
+//            HttpURLConnection connection = (HttpURLConnection) validator.openConnection();
+//            connection.setRequestMethod("GET"); 
+//            connection.setConnectTimeout(5*1000); //This tends to choke sometimes...should i handle a timeout better?
+//            System.out.println("Connect to iiif validator...");
+//            connection.connect();
+//            reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+//            stringBuilder = new StringBuilder();
+//            String line = null;
+//            while ((line = reader.readLine()) != null)
+//            {
+//              stringBuilder.append(line);
+//            }
+//            connection.disconnect();
+//        
+//            if(stringBuilder.length() > 0){
+//                iiif_return = JSONObject.fromObject(stringBuilder.toString());
+//                iiif_return.remove("received");
+//            }
+//            else{
+//                iiif_return = new JSONObject();
+//            }
+//        }
+//        catch(java.net.SocketTimeoutException e){ //This specifically catches the timeout
+//            System.out.println("The iiif endpoint is taking too long, so its going to be a blank object.");
+//            iiif_return = new JSONObject(); //We were never going to get a response, so return an empty object.
+//        }
         
-            if(stringBuilder.length() > 0){
-                iiif_return = JSONObject.fromObject(stringBuilder.toString());
-                iiif_return.remove("received");
-            }
-            else{
-                iiif_return = new JSONObject();
-            }
-        }
-        catch(java.net.SocketTimeoutException e){ //This specifically catches the timeout
-            System.out.println("The iiif endpoing is taking too long, so its going to be a blank object.");
-            iiif_return = new JSONObject(); //We were never going to get a response, so return an empty object.
-        }
         return iiif_return;
     }
     
