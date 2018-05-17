@@ -2387,8 +2387,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         System.out.println(access_token);
         boolean getUser = true;
         try {
-            DecodedJWT recievedToken = JWT.decode(access_token);
-            String KID = recievedToken.getKeyId();
+            DecodedJWT receivedToken = JWT.decode(access_token);
+            String KID = receivedToken.getKeyId();
             //FIXME catch a timeout or fail to get jwks.json and handle gracefully.
             JwkProvider provider = new UrlJwkProvider("https://cubap.auth0.com/.well-known/jwks.json");
             Jwk jwk = provider.get(KID); //throws Exception when not found or can't get one
@@ -2396,12 +2396,13 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             Algorithm algorithm = Algorithm.RSA256(pubKey, null);
             JWTVerifier verifier = JWT.require(algorithm).build(); //Reusable verifier instance
                //.withIssuer("auth0")
+            generatorID = receivedToken.getClaim("http://devstore.rerum.io/v1/agent").asString();
+            System.out.println("Was I able to pull the agent claim from the token directly without userinfo?  Value below");
+            System.out.println("Value: "+generatorID);
+            if(botCheck(generatorID)) return true;
             DecodedJWT d_jwt = verifier.verify(access_token);
             System.out.println("We were able to verify it. ");
             verified = true;
-            generatorID = recievedToken.getClaim("http://devstore.rerum.io/v1/agent").asString();
-            System.out.println("Was I able to pull the agent claim from the token directly without userinfo?  Value below");
-            System.out.println("Value: "+generatorID);
         } 
         catch (Exception exception){
             //Invalid signature/claims.  Try to authenticate the old way
@@ -2438,6 +2439,16 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         }
         System.out.println("I need a generator out of all this.  Did I get it: "+generatorID);
         return verified;
+    }
+    
+    /**
+     * Look at agent in token to accept even expired tokens from our known bot
+     * at Auth0 who initializes agents for newly registered applications.
+     * @param agent URI intended for generator
+     * @return true if matched
+     */
+    private boolean botCheck(String agent) {
+        return agent.compareTo(getRerumProperty("bot_agent")) == 0;
     }
        
     private JSONObject generateAgentForLegacyUser(JSONObject legacyUserObj){
