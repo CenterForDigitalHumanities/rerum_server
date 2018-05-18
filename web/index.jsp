@@ -121,14 +121,13 @@
             
             <p class="handHoldy">
                 If you like what you read in <a target="_blank" href="https://github.com/CenterForDigitalHumanities/rerum_server/blob/master/API.md" class="linkOut">our API documentation</a> 
-                and want to begin using RERUM please register by clicking below.  If you already registered, this will create a new access token and overwrite your old one.
-            </p>
-            <p class="handHoldy">Be prepared to be routed to Auth0 (don't know why?
+                and want to begin using RERUM please register by clicking below. 
+                Be prepared to be routed to Auth0 (don't know why?
                 <a target="_blank" href="https://github.com/CenterForDigitalHumanities/rerum_server/blob/master/API.md" class="linkOut">Read the API</a>).
             </p>
             <p class="handHoldy">
-                After registering, you will be returned to this page with a code.  Scroll down to use that code to get a refresh token and an access token so you can use the API.
-                As the page gathers information from requests, it will populate these fields for you.  You can always
+                After registering, you will be returned to this page with an Auth0 Authorization code.  Use that code at the bottom of this page to get a refresh token 
+                and an access token so you can use the API.  You may notice the page has already populated known information for you.  
             </p>
             </div>
             <div class="panel-footer">
@@ -140,7 +139,7 @@
             <div class="panel-heading"> <span class="panel-title">Auth0 Authorization Status</span> </div>
             <div class="panel-body">
             <p class="handHoldy">
-                If you believe are already registered and want to check on your status with Auth0, follow the prompts below.  You may be routed to Auth0 so we can verify who you are.  
+                If you believe are already registered and want to check on your status with Auth0, follow the prompts below.  You will be routed to Auth0 so we can verify who you are.  
             </p>
             <div>
                 <span class="status_header"> Auth0 Status </span> 
@@ -157,7 +156,9 @@
             <div class="panel-heading"> <span class="panel-title">Test RERUM API Access</span> </div>
             <div class="panel-body">
             <p class="handHoldy"> 
-                If you would like to check your ability to use RERUM you can provide your access token below and test access.  
+                Provide you access token below to check if it is still valid.  If so, your access to RERUM will authorized.  Otherwise, you will see an "unauthorized" message.
+            </p>
+            <p class="handHoldy">
                 If the token you have is not working, it may be because access tokens expire every 2 hours.  You can use your refresh token to get a new access token.
             </p>
             <textarea class="form-control" id="a_t" placeholder="Your access token goes here."></textarea>
@@ -176,6 +177,7 @@
             <div class="panel-body">
                 <p class="handHoldy">
                     Your access token to use RERUM expires every 2 hours.  Has it been that long or longer? Provide your refresh token below to get a new access token.
+                    If you lost your refresh token, you can get a new one in "Get A New Refresh Token" below.
                 </p>
                 <textarea class="form-control" placeholder="Your refresh token goes here." id="r_t_4_a_t"></textarea>
             </div>
@@ -188,9 +190,9 @@
             <div class="panel-heading"> <span class="panel-title">Get A New Refresh Token</span> </div>
             <div class="panel-body">
                 <p class="handHoldy">
-                    You can supply a valid access code to get a new refresh token.  Use "Check my Authorization Statys with Auth0" to get a valid code.    
+                    You can supply a valid access code to get a new refresh token.  Use "Check my Authorization Status with Auth0" to get a valid code.    
                 </p>
-                Enter your code: <input class="form-control" type="text" id="code_for_refresh_token"/>
+                Enter your code: <input class="form-control" type="text" placeholder="Your Auth0 Authorization Code goes here" id="code_for_refresh_token"/>
                 <br>
                 <textarea readonly class="form-control" id="new_refresh_token" placeholder="Your refresh token will appear here."></textarea>
             </div>
@@ -277,6 +279,7 @@
         $("#request_token").click(function(){
             var r_t = $("#r_t_4_a_t").val();
             if(r_t){
+                $("#r_t_4_a_t").css("border", "none");
                 var params={
                     "refresh_token":r_t
                 };
@@ -295,12 +298,17 @@
                 xhr.setRequestHeader("Content-type", "application/json"); 
                 xhr.send(JSON.stringify(params));
             }
+            else{
+                $("#r_t_4_a_t").attr("placeholder", "You must supply a code here!");
+                $("#r_t_4_a_t").css("border", "2px solid yellow");
+            }
         });
         
         $("#refresh_token").click(function(){
             //The user would like to request a new access token using the refresh token.  Send them off to log in. 
             var authCode = $("#code_for_refresh_token").val();
             if(authCode){
+                $("#code_for_refresh_token").css("border", "none");
                 var params = {
                     "authorization_code":authCode
                 };
@@ -319,6 +327,10 @@
                 xhr.open("POST", postURL, true); 
                 xhr.setRequestHeader("Content-type", "application/json"); 
                 xhr.send(JSON.stringify(params));
+            }
+            else{
+                $("#code_for_refresh_token").attr("placeholder", "You must supply a code here!");
+                $("#code_for_refresh_token").css("border", "2px solid yellow");
             }
         });
         
@@ -391,7 +403,7 @@
                            $("#test_api").show();
                        }
                        else{
-                           $("#rerumStatus").html("UNAUTHORIZED.  Try to refresh your status and if you still have trouble, <a class='linkOut' href=''>contact us at RERUM</a>.");
+                           $("#rerumStatus").html("UNAUTHORIZED.  Refresh your access token and try again.  If you still have trouble, <a class='linkOut' href=''>contact us at RERUM</a>.");
                            $("#a_t").css("border", "2px solid red");
                        }
                     }

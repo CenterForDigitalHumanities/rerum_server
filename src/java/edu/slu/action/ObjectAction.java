@@ -1574,7 +1574,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 JSONObject originalJSONObj = JSONObject.fromObject(originalObject);
                 boolean alreadyDeleted = checkIfDeleted(JSONObject.fromObject(originalObject));
                 boolean isReleased = checkIfReleased(JSONObject.fromObject(originalObject));
-                String origObjGenerator = originalJSONObj.getJSONObject("__rerum").getString("generatedBy");
                 if(alreadyDeleted){
                     writeErrorResponse("The object you are trying to update is deleted.", HttpServletResponse.SC_FORBIDDEN);
                 }
@@ -1621,7 +1620,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         }
                     }
                     else{
-                        updateExternalObject(originalJSONObj);
+                        updateExternalObject(received);
                     }
                 }
             }
@@ -2261,6 +2260,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      */
     private void updateExternalObject(JSONObject externalObj){
         System.out.println("update on external object");
+        System.out.println(externalObj);
         try {
             JSONObject jo = new JSONObject();
             JSONObject iiif_validation_response = checkIIIFCompliance(externalObj, true);
@@ -2291,6 +2291,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         catch (IOException ex) {
             Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
         }
+
      }
     
     private JSONObject getJWKS() throws MalformedURLException, ProtocolException, IOException{
