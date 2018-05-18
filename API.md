@@ -10,6 +10,8 @@
     - [Create](#create)
     - [Batch Create (proposed)](#batch-create-proposed)
     - [Custom Query (beta)](#custom-query-beta)
+    - [Access Token Proxy](#access-token-proxy)
+    - [Refresh Token Proxy](#refresh-token-proxy)
   - [PUT](#put)
     - [Update](#update)
     - [Batch Update (proposed)](#batch-update-proposed)
@@ -107,6 +109,60 @@ Example Response:
     "error" : "Error for why this object failed validation",
     "okay" : 1 // 0 or 1 as to whether or not it passed IIIF validation
   }
+}
+~~~
+
+### Access Token Proxy
+
+| Patterns | Payloads | Responses
+| ---     | ---     | ---
+| `/v1/accessToken` | `{JSON}` | 200: `{JSON}`
+
+- **`{JSON}`**— Auth0 requirements [here](https://auth0.com/docs/tokens/refresh-token/current#use-a-refresh-token)
+- **Response: `{JSON}`**— Containing the Auth0 /oauth/token `JSON` response
+
+RERUM works as a proxy with Auth0 to help manage tokens from registered applications.
+This will form the request necessary to get a response from Auth0 which contains
+a new access token.
+
+Example Response:
+
+- **Header:** `HTTP/1.1 200 OK`
+- **Body:**
+
+~~~ (json)
+{
+  "access_token":"eyJz93a...k4laUWw",
+  "token_type":"Bearer",
+  "expires_in":86400
+}
+~~~
+
+### Refresh Token Proxy
+
+| Patterns | Payloads | Responses
+| ---     | ---     | ---
+| `/v1/refreshToken` | `{JSON}` | 200: `{JSON}`
+
+- **`{JSON}`**— Auth0 requirements [here](https://auth0.com/docs/tokens/refresh-token/current#get-a-refresh-token)
+- **Response: `{JSON}`**— Containing the Auth0 /oauth/token `JSON` response
+
+RERUM works as a proxy with Auth0 to help manage tokens from registered applications.
+This will form the request necessary to get a response from Auth0 which contains
+a new refresh token.
+
+Example Response:
+
+- **Header:** `HTTP/1.1 200 OK`
+- **Body:**
+
+~~~ (json)
+{
+  "access_token":"eyJz93a...k4laUWw",
+  "refresh_token":"GEbRxBN...edjnXbL",
+  "id_token":"eyJ0XAi...4faeEoQ",
+  "token_type":"Bearer",
+  "expires_in":86400
 }
 ~~~
 
