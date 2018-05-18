@@ -147,7 +147,7 @@
             <div class="panel-heading"> <span class="panel-title">Auth0 Authorization Status</span> </div>
             <div class="panel-body">
             <p class="handHoldy">
-                If you believe are already registered and want to check on your status with Auth0, follow the prompts below.  You will be routed to Auth0 so we can verify who you are.  
+                If you believe you are already registered and want to check on your status, follow the prompts below.  You will be routed to Auth0 so we can verify who you are.  
             </p>
             <div>
                 <span class="status_header"> Auth0 Status </span> 
@@ -164,7 +164,7 @@
             <div class="panel-heading"> <span class="panel-title">Test RERUM API Access</span> </div>
             <div class="panel-body">
             <p class="handHoldy"> 
-                Provide you access token below to check if it is still valid.  If so, your access to RERUM will authorized.  Otherwise, you will see an "unauthorized" message.
+                Provide your access token below to check if it is still valid.  If so, your access to RERUM will be authorized.  Otherwise, you will see an "unauthorized" message.
             </p>
             <p class="handHoldy">
                 If the token you have is not working, it may be because access tokens expire every 2 hours.  You can use your refresh token to get a new access token.
