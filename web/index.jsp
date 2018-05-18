@@ -143,7 +143,7 @@
             </p>
             <div>
                 <span class="status_header"> Auth0 Status </span> 
-                <kbd class="status" id="authorizationStatus">UNKNOWN</kbd>
+                <kbd class="rerumStatus" id="authorizationStatus">UNKNOWN</kbd>
             </div>
             </div>
             <div class="panel-footer">
@@ -164,7 +164,7 @@
             <textarea class="form-control" id="a_t" placeholder="Your access token goes here."></textarea>
             <div>
                 <span class="status_header"> RERUM status </span> 
-                <kbd class="status" id="rerumStatus">UNKNOWN</kbd>
+                <kbd class="rerumStatus" id="rerumStatus" class="">UNKNOWN</kbd>
             </div>
             </div>
             <div class="panel-footer">
@@ -180,6 +180,10 @@
                     If you lost your refresh token, you can get a new one in "Get A New Refresh Token" below.
                 </p>
                 <textarea class="form-control" placeholder="Your refresh token goes here." id="r_t_4_a_t"></textarea>
+                <div>
+                    <span class="status_header"> Status </span> 
+                    <kbd class="rerumStatus" id="natStatus" >UNKNOWN</kbd>
+                </div>
             </div>
             <div class="panel-footer">
                 <input class='btn btn-primary btn-large' type="button" id="request_token" value="Get A New Access Token" />
@@ -195,6 +199,10 @@
                 Enter your code: <textarea class="form-control" placeholder="Your Auth0 Authorization Code goes here" id="code_for_refresh_token"></textarea>
                 <br>
                 <textarea readonly class="form-control" id="new_refresh_token" placeholder="Your refresh token will appear here."></textarea>
+                <div>
+                    <span class="status_header"> Status </span> 
+                    <kbd class="rerumStatus" id="nrtStatus">UNKNOWN</kbd>
+                </div>
             </div>
             <div class="panel-footer">
                 <input class='btn btn-primary btn-large' type="button" id="refresh_token" value="Get A New Refresh Token" />
@@ -278,8 +286,10 @@
         
         $("#request_token").click(function(){
             var r_t = $("#r_t_4_a_t").val();
+            var statusElem = $("#natStatus");
             if(r_t){
                 $("#r_t_4_a_t").css("border", "none");
+                $("#r_t_4_a_t").val();
                 var params={
                     "refresh_token":r_t
                 };
@@ -291,7 +301,12 @@
                         if(typeof resp=="string"){
                             resp = JSON.parse(resp);
                         }
-                       $("#a_t").val(resp.access_token);
+                        $("#a_t").val(resp.access_token);
+                        statusElem.html("The refresh token was accepted.");
+                    }
+                     else{
+                        $("#r_t_4_a_t").css("border", "2px solid red");
+                        statusElem.html("The refresh token was invalid.  Get a new refresh token or try again.");
                     }
                 };
                 xhr.open("POST", postURL, true); 
@@ -307,8 +322,11 @@
         $("#refresh_token").click(function(){
             //The user would like to request a new access token using the refresh token.  Send them off to log in. 
             var authCode = $("#code_for_refresh_token").val();
+            var statusElem = $("#nrtStatus");
             if(authCode){
                 $("#code_for_refresh_token").css("border", "none");
+                $("#new_refresh_token").css("border", "none");
+                $("#new_refresh_token").val("");
                 var params = {
                     "authorization_code":authCode
                 };
@@ -322,6 +340,11 @@
                         }
                        $("#new_refresh_token").val(resp.refresh_token); 
                        $("#a_t").val(resp.access_token);
+                       statusElem.html("Auth0 accepted the code.");
+                    }
+                    else{
+                        $("#code_for_refresh_token").css("border", "2px solid red");
+                        statusElem.html("Auth0 rejected the code.  Check your status to get a new code and try again.");
                     }
                 };
                 xhr.open("POST", postURL, true); 
@@ -387,8 +410,9 @@
         
         function testAPI(){
             var userProvidedToken = $("#a_t").val();
+            var statusElem = $("#rerumStatus");
             if(userProvidedToken !== ""){
-                $("#rerumStatus").html("WORKING...");
+                statusElem.html("WORKING...");
                 $("#a_t").css("border", "none");
                 var params = { 
                     "@id" : "http://devstore.rerum.io/v1/id/5aff0348e4b071049759647c", 
@@ -399,11 +423,11 @@
                 xhr.onreadystatechange = function() {
                     if (this.readyState === XMLHttpRequest.DONE) {
                        if(this.status === 200){
-                           $("#rerumStatus").html("AUTHORIZED");
+                           statusElem.html("AUTHORIZED");
                            $("#test_api").show();
                        }
                        else{
-                           $("#rerumStatus").html("UNAUTHORIZED.  Refresh your access token and try again.  If you still have trouble, <a class='linkOut' href=''>contact us at RERUM</a>.");
+                           statusElem.html("UNAUTHORIZED.  Refresh your access token and try again.  If you still have trouble, <a class='linkOut' href=''>contact us at RERUM</a>.");
                            $("#a_t").css("border", "2px solid red");
                        }
                     }

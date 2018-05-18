@@ -203,6 +203,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
                 jsonReturn = new JSONObject(); 
                 jsonReturn.element("error", "Couldn't access output stream");
+                jsonReturn.element("msg", ex);
                 out = response.getWriter();
                 response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
                 out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jsonReturn));
@@ -268,6 +269,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
                 jsonReturn = new JSONObject(); //We were never going to get a response, so return an empty object.
                 jsonReturn.element("error", "Couldn't access output stream");
+                jsonReturn.element("msg", ex);
                 out = response.getWriter();
                 response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
                 out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jsonReturn));
