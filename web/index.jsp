@@ -87,6 +87,14 @@
             height: 170px;
             margin-bottom: 8px;
         }
+        
+        #a_t, #r_t_4_a_t, #new_refresh_token {
+            margin-bottom: 8px;
+        }
+        
+        #code_for_refresh_token{
+            margin-bottom: -13px;
+        }
 
         
     </style>
@@ -301,12 +309,14 @@
                         if(typeof resp=="string"){
                             resp = JSON.parse(resp);
                         }
-                        $("#a_t").val(resp.access_token);
-                        statusElem.html("The refresh token was accepted.");
-                    }
-                     else{
-                        $("#r_t_4_a_t").css("border", "2px solid red");
-                        statusElem.html("The refresh token was invalid.  Get a new refresh token or try again.");
+                        if(this.status < 300){
+                            $("#a_t").val(resp.access_token);
+                            statusElem.html("The refresh token was accepted.");
+                        }
+                        else{
+                            $("#r_t_4_a_t").css("border", "2px solid red");
+                            statusElem.html("The refresh token was invalid.  Get a new refresh token or try again.");
+                        }
                     }
                 };
                 xhr.open("POST", postURL, true); 
@@ -338,13 +348,15 @@
                         if(typeof resp=="string"){
                             resp = JSON.parse(resp);
                         }
-                       $("#new_refresh_token").val(resp.refresh_token); 
-                       $("#a_t").val(resp.access_token);
-                       statusElem.html("Auth0 accepted the code.");
-                    }
-                    else{
-                        $("#code_for_refresh_token").css("border", "2px solid red");
-                        statusElem.html("Auth0 rejected the code.  Check your status to get a new code and try again.");
+                        if(this.status < 300){
+                            $("#new_refresh_token").val(resp.refresh_token); 
+                            $("#a_t").val(resp.access_token);
+                            statusElem.html("Auth0 accepted the code.");
+                        }
+                        else{
+                            $("#code_for_refresh_token").css("border", "2px solid red");
+                            statusElem.html("Auth0 rejected the code.  Check your status to get a new code and try again.");
+                        }                      
                     }
                 };
                 xhr.open("POST", postURL, true); 
