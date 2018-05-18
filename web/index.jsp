@@ -202,7 +202,7 @@
             <div class="panel-heading"> <span class="panel-title">Get A New Refresh Token</span> </div>
             <div class="panel-body">
                 <p class="handHoldy">
-                    You can supply a valid access code to get a new refresh token.  Use "Check my Authorization Status with Auth0" to get a valid code.    
+                    You can supply a valid Auth0 Authorization Code to get a new refresh token.  Use "Check my Authorization Status with Auth0" to get a valid code.    
                 </p>
                 Enter your code: <textarea class="form-control" placeholder="Your Auth0 Authorization Code goes here" id="code_for_refresh_token"></textarea>
                 <br>
