@@ -35,7 +35,7 @@
 All the following interactions will take place between
 the server running RERUM and the application server. If
 you prefer to use the public RERUM server (which I hope
-you do), the base URL is `http://store.rerum.io/v1`. 
+you do), the base URL is `http://devstore.rerum.io/v1`. 
 
 ## GET
 
