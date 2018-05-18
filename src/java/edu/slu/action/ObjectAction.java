@@ -138,7 +138,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
       String propVal = "";
       try {
          propVal = rb.getString(prop);
-      } catch (MissingResourceException e) {
+      } catch (MissingResourceException e) {                     
          System.err.println("Token ".concat(prop).concat(" not in Propertyfile!"));
       }
       return propVal;
@@ -217,6 +217,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     */    
    public void generateNewAccessToken() throws MalformedURLException, IOException, Exception {
        if(null!= processRequestBody(request, false) && methodApproval(request, "token")){
+            System.out.println("RERUM is generating an ew access token...");
             JSONObject received = JSONObject.fromObject(content);
             JSONObject jsonReturn = new JSONObject();
             String authTokenURL = "https://cubap.auth0.com/oauth/token";
@@ -227,6 +228,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             tokenRequestParams.element("refresh_token",received.getString("refresh_token"));
             tokenRequestParams.element("redirect_uri", "http://devstore.rerum.io");
             try{
+                System.out.println("RERUM is connecting with Auth0...");
                 URL auth0 = new URL(authTokenURL);
                 HttpURLConnection connection = (HttpURLConnection) auth0.openConnection();
                 connection.setRequestMethod("POST"); 
@@ -249,6 +251,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     sb.append(line);
                 }
                 reader.close();
+                System.out.println("Auth0 responded, hand that back...");
                 jsonReturn = JSONObject.fromObject(sb.toString());
                 out = response.getWriter();
                 response.setStatus(HttpServletResponse.SC_OK);
@@ -539,7 +542,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
                     }
                     else{
-                        writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                        writeErrorResponse("Could not authorize you to perform this action.  Have you registered at "+Constant.RERUM_REGISTRATION_URL, HttpServletResponse.SC_UNAUTHORIZED);
                     }
                 }
             break;
@@ -558,7 +561,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
                     }
                     else{
-                        writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                        writeErrorResponse("Could not authorize you to perform this action.  Have you registered at "+Constant.RERUM_REGISTRATION_URL, HttpServletResponse.SC_UNAUTHORIZED);
                     }
                 }
             break;
@@ -577,7 +580,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
                     }
                     else{
-                        writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                        writeErrorResponse("Could not authorize you to perform this action.  Have you registered at "+Constant.RERUM_REGISTRATION_URL, HttpServletResponse.SC_UNAUTHORIZED);
                     }
                 }
             break;
@@ -596,7 +599,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
                     }
                     else{
-                        writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                        writeErrorResponse("Could not authorize you to perform this action.  Have you registered at "+Constant.RERUM_REGISTRATION_URL, HttpServletResponse.SC_UNAUTHORIZED);
                     }
                 }
             break;
@@ -615,7 +618,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
                     }
                     else{
-                        writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                        writeErrorResponse("Could not authorize you to perform this action.  Have you registered at "+Constant.RERUM_REGISTRATION_URL, HttpServletResponse.SC_UNAUTHORIZED);
                     }
                 }
             break;
@@ -634,7 +637,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
                     }
                     else{
-                        writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                        writeErrorResponse("Could not authorize you to perform this action.  Have you registered at "+Constant.RERUM_REGISTRATION_URL, HttpServletResponse.SC_UNAUTHORIZED);
                     }
                 }
             break;
@@ -653,7 +656,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
                     }
                     else{
-                        writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                        writeErrorResponse("Could not authorize you to perform this action.  Have you registered at "+Constant.RERUM_REGISTRATION_URL, HttpServletResponse.SC_UNAUTHORIZED);
                     }
                 }
             break;
@@ -672,7 +675,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
                     }
                     else{
-                        writeErrorResponse("Could not authorize you to perform this action.  Are you logged in with auth0?  Have you consented to invoke this API through auth0?  ", HttpServletResponse.SC_UNAUTHORIZED);
+                        writeErrorResponse("Could not authorize you to perform this action.  Have you registered at "+Constant.RERUM_REGISTRATION_URL, HttpServletResponse.SC_UNAUTHORIZED);
                     }
                 }
             break;
@@ -1208,7 +1211,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @respond with new @id in Location header and the new annotation in the body.
      */
     public void saveNewObject() throws IOException, ServletException, Exception{
-        System.out.println("Save an object!");
+        System.out.println("create object");
         if(null != processRequestBody(request, false) && methodApproval(request, "create")){
             JSONObject received = JSONObject.fromObject(content);
             if(received.containsKey("@id")){
@@ -1226,26 +1229,27 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
                 //set @id from _id and update the annotation
                 BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
-                String uid = "http://devstore.rerum.io/v1/id/"+newObjectID;
-                dboWithObjectID.append("@id", uid);
+                String newid = "http://devstore.rerum.io/v1/id/"+newObjectID;
+                dboWithObjectID.append("@id", newid);
                 mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
                 JSONObject jo = new JSONObject();
                 JSONObject newObjWithID = JSONObject.fromObject(dboWithObjectID);
                 jo.element("code", HttpServletResponse.SC_CREATED);
-                jo.element("@id", uid);
+                jo.element("@id", newid);
                 jo.element("iiif_validation", iiif_validation_response);
                 try {
+                    System.out.println("Object created: "+newid);
                     response.addHeader("Access-Control-Allow-Origin", "*");
                     addWebAnnotationHeaders(newObjectID, isContainerType(received), isLD(received));
                     addLocationHeader(newObjWithID);
                     response.setStatus(HttpServletResponse.SC_CREATED);
                     out = response.getWriter();
                     out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
-                } 
+                }
                 catch (IOException ex) {
                     Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
                 }
-            }          
+            }
         }
     }
 
@@ -2302,7 +2306,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             int rcode = 0;
             String tokenURL="https://cubap.auth0.com/oauth/token";
             JSONObject body = new JSONObject();
-            
             //body.element("grant_type", "authorization_code");
             body.element("grant_type", "client_credentials");
             body.element("client_id", getRerumProperty("clientID"));
@@ -2322,9 +2325,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             connection.setRequestProperty("Content-Type", "application/json");
             connection.connect();
             rcode = connection.getResponseCode();
-            System.out.println("response code from auth0: "+connection.getResponseCode());
-            System.out.println("Message to go along with code:");
-            System.out.println(connection.getResponseMessage());
             if(connection.getResponseCode() == 401 ){
                 //One of the values used was wrong.  The secret may have expired, the clientID may be wrong, the auth_code may be wrong or the user may not be a part of the RERUM client.
                 token = "Auth0 responded 401.  Contact RERUM.";
@@ -2386,7 +2386,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         JSONObject userInfo;
         System.out.println("The token is");
         System.out.println(access_token);
-        boolean getUser = true;
         try {
             DecodedJWT receivedToken = JWT.decode(access_token);
             String KID = receivedToken.getKeyId();
@@ -2398,16 +2397,23 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             JWTVerifier verifier = JWT.require(algorithm).build(); //Reusable verifier instance
                //.withIssuer("auth0")
             generatorID = receivedToken.getClaim("http://devstore.rerum.io/v1/agent").asString();
-            System.out.println("Was I able to pull the agent claim from the token directly without userinfo?  Value below");
+            System.out.println("Was I able to pull the agent claim from the token directly without userinfo without verifying?  Value below");
             System.out.println("Value: "+generatorID);
-            if(botCheck(generatorID)) return true;
-            DecodedJWT d_jwt = verifier.verify(access_token);
-            System.out.println("We were able to verify it. ");
-            verified = true;
+            if(botCheck(generatorID)){
+                System.out.println("It passed the bot check, no need to verify the access token.  I have the generator ID.  ");
+                verified = true;
+            }
+            else{
+                DecodedJWT d_jwt = verifier.verify(access_token);
+                System.out.println("We were able to verify the access token. ");
+                verified = true;
+            }
+            
         } 
         catch (Exception exception){
-            //Invalid signature/claims.  Try to authenticate the old way
-            System.out.println("Verification failed.  We were given a bad token.  IP fallback");
+            //Invalid signature/claims/token.  Try to authenticate the old way
+            System.out.println("Verification failed.  We were given a bad token.  IP fallback.  Exception below, but caught.");
+            Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, exception);
             String requestIP = request.getRemoteAddr();
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
             //check if the domain name and ip is in database
@@ -2426,15 +2432,15 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     //This is a legacy user.
                     //Create agent and write back to server collection
                     System.out.println("The registered server did not have an agent ID.  It must be from the old system.");
+                    System.out.println("We will generate a new agent to store with the registered server.");
                     userInfo = generateAgentForLegacyUser(JSONObject.fromObject(result));
                 }
                 generatorID = userInfo.getString("agent");
-                getUser = false;
                 verified = true;
             }
             else{
-                System.out.println("[Modifying Data Request]: ip ========== " + requestIP + "@" + sdf.format(new Date()) + " +++++ Server Not Registered");
-                getUser = false;
+                System.out.println("[Modifying Data Request]: ip ========== " + requestIP + "@" + sdf.format(new Date()) + " +++++ The app needs to register with RERUM");
+                
                 verified = false;
             }
         }
@@ -2449,7 +2455,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @return true if matched
      */
     private boolean botCheck(String agent) {
-        return agent.compareTo(getRerumProperty("bot_agent")) == 0;
+        return agent.equals(getRerumProperty("bot_agent"));
     }
        
     private JSONObject generateAgentForLegacyUser(JSONObject legacyUserObj){
