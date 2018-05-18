@@ -152,11 +152,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     */    
    public void generateNewRefreshToken() throws MalformedURLException, IOException, Exception {
         if(null!= processRequestBody(request, false) && methodApproval(request, "token")){
+            System.out.println("Proxy generate a refresh token");
             JSONObject received = JSONObject.fromObject(content);
             JSONObject jsonReturn = new JSONObject();
             String authTokenURL = "https://cubap.auth0.com/oauth/token";
             JSONObject tokenRequestParams = new JSONObject();
-            System.out.println("Generate new refresh token");
+            
             tokenRequestParams.element("grant_type", "authorization_code");
             tokenRequestParams.element("client_id", getRerumProperty("clientID"));
             tokenRequestParams.element("code" , received.getString("authorization_code"));
@@ -217,7 +218,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     */    
    public void generateNewAccessToken() throws MalformedURLException, IOException, Exception {
        if(null!= processRequestBody(request, false) && methodApproval(request, "token")){
-            System.out.println("RERUM is generating an ew access token...");
+            System.out.println("Proxy generate an access token");
             JSONObject received = JSONObject.fromObject(content);
             JSONObject jsonReturn = new JSONObject();
             String authTokenURL = "https://cubap.auth0.com/oauth/token";
@@ -228,7 +229,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             tokenRequestParams.element("refresh_token",received.getString("refresh_token"));
             tokenRequestParams.element("redirect_uri", "http://devstore.rerum.io");
             try{
-                System.out.println("RERUM is connecting with Auth0...");
                 URL auth0 = new URL(authTokenURL);
                 HttpURLConnection connection = (HttpURLConnection) auth0.openConnection();
                 connection.setRequestMethod("POST"); 
@@ -251,7 +251,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     sb.append(line);
                 }
                 reader.close();
-                System.out.println("Auth0 responded, hand that back...");
                 jsonReturn = JSONObject.fromObject(sb.toString());
                 out = response.getWriter();
                 response.setStatus(HttpServletResponse.SC_OK);
@@ -1261,6 +1260,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      */
     public void patchSetUpdate()throws IOException, ServletException, Exception{
         Boolean historyNextUpdatePassed = false;
+        System.out.println("patch set update object");
         if(null!= processRequestBody(request, true) && methodApproval(request, "set")){
             BasicDBObject query = new BasicDBObject();
             JSONObject received = JSONObject.fromObject(content); 
@@ -1306,6 +1306,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                             mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
                             historyNextUpdatePassed = alterHistoryNext(updateHistoryNextID, newNextAtID); //update history.next or original object to include the newObject @id
                             if(historyNextUpdatePassed){
+                                System.out.println("object patch set updated: "+newNextAtID);
                                 JSONObject jo = new JSONObject();
                                 JSONObject iiif_validation_response = checkIIIFCompliance(newNextAtID, "2.1");
                                 jo.element("code", HttpServletResponse.SC_OK);
@@ -1353,6 +1354,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      */
     public void patchUnsetUpdate()throws IOException, ServletException, Exception{
         Boolean historyNextUpdatePassed = false;
+        System.out.println("Patch unset update");
         if(null!= processRequestBody(request, true) && methodApproval(request, "unset")){
             BasicDBObject query = new BasicDBObject();
             JSONObject received = JSONObject.fromObject(content); 
@@ -1408,6 +1410,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                             mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
                             historyNextUpdatePassed = alterHistoryNext(updateHistoryNextID, newNextAtID); //update history.next or original object to include the newObject @id
                             if(historyNextUpdatePassed){
+                                System.out.println("Patch unset updated: "+newNextAtID);
                                 JSONObject jo = new JSONObject();
                                 JSONObject iiif_validation_response = checkIIIFCompliance(newNextAtID, "2.1");
                                 jo.element("code", HttpServletResponse.SC_OK);
@@ -1453,6 +1456,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      */
     public void patchUpdateObject() throws ServletException, Exception{
         Boolean historyNextUpdatePassed = false;
+        System.out.println("Patch update object");
         if(null!= processRequestBody(request, true) && methodApproval(request, "patch")){
             BasicDBObject query = new BasicDBObject();
             JSONObject received = JSONObject.fromObject(content); 
@@ -1512,6 +1516,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                             mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
                             historyNextUpdatePassed = alterHistoryNext(updateHistoryNextID, newNextAtID); //update history.next or original object to include the newObject @id
                             if(historyNextUpdatePassed){
+                                System.out.println("Patch updated object: "+newNextAtID);
                                 JSONObject jo = new JSONObject();
                                 JSONObject iiif_validation_response = checkIIIFCompliance(newNextAtID, "2.1");
                                 jo.element("code", HttpServletResponse.SC_OK);
@@ -1557,6 +1562,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         //cubap: I'm not sold we have to do this. Our versioning would allow multiple changes. 
         //The application might want to throttle internally, but it can.
         Boolean historyNextUpdatePassed = false;
+        System.out.println("put update object");
         if(null!= processRequestBody(request, true) && methodApproval(request, "update")){
             BasicDBObject query = new BasicDBObject();
             JSONObject received = JSONObject.fromObject(content); 
@@ -1592,6 +1598,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
                         historyNextUpdatePassed = alterHistoryNext(updateHistoryNextID, newNextAtID); //update history.next or original object to include the newObject @id
                         if(historyNextUpdatePassed){
+                            System.out.println("Object put updated: "+newNextAtID);
                             JSONObject jo = new JSONObject();
                             JSONObject iiif_validation_response = checkIIIFCompliance(newNextAtID, "2.1");
                             jo.element("code", HttpServletResponse.SC_OK);
@@ -1635,6 +1642,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @throws javax.servlet.ServletException
      */
     public void overwriteObject()throws IOException, ServletException, Exception{
+        System.out.println("overwrite object");
         if(null!= processRequestBody(request, true) && methodApproval(request, "overwrite")){
             BasicDBObject query = new BasicDBObject();
             JSONObject received = JSONObject.fromObject(content); 
@@ -1665,6 +1673,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         mongoDBService.update(Constant.COLLECTION_ANNOTATION, originalObject, udbo);
                         JSONObject jo = new JSONObject();
                         JSONObject iiif_validation_response = checkIIIFCompliance(receivedID, "2.1");
+                        System.out.println("object overwritten: "+receivedID);
                         jo.element("code", HttpServletResponse.SC_OK);
                         jo.element("new_obj_state", newObject); //FIXME: @webanno standards say this should be the response.
                         jo.element("iiif_validation", iiif_validation_response);
@@ -1698,6 +1707,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     public void releaseObject() throws IOException, ServletException, Exception{
         boolean treeHealed = false;
         boolean isGenerator = false;
+        System.out.println("Release object");
         if(null!= processRequestBody(request, true) && methodApproval(request, "release")){
             BasicDBObject query = new BasicDBObject();
             JSONObject received = JSONObject.fromObject(content);
@@ -1735,6 +1745,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                             if(treeHealed){ //If the tree was established/healed
                                 //perform the update to isReleased of the object being released.  Its releases.next[] and releases.previous are already correct.
                                 mongoDBService.update(Constant.COLLECTION_ANNOTATION, originalObject, releasedObject);
+                                System.out.println("Object released: "+updateToReleasedID);
                                 JSONObject jo = new JSONObject();
                                 jo.element("code", HttpServletResponse.SC_OK);
                                 jo.element("new_obj_state", releasedObject); //FIXME: @webanno standards say this should be the response.
@@ -1963,6 +1974,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * Public facing servlet to delete a given annotation. 
      */
     public void deleteObject() throws IOException, ServletException, Exception{
+        System.out.println("Delete object");
         if(null!=processRequestBody(request, true) && methodApproval(request, "delete")){ 
             BasicDBObject query = new BasicDBObject();
             BasicDBObject originalObject;
@@ -2015,6 +2027,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         if(treeHealed){
                             mongoDBService.update(Constant.COLLECTION_ANNOTATION, originalObject, updatedObjectWithDeletedFlag);
                             response.setStatus(HttpServletResponse.SC_NO_CONTENT);
+                            System.out.println("Object deleted:"+preserveID);
                         }
                         else{
                             //@cubap @theHabes FIXME By default, objects that don't have the history property will fail to this line.
@@ -2247,6 +2260,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @param externalObj the external object as it existed in the PUT request to be saved.
      */
     private void updateExternalObject(JSONObject externalObj){
+        System.out.println("update on external object");
         try {
             JSONObject jo = new JSONObject();
             JSONObject iiif_validation_response = checkIIIFCompliance(externalObj, true);
@@ -2270,6 +2284,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             addWebAnnotationHeaders(newRootID, isContainerType(newObjState), isLD(newObjState));
             response.addHeader("Access-Control-Allow-Origin", "*");
             response.setStatus(HttpServletResponse.SC_OK);
+            System.out.println("Object now internal to rerum: "+newRootID);
             out = response.getWriter();
             out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
         }
@@ -2384,8 +2399,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         System.out.println("verify a JWT access toekn");
         boolean verified = false;
         JSONObject userInfo;
-        System.out.println("The token is");
-        System.out.println(access_token);
         try {
             DecodedJWT receivedToken = JWT.decode(access_token);
             String KID = receivedToken.getKeyId();
@@ -2421,7 +2434,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             query.append("ip", requestIP);
             List<DBObject> ls_results = mongoDBService.findByExample(Constant.COLLECTION_ACCEPTEDSERVER, query);
             if(ls_results.size() > 0){
-                System.out.println("[Modifying Data Request]: ip ========== " + requestIP + "@" + sdf.format(new Date()) + " +++++ From Registered Server");
+                System.out.println("[Modifying Data Request]: ip ========== " + requestIP + "@" + sdf.format(new Date()) + " +++++ App registered in legacy system");
                 DBObject result = ls_results.get(0);
                 if(null!=result.get("agent") && !"".equals(result.get("agent"))){
                     //The user registered their IP with the new system
@@ -2488,6 +2501,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         generatorID = "http://devstore.rerum.io/v1/id/"+newObjectID;
         DBObject updatedOrig = (DBObject) JSON.parse(orig.toString());
         mongoDBService.update(Constant.COLLECTION_ACCEPTEDSERVER, originalToUpdate, updatedOrig);
+        System.out.println("Agent created and stored with accepted server: "+generatorID);
         return newAgent;
     }
     
