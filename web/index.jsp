@@ -391,7 +391,7 @@
                 $("#rerumStatus").html("WORKING...");
                 $("#a_t").css("border", "none");
                 var params = { 
-                    "@id" : "http://devstore.rerum.io/v1/id/5aa17cdae4b09d664d424d1c", 
+                    "@id" : "http://devstore.rerum.io/v1/id/5aff0348e4b071049759647c", 
                     "tester" : "test_"+Date.now()
                 }; 
                 var postURL = "http://devstore.rerum.io/v1/api/update.action"; 
