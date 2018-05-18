@@ -129,7 +129,7 @@
             
             <p class="handHoldy">
                 If you like what you read in <a target="_blank" href="https://github.com/CenterForDigitalHumanities/rerum_server/blob/master/API.md" class="linkOut">our API documentation</a> 
-                and want to begin using RERUM please register by clicking below. 
+                and want to begin using RERUM as a back stack service please register by clicking below. 
                 Be prepared to be routed to Auth0 (don't know why?
                 <a target="_blank" href="https://github.com/CenterForDigitalHumanities/rerum_server/blob/master/API.md" class="linkOut">Read the API</a>).
             </p>
