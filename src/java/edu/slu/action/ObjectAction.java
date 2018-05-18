@@ -354,6 +354,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @return configuredObject The same object that was recieved but with the proper __rerum options.  This object is intended to be saved as a new object (@see versioning)
      */
     public JSONObject configureRerumOptions(JSONObject received, boolean update){
+        System.out.println("Configuring options...what is update:"+update);
         JSONObject configuredObject = received;
         JSONObject received_options;
         try{
@@ -400,8 +401,10 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         }
         else{
             if(update){
-             //Hitting this means we are updating an object that did not have __rerum history.  This is weird.  What should I do?
+             //Hitting this means we are updating an object that did not have __rerum history.  This is an external object update.
                 //FIXME @cubap @theHabes
+                history_prime = "root";
+                history_previous = received.getString("@id");
             }
             else{
              //Hitting this means we are are saving an object that did not have __rerum history.  This is normal   
@@ -2264,7 +2267,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         try {
             JSONObject jo = new JSONObject();
             JSONObject iiif_validation_response = checkIIIFCompliance(externalObj, true);
-            JSONObject newObjState = configureRerumOptions(externalObj, false);
+            JSONObject newObjState = configureRerumOptions(externalObj, true);
             DBObject dbo = (DBObject) JSON.parse(newObjState.toString());
             String exernalObjID = newObjState.getString("@id");
             String newRootID;

@@ -192,7 +192,7 @@
                 <p class="handHoldy">
                     You can supply a valid access code to get a new refresh token.  Use "Check my Authorization Status with Auth0" to get a valid code.    
                 </p>
-                Enter your code: <input class="form-control" type="text" placeholder="Your Auth0 Authorization Code goes here" id="code_for_refresh_token"/>
+                Enter your code: <textarea class="form-control" placeholder="Your Auth0 Authorization Code goes here" id="code_for_refresh_token"></textarea>
                 <br>
                 <textarea readonly class="form-control" id="new_refresh_token" placeholder="Your refresh token will appear here."></textarea>
             </div>
@@ -299,7 +299,7 @@
                 xhr.send(JSON.stringify(params));
             }
             else{
-                $("#r_t_4_a_t").attr("placeholder", "You must supply a code here!");
+                $("#r_t_4_a_t").attr("placeholder", "You must supply a refresh token here!");
                 $("#r_t_4_a_t").css("border", "2px solid yellow");
             }
         });
@@ -386,9 +386,9 @@
         }
         
         function testAPI(){
-            $("#rerumStatus").html("WORKING...");
             var userProvidedToken = $("#a_t").val();
             if(userProvidedToken !== ""){
+                $("#rerumStatus").html("WORKING...");
                 $("#a_t").css("border", "none");
                 var params = { 
                     "@id" : "http://devstore.rerum.io/v1/id/5aa17cdae4b09d664d424d1c", 
