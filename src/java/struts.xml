@@ -86,6 +86,8 @@
         <action name="getAllAncestors" class="objectAction" method="getAllAncestors"></action>
         <action name="getAllDescendents" class="objectAction" method="getAllDescendents"></action>
         <action name="create" class="objectAction" method="saveNewObject"></action>
+        <!-- TPEN_NL support -->
+        <action name="batch_create" class="objectAction" method="batchSaveFromCopy"></action>
         <action name="release" class="objectAction" method="releaseObject"></action>
         <action name="patch" class="objectAction" method="patchUpdateObject"></action>
         <action name="update" class="objectAction" method="putUpdateObject"></action>
