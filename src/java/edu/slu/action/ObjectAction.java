@@ -256,7 +256,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 out = response.getWriter();
                 response.setStatus(HttpServletResponse.SC_OK);
                 out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jsonReturn));
-                }
+            }
             catch(java.net.SocketTimeoutException e){ //This specifically catches the timeout
                 System.out.println("The Auth0 token endpoint is taking too long...");
                 jsonReturn = new JSONObject();
@@ -326,6 +326,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         JSONObject jo = new JSONObject();
         jo.element("code", status);
         jo.element("message", msg);
+        System.out.println(jo);
         try {
             response.addHeader("Access-Control-Allow-Origin", "*");
             response.setContentType("application/json");
@@ -570,13 +571,28 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 }
             break;
             case "patch":
+                /**
+                 * Note that PATCH is not a standard method.  Sometimes, programming languages don't have support for the method and 
+                 * throw runtime errors, which forces people into using POST with a HTTP Method Override Header to say PATCH.
+                 * As a result, the API must support catching this header on these POST requests and allowing it to be treated
+                 * as PATCH throughout, which we can control here for patch, set and unset cases.  
+                */
                 auth_verified =  verifyAccess(access_token);
                 if(auth_verified){
                     if(requestMethod.equals("PATCH")){
                         restful = true;
                     }
                     else{
-                        writeErrorResponse("Improper request method for updating, please use PATCH to alter this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                        String override = checkPatchOverrideSupport(http_request);
+                        if(override.equals("yes")){
+                            restful=true;
+                        }
+                        else if(override.equals("no")){
+                            writeErrorResponse("Improper request method for updating, PATCH to remove keys from this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                        }
+                        else if(override.equals("improper")){
+                            //Error response returned by checkPatchOverrideSupport, don't double up and put one here
+                        }
                     }
                 }
                 else{
@@ -595,7 +611,16 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         restful = true;
                     }
                     else{
-                        writeErrorResponse("Improper request method for updating, PATCH to add keys to this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                        String override = checkPatchOverrideSupport(http_request);
+                        if(override.equals("yes")){
+                            restful=true;
+                        }
+                        else if(override.equals("no")){
+                            writeErrorResponse("Improper request method for updating, PATCH to remove keys from this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                        }
+                        else if(override.equals("improper")){
+                            //Error response returned by checkPatchOverrideSupport, don't double up and put one here
+                        }
                     }
                 }
                 else{
@@ -614,7 +639,17 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         restful = true;
                     }
                     else{
-                        writeErrorResponse("Improper request method for updating, PATCH to remove keys from this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                        String override = checkPatchOverrideSupport(http_request);
+                        if(override.equals("yes")){
+                            restful=true;
+                        }
+                        else if(override.equals("no")){
+                            writeErrorResponse("Improper request method for updating, PATCH to remove keys from this RERUM object.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                        }
+                        else if(override.equals("improper")){
+                            //Error response returned by checkPatchOverrideSupport, don't double up and put one here
+                        }
+                        
                     }
                 }
                 else{
@@ -685,6 +720,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             break;
             case "get":
                 auth_verified = true;
+                System.out.println("trying to get with method "+requestMethod);
                 if(requestMethod.equals("GET") || requestMethod.equals("HEAD")){
                     restful = true;
                 }
@@ -701,11 +737,43 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     writeErrorResponse("Improper request method for the Auth0 proxy, please use post.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
                 }
             break;
+            case "getProps":
+                //This is a getByProperties request, so it acts like a GET, but has body like POST (and putting body in it forces POST method even when GET is set). 
+                auth_verified = true;
+                if(requestMethod.equals("POST")){
+                    restful = true;
+                }
+                else{
+                    writeErrorResponse("Improper request method for requesting objects with matching properties.  Use POST.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                }
+            break;
             default:
                 writeErrorResponse("Improper request method for this type of request (unknown).", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
         }   
         System.out.println("Method approved? "+restful);
         return restful;
+    }
+    
+    /**
+     * Since programming languages with HTTP packages don't all support PATCH, we have to detect the workaround.
+     * If the user supplies the header
+     * @param http_request the request that was made so we can check its headers.
+     * @return 
+     */
+    private String checkPatchOverrideSupport(HttpServletRequest http_request){
+        String overrideStatus = "no";
+        String overrideHeader = http_request.getHeader("X-HTTP-Method-Override");
+        String methodUsed = http_request.getMethod();
+        if(null != overrideHeader){
+            if(overrideHeader.equals("PATCH") && methodUsed.equals("POST")){
+                overrideStatus = "yes";
+            }
+            else{
+                overrideStatus = "improper";
+                writeErrorResponse("The use of the override header for 'PATCH' requests is allowed.  The method must be 'POST' and the header value must be 'PATCH'", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+            }
+        }
+        return overrideStatus;
     }
     
     /**
@@ -1173,23 +1241,40 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     /**
      * Get annotations by given properties. 
      * @param Object with key:value pairs with conditions to match against.
-     * @reutrn list of annotations that match the given conditions.
+     * @reutrn list of annotations that match the given conditions.  DO NOT RETURN DELETED OBJECTS
      */
     // This is not Web Annotation standard as the specifications states you respond with a single object, not a list.  Not sure what to do with these.
     // @cubap answer: I asked on oac-discuss and was told Web Annotation hasn't handled lists yet, so just be nice.
     public void getByProperties() throws IOException, ServletException, Exception{
-        if(null != processRequestBody(request, false) && methodApproval(request, "get")){
+        System.out.println("v1 getByProperties");
+        //want to use methodApproval(request, "get"), but these have body so...post
+        if(null != processRequestBody(request, false) && methodApproval(request, "getProps")){
             JSONObject received = JSONObject.fromObject(content);
             BasicDBObject query = new BasicDBObject();
             Set<String> set_received = received.keySet();
             for(String key : set_received){
                 query.append(key, received.get(key));
             }
+            //Ignore deleted annotations! https://docs.mongodb.com/v2.6/reference/operator/query/exists/
+            JSONObject existsFlag = new JSONObject();
+            existsFlag.element("$exists", false);
+            query.append("__deleted", existsFlag);
             List<DBObject> ls_result = mongoDBService.findByExample(Constant.COLLECTION_ANNOTATION, query);
             JSONArray ja = new JSONArray();
             for(DBObject dbo : ls_result){
                 ja.add((BasicDBObject) dbo);
             }
+            try {
+                    response.addHeader("Content-Type","application/json"); // not ld+json because it is an array
+                    response.addHeader("Access-Control-Allow-Origin", "*");
+                    response.setStatus(HttpServletResponse.SC_OK);
+                    out = response.getWriter();
+                    out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(ja));
+                } 
+            catch (IOException ex) {
+                Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            /*
             if(ls_result.size() > 0){
                 try {
                     response.addHeader("Content-Type","application/json"); // not ld+json because it is an array
@@ -1205,6 +1290,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             else{
                 writeErrorResponse("Object(s) not found using provided properties '"+received+"'.", HttpServletResponse.SC_NOT_FOUND);
             }
+            */
         }
     }
     
@@ -1217,11 +1303,13 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     public void saveNewObject() throws IOException, ServletException, Exception{
         System.out.println("create object");
         if(null != processRequestBody(request, false) && methodApproval(request, "create")){
+            System.out.println("process and approval over.  actually save now");
             JSONObject received = JSONObject.fromObject(content);
-            if(received.containsKey("@id")){
-                writeErrorResponse("Object already contains an @id "+received.containsKey("@id")+".  Either remove this property for saving or if it is a REERUM object update instead.", HttpServletResponse.SC_BAD_REQUEST);
+            if(received.containsKey("@id") && !received.getString("@id").isEmpty()){
+                writeErrorResponse("Object already contains an @id "+received.containsKey("@id")+".  Either remove this property for saving or if it is a RERUM object update instead.", HttpServletResponse.SC_BAD_REQUEST);
             }
             else{
+                System.out.println("We can create...");
                 JSONObject iiif_validation_response = checkIIIFCompliance(received, true); //This boolean should be provided by the user somehow.  It is a intended-to-be-iiif flag
                 configureRerumOptions(received, false);
                 DBObject dbo = (DBObject) JSON.parse(received.toString());
@@ -1234,7 +1322,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 //set @id from _id and update the annotation
                 BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
                 String newid = "http://devstore.rerum.io/v1/id/"+newObjectID;
-                dboWithObjectID.append("@id", newid);
+                dboWithObjectID.put("@id", newid);
                 mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
                 JSONObject jo = new JSONObject();
                 JSONObject newObjWithID = JSONObject.fromObject(dboWithObjectID);
@@ -1518,6 +1606,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                             BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
                             dboWithObjectID.append("@id", newNextAtID);
                             newObject.element("@id", newNextAtID);
+                            newObject.remove("_id");
                             mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
                             historyNextUpdatePassed = alterHistoryNext(updateHistoryNextID, newNextAtID); //update history.next or original object to include the newObject @id
                             if(historyNextUpdatePassed){
@@ -1599,6 +1688,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
                         dboWithObjectID.append("@id", newNextAtID);
                         newObject.element("@id", newNextAtID);
+                        newObject.remove("_id");
                         mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
                         historyNextUpdatePassed = alterHistoryNext(updateHistoryNextID, newNextAtID); //update history.next or original object to include the newObject @id
                         if(historyNextUpdatePassed){
@@ -1678,6 +1768,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         JSONObject jo = new JSONObject();
                         JSONObject iiif_validation_response = checkIIIFCompliance(receivedID, "2.1");
                         System.out.println("object overwritten: "+receivedID);
+                        newObject.remove("_id");
                         jo.element("code", HttpServletResponse.SC_OK);
                         jo.element("new_obj_state", newObject); //FIXME: @webanno standards say this should be the response.
                         jo.element("iiif_validation", iiif_validation_response);
@@ -1749,6 +1840,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                             if(treeHealed){ //If the tree was established/healed
                                 //perform the update to isReleased of the object being released.  Its releases.next[] and releases.previous are already correct.
                                 mongoDBService.update(Constant.COLLECTION_ANNOTATION, originalObject, releasedObject);
+                                releasedObject.remove("_id");
                                 System.out.println("Object released: "+updateToReleasedID);
                                 JSONObject jo = new JSONObject();
                                 jo.element("code", HttpServletResponse.SC_OK);
@@ -2282,6 +2374,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
             newObjState = configureRerumOptions(newObjState, false);
             newObjState = alterHistoryPrevious(newObjState, exernalObjID); //update history.previous of the new object to contain the external object's @id.
+            newObjState.remove("_id");
             jo.element("code", HttpServletResponse.SC_CREATED);
             jo.element("original_object_id", exernalObjID);
             jo.element("new_obj_state", newObjState); 
@@ -2438,10 +2531,9 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             //check if the domain name and ip is in database
             BasicDBObject query = new BasicDBObject();
             query.append("ip", requestIP);
-            List<DBObject> ls_results = mongoDBService.findByExample(Constant.COLLECTION_ACCEPTEDSERVER, query);
-            if(ls_results.size() > 0){
+            DBObject result = mongoDBService.findOneByExample(Constant.COLLECTION_ACCEPTEDSERVER, query);
+            if(null != result){
                 System.out.println("[Modifying Data Request]: ip ========== " + requestIP + "@" + sdf.format(new Date()) + " +++++ App registered in legacy system");
-                DBObject result = ls_results.get(0);
                 if(null!=result.get("agent") && !"".equals(result.get("agent"))){
                     //The user registered their IP with the new system
                     System.out.println("The registered server had an agent ID with it, so it must be from the new system.");
@@ -2454,12 +2546,13 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     System.out.println("We will generate a new agent to store with the registered server.");
                     userInfo = generateAgentForLegacyUser(JSONObject.fromObject(result));
                 }
+                System.out.println("Grab agent id from");
+                System.out.println(userInfo);
                 generatorID = userInfo.getString("agent");
                 verified = true;
             }
             else{
                 System.out.println("[Modifying Data Request]: ip ========== " + requestIP + "@" + sdf.format(new Date()) + " +++++ The app needs to register with RERUM");
-                
                 verified = false;
             }
         }
@@ -2479,6 +2572,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
        
     private JSONObject generateAgentForLegacyUser(JSONObject legacyUserObj){
         System.out.println("Detected a legacy registration.  Creating an agent and storing it with this legacy object.");
+        System.out.println(legacyUserObj);
         JSONObject newAgent = new JSONObject();
         DBObject originalToUpdate = (DBObject)JSON.parse(legacyUserObj.toString());
         JSONObject orig = JSONObject.fromObject(originalToUpdate);
@@ -2506,8 +2600,11 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         newAgent.element("agent", "http://devstore.rerum.io/v1/id/"+newObjectID);
         generatorID = "http://devstore.rerum.io/v1/id/"+newObjectID;
         DBObject updatedOrig = (DBObject) JSON.parse(orig.toString());
-        mongoDBService.update(Constant.COLLECTION_ACCEPTEDSERVER, originalToUpdate, updatedOrig);
-        System.out.println("Agent created and stored with accepted server: "+generatorID);
+        DBObject idOnAgent = (DBObject) JSON.parse(newAgent.toString());
+        mongoDBService.update(Constant.COLLECTION_ACCEPTEDSERVER, originalToUpdate, updatedOrig); //This update does not appear to work every time...
+        mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, idOnAgent);
+        System.out.println("Agent created and stored with accepted server...");
+        System.out.println(updatedOrig);
         return newAgent;
     }
     

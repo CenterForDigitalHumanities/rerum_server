@@ -81,6 +81,7 @@
             <result name="403">/403.jsp</result>
         </global-results>
         
+        <!-- TPEN_NL support -->
         <action name="getByProperties" class="objectAction" method="getByProperties"></action>
         <action name="getByID" class="objectAction" method="getByID"></action>
         <action name="getAllAncestors" class="objectAction" method="getAllAncestors"></action>
