@@ -377,7 +377,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         String releases_replaces = releases_previous;
         String[] emptyArray = new String[0];
         rerumOptions.element("alpha", "true"); // alpha sandbox
-        rerumOptions.element("APIversion", "1.0.0");
+        rerumOptions.element("APIversion", "0.8.0");
         rerumOptions.element("createdAt", System.currentTimeMillis());
         rerumOptions.element("isOverwritten", "");
         rerumOptions.element("isReleased", "");

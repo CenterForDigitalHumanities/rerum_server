@@ -1,0 +1,62 @@
+{
+    "@context":{
+        "@version": "0.8.0",
+        "rerum": "http://devstore.rerum.io/v1/terms/",
+        "dcterms": "http://purl.org/dc/terms/",
+        "prov"   : "",
+        "as": "http://www.w3.org/ns/activitystreams#",
+
+        "__rerum":{
+            "@id":"rerum:__rerum",
+            "@type": "@vocab",
+            "container": "@set"
+        },
+        "createdAt": {
+      	    "@id": "dcterms:created",
+            "@type": "@id"  
+        },
+        "generator":{
+            "@id": "as:generator",
+            "@type": "@id"
+        },
+        "isReleased": {
+      	    "@id": "dcterms:issued",
+            "@type": "@id"  
+        },
+	"isOverwritten" : {
+            "@id": "dcterms:modified",
+            "@type": "@id"
+        },
+        "releases" : {
+            "@id": "rerum:releases",
+            "@type": "@vocab",
+            "container":"@set"
+        },
+        "history":{
+            "@id": "rerum:history",
+            "@type": "@vocab",
+            "container":"@set"
+        },
+	"APIversion":{
+  	    "@id":"rerum:APIversion",
+            "@type":"@id"          
+        },
+        "previous":{
+    	     "@id":"prov:wasRevisionOf",
+             "@type": "@id"
+        },
+        "next":{
+             "@id":"dcterms:isVersionOf",
+             "container": "@list"
+        },
+        "prime":{
+             "@id":"dcterms:isVersionOf",
+             "@type": "@id"
+        },
+        "replaces":{
+	    "@id":"dcterms:replaces",
+            "@type": "@id"
+        }     
+    }
+}
+

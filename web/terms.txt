@@ -1,0 +1,52 @@
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix rerum: <http://devstore.rerum.io/v1/terms> .
+
+
+rerum:__rerum
+     dcterms:description "A set of properties that pertain specifically to the RERUM API."@en ;
+     rerum: releases "A set of properties to describe the rerum:isReleased history tree of a resource."@en ;
+     rerum: history "A set of properties to describe the history tree of a resource."@en ;
+     rerum: APIVersion "The version of the RERUM API the resource was created under "@en ;
+     rerum: createdAt "The xsd:Date that this specific object was created"@en ;
+     rerum: generatedBy "The application whose API key wrote this object"@en ;
+     rerum: isReleased "The most recent xsd:Date for the last object in rerum:releases.previous "@en ;
+     rerum isOverwritten "The most recent xsd:Date that this specific object was forcibly overwritten instead of versioned"@en ;
+
+rerum:releases
+    dcterms:description "A set of properties to describe the rerum:isReleased history tree of a resource."@en ;
+    rerum:previous "An ordered list of resource @id representing the previous release states of this resource."@en ;
+    rerum:next "An ordered list of resource @id representing the previous release states of this resource."@en ;
+
+rerum:history
+    dcterms:description "A set of properties to describe the history tree of a resource."@en ;
+    rerum:previous "An ordered list of resource @id representing the previous release states of this resource."@en ;
+    rerum:next "An ordered list of resource @id representing the previous release states of this resource."@en ;
+    rerum:prime "A resource @id representing the original state of this resource.  If it is the origin it is rerum:prime "@en ;
+
+rerum:next
+    dcterms:description "An ordered list of resource @id representing the previous release states of this resource."@en ;
+
+rerum:previous
+    dcterms:description "An ordered list of resource @id representing the previous release states of this resource."@en ;
+
+rerum:prime
+    dcterms:description "A resource @id representing the original state of this resource.  If the described resource is the original, then it is root so as not to repeat the resource @id. "@en ;
+
+rerum:APIversion
+    dcterms:description "The version of the RERUM API the resource was created under "@en ;
+
+rerum:createdAt
+    dcterms:description "The xsd:Date that this specific object was created"@en ;
+
+rerum:isOverwritten
+    dcterms:description "The most recent xsd:Date that this specific object was forcibly overwritten instead of versioned"@en ;
+
+rerum:isReleased
+    dcterms:description "The most recent xsd:Date for the last object in rerum:releases.previous "@en ;
+
+rerum:generatedBy
+    dcterms:description "The application whose API key wrote this object"@en ;
+
+rerum:replaces
+    dcterms:description "A related resource that is supplanted, displaced, or superseded by the described resource."@en ;
