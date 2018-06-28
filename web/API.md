@@ -12,6 +12,7 @@
     - [Custom Query (beta)](#custom-query-beta)
     - [Access Token Proxy](#access-token-proxy)
     - [Refresh Token Proxy](#refresh-token-proxy)
+    - [HTTP POST Method Override](#http-post-method-override)
   - [PUT](#put)
     - [Update](#update)
     - [Batch Update (proposed)](#batch-update-proposed)
@@ -207,6 +208,32 @@ so `{ "@type" : "sc:Canvas", "label" : "page 46" }` will match
   "@type": "sc:Canvas"
 }]
 ~~~
+
+### HTTP POST Method Override
+
+| Patterns | Payloads | Responses
+| ---     | ---     | ---
+| `/v1/patch` | `{JSON}` | 201: `header.Location` "Created @ `[@id]`", `{JSON}`
+
+- **`{JSON}`**—The object to patch update. 
+- **Response: `{JSON}`**—Containing various bits of information about the patch.
+
+Some programming languages and some servers do not consider `PATCH` to be a standard method.
+As a result, some software is unable to make a `PATCH` update request.
+RERUM still wants these applications to fit within these standards.  We support
+the `X-HTTP-Method-Override` header on `POST` requests to make them act like `PATCH` requests
+in this API.  
+
+Example Method Override Request:
+
+- **Header:** 
+          `Method: POST`,
+          `X-HTTP-Method-Override: PATCH`
+- **Body:**
+          **`{JSON}`**—An object containing the @id for upate and the fields in that object to patch. 
+          
+This grants software that is otherwise unable to make these requests the ability
+to so.
 
 ## PUT
 
