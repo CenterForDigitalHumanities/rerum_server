@@ -1262,7 +1262,16 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             List<DBObject> ls_result = mongoDBService.findByExample(Constant.COLLECTION_ANNOTATION, query);
             JSONArray ja = new JSONArray();
             for(DBObject dbo : ls_result){
-                ja.add((BasicDBObject) dbo);
+                BasicDBObject itemToAdd = (BasicDBObject) dbo;
+                itemToAdd.remove("_id");
+                itemToAdd.remove("addedTime"); // retained for legacy v0 objects
+                itemToAdd.remove("originalAnnoID");// retained for legacy v0 objects
+                itemToAdd.remove("version");// retained for legacy v0 objects
+                itemToAdd.remove("permission");// retained for legacy v0 objects
+                itemToAdd.remove("forkFromID"); // retained for legacy v0 objects
+                itemToAdd.remove("serverName");// retained for legacy v0 objects
+                itemToAdd.remove("serverIP");// retained for legacy v0 objects
+                ja.add((BasicDBObject) itemToAdd);
             }
             try {
                     response.addHeader("Content-Type","application/json"); // not ld+json because it is an array
@@ -1312,6 +1321,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 System.out.println("We can create...");
                 JSONObject iiif_validation_response = checkIIIFCompliance(received, true); //This boolean should be provided by the user somehow.  It is a intended-to-be-iiif flag
                 configureRerumOptions(received, false);
+                received.remove("_id");
                 DBObject dbo = (DBObject) JSON.parse(received.toString());
                 if(null!=request.getHeader("Slug")){
                     // Slug is the user suggested ID for the annotation. This could be a cool RERUM thing.
@@ -1549,7 +1559,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      */
     public void patchUpdateObject() throws ServletException, Exception{
         Boolean historyNextUpdatePassed = false;
-        System.out.println("Patch update object");
         if(null!= processRequestBody(request, true) && methodApproval(request, "patch")){
             BasicDBObject query = new BasicDBObject();
             JSONObject received = JSONObject.fromObject(content); 
@@ -1557,7 +1566,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 String updateHistoryNextID = received.getString("@id");
                 query.append("@id", updateHistoryNextID);
                 BasicDBObject originalObject = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The originalObject DB object
-                BasicDBObject updatedObject = (BasicDBObject) originalObject.copy(); //A copy of the original, this will be saved as a new object.  Make all edits to this variable.
                 boolean alreadyDeleted = checkIfDeleted(JSONObject.fromObject(originalObject));
                 boolean isReleased = checkIfReleased(JSONObject.fromObject(originalObject));
                 if(alreadyDeleted){
@@ -1568,6 +1576,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 }
                 else{
                     if(null != originalObject){
+                        BasicDBObject updatedObject = (BasicDBObject) originalObject.copy(); //A copy of the original, this will be saved as a new object.  Make all edits to this variable.
                         Set<String> update_anno_keys = received.keySet();
                         boolean triedToSet = false;
                         int updateCount = 0;
@@ -1634,12 +1643,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         }
                     }
                     else{
-                        writeErrorResponse("Object "+received.getString("@id")+" not found in RERUM, could not update.", HttpServletResponse.SC_BAD_REQUEST);
+                        writeErrorResponse("Object "+received.getString("@id")+" not found in RERUM, could not patch update.", HttpServletResponse.SC_BAD_REQUEST);
                     }
                 }
             }
             else{
-                writeErrorResponse("Object did not contains an @id, could not update.", HttpServletResponse.SC_BAD_REQUEST);
+                writeErrorResponse("Object did not contains an @id, could not patch update.", HttpServletResponse.SC_BAD_REQUEST);
             }
         }
     }
@@ -1682,6 +1691,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         //Since this is a put update, it is possible __rerum is not in the object provided by the user.  We get a reliable copy oof the original out of mongo
                         newObject = configureRerumOptions(newObject, true); //__rerum for the new object being created because of the update action
                         newObject.remove("@id"); //This is being saved as a new object, so remove this @id for the new one to be set.
+                        newObject.remove("_id");
                         DBObject dbo = (DBObject) JSON.parse(newObject.toString());
                         String newNextID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
                         String newNextAtID = "http://devstore.rerum.io/v1/id/"+newNextID;
@@ -1761,6 +1771,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 else{
                     if(null != originalObject){
                         JSONObject newObject = received;//The edited original object meant to be saved as a new object (versioning)
+                        newObject.remove("_id");
                         JSONObject originalProperties = originalJSONObj.getJSONObject("__rerum");
                         newObject.element("__rerum", originalProperties);
                         DBObject udbo = (DBObject) JSON.parse(newObject.toString());
@@ -2358,6 +2369,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     private void updateExternalObject(JSONObject externalObj){
         System.out.println("update on external object");
         System.out.println(externalObj);
+        externalObj.remove("_id"); //Make sure not to pass this along to any save/update scenario.  
         try {
             JSONObject jo = new JSONObject();
             JSONObject iiif_validation_response = checkIIIFCompliance(externalObj, true);
