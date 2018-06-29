@@ -97,6 +97,9 @@ import java.io.DataOutputStream;
 import java.io.OutputStream;
 import java.net.ProtocolException;
 import java.net.URLEncoder;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CodingErrorAction;
 import java.security.interfaces.RSAPublicKey;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -104,6 +107,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
+import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpSession;
 import org.apache.struts2.ServletActionContext;
 
@@ -792,22 +796,45 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         String cType = http_request.getContentType();
         String requestBody;
         JSONObject complianceInfo = new JSONObject();
+        /* UTF-8 special character support for requests */
+        //http://biercoff.com/malformedinputexception-input-length-1-exception-solution-for-scala-and-java/
+        ServletInputStream input = http_request.getInputStream();
+        CharsetDecoder decoder = Charset.forName("UTF-8").newDecoder();
+        decoder.onMalformedInput(CodingErrorAction.REPLACE);
+        InputStreamReader reader = new InputStreamReader(input, decoder);
+        bodyReader = new BufferedReader( reader );
+        
         bodyReader = http_request.getReader();
         bodyString = new StringBuilder();
         String line;
         JSONObject test;
         JSONArray test2;
+        System.out.println("Process ctype "+cType);
+        System.out.println(cType.contains("application/json"));
         if(null!=cType && (cType.contains("application/json") || cType.contains("application/ld+json"))){
-            while ((line = bodyReader.readLine()) != null)
-            {
-              bodyString.append(line);
+            System.out.println("Processing because it was jsony");
+            //Note special characters cause this to break right here. 
+            try{
+                while ((line = bodyReader.readLine()) != null)
+                {
+                  bodyString.append(line);
+                }
             }
+            catch(Exception e){
+                System.out.println("Couldn't access body to read");
+                System.out.println(e.getCause());
+            }
+            
+            System.out.println("built body string");
             requestBody = bodyString.toString();
+            System.out.println("here is the bodyString");
+            System.out.println(requestBody);
             try{ 
               //JSONObject test
               test = JSONObject.fromObject(requestBody);
             }
             catch(Exception ex){
+                System.out.println("not a json object for processing");
                 if(supportStringID){
                     //We do not allow arrays of ID's for DELETE, so if it failed JSONObject parsing then this is a hard fail for DELETE.
                     //They attempted to provide a JSON object for DELETE but it was not valid JSON
@@ -1559,9 +1586,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      */
     public void patchUpdateObject() throws ServletException, Exception{
         Boolean historyNextUpdatePassed = false;
+        System.out.println("trying to patch...");
         if(null!= processRequestBody(request, true) && methodApproval(request, "patch")){
+            System.out.println("processed and method approval patch");
             BasicDBObject query = new BasicDBObject();
             JSONObject received = JSONObject.fromObject(content); 
+            System.out.println("parsed content");
             if(received.containsKey("@id")){
                 String updateHistoryNextID = received.getString("@id");
                 query.append("@id", updateHistoryNextID);
