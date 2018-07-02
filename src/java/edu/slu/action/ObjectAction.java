@@ -794,23 +794,23 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      */
     public String processRequestBody(HttpServletRequest http_request, boolean supportStringID) throws IOException, ServletException, Exception{
         String cType = http_request.getContentType();
+        http_request.setCharacterEncoding("UTF-8");
         String requestBody;
         JSONObject complianceInfo = new JSONObject();
         /* UTF-8 special character support for requests */
         //http://biercoff.com/malformedinputexception-input-length-1-exception-solution-for-scala-and-java/
         ServletInputStream input = http_request.getInputStream();
-        CharsetDecoder decoder = Charset.forName("UTF-8").newDecoder();
-        decoder.onMalformedInput(CodingErrorAction.REPLACE);
-        InputStreamReader reader = new InputStreamReader(input, decoder);
-        bodyReader = new BufferedReader( reader );
-        
-        bodyReader = http_request.getReader();
+        //CharsetDecoder decoder = Charset.forName("UTF-8").newDecoder();
+        //decoder.onMalformedInput(CodingErrorAction.REPLACE);
+        InputStreamReader reader = new InputStreamReader(input, "utf-8");
+        //bodyReader = new BufferedReader( reader );
+        System.out.println("Process req body...");
+        bodyReader = new BufferedReader(reader);
+        System.out.println("...got reader");
         bodyString = new StringBuilder();
         String line;
         JSONObject test;
         JSONArray test2;
-        System.out.println("Process ctype "+cType);
-        System.out.println(cType.contains("application/json"));
         if(null!=cType && (cType.contains("application/json") || cType.contains("application/ld+json"))){
             System.out.println("Processing because it was jsony");
             //Note special characters cause this to break right here. 
@@ -822,7 +822,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             }
             catch(Exception e){
                 System.out.println("Couldn't access body to read");
-                System.out.println(e.getCause());
+                System.out.println(e);
             }
             
             System.out.println("built body string");
@@ -1018,6 +1018,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             try {
                 out = response.getWriter();
                 response.setStatus(HttpServletResponse.SC_CREATED);
+                response.addHeader("Content-Type", "application/json; charset=utf-8");
+                response.setContentType("UTF-8");
                 out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
             } catch (IOException ex) {
                 Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
@@ -1250,6 +1252,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 // will not be ld+json without it.
                 try {
                     addWebAnnotationHeaders(oid, isContainerType(jo), isLD(jo));
+                    response.addHeader("Content-Type", "application/json; charset=utf-8");
+                    response.setContentType("UTF-8");
                     response.addHeader("Access-Control-Allow-Origin", "*");
                     response.setStatus(HttpServletResponse.SC_OK);
                     out = response.getWriter();
@@ -1301,7 +1305,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 ja.add((BasicDBObject) itemToAdd);
             }
             try {
-                    response.addHeader("Content-Type","application/json"); // not ld+json because it is an array
+                    response.addHeader("Content-Type","application/json; charset=utf-8"); // not ld+json because it is an array
+                    response.setCharacterEncoding("UTF-8");
                     response.addHeader("Access-Control-Allow-Origin", "*");
                     response.setStatus(HttpServletResponse.SC_OK);
                     out = response.getWriter();
@@ -1371,6 +1376,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     response.addHeader("Access-Control-Allow-Origin", "*");
                     addWebAnnotationHeaders(newObjectID, isContainerType(received), isLD(received));
                     addLocationHeader(newObjWithID);
+                    response.addHeader("Content-Type", "application/json; charset=utf-8");
+                    response.setContentType("UTF-8");
                     response.setStatus(HttpServletResponse.SC_CREATED);
                     out = response.getWriter();
                     out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
@@ -1445,6 +1452,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                                 jo.element("iiif_validation", iiif_validation_response);
                                 try {
                                     addWebAnnotationHeaders(newNextID, isContainerType(newObject), isLD(newObject));
+                                    response.addHeader("Content-Type", "application/json; charset=utf-8");
+                                    response.setContentType("UTF-8");
                                     response.addHeader("Access-Control-Allow-Origin", "*");
                                     response.setStatus(HttpServletResponse.SC_OK);
                                     out = response.getWriter();
@@ -1551,6 +1560,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                                     addWebAnnotationHeaders(newNextID, isContainerType(newObject), isLD(newObject));
                                     response.addHeader("Access-Control-Allow-Origin", "*");
                                     response.setStatus(HttpServletResponse.SC_OK);
+                                    response.addHeader("Content-Type", "application/json; charset=utf-8");
+                                    response.setContentType("UTF-8");
                                     out = response.getWriter();
                                     out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
                                 } 
@@ -1660,6 +1671,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                                     addWebAnnotationHeaders(newNextID, isContainerType(newObject), isLD(newObject));
                                     response.addHeader("Access-Control-Allow-Origin", "*");
                                     response.setStatus(HttpServletResponse.SC_OK);
+                                    response.addHeader("Content-Type", "application/json; charset=utf-8");
+                                    response.setContentType("UTF-8");
                                     out = response.getWriter();
                                     out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
                                 } 
@@ -1743,6 +1756,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                                 addWebAnnotationHeaders(newNextID, isContainerType(newObject), isLD(newObject));
                                 response.addHeader("Access-Control-Allow-Origin", "*");
                                 response.setStatus(HttpServletResponse.SC_OK);
+                                response.addHeader("Content-Type", "application/json; charset=utf-8");
+                                response.setContentType("UTF-8");
                                 out = response.getWriter();
                                 out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
                             }
@@ -1815,6 +1830,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         jo.element("iiif_validation", iiif_validation_response);
                         try {
                             addWebAnnotationHeaders(receivedID, isContainerType(newObject), isLD(newObject));
+                            response.addHeader("Content-Type", "application/json; charset=utf-8");
+                            response.setContentType("UTF-8");
                             response.addHeader("Access-Control-Allow-Origin", "*");
                             response.setStatus(HttpServletResponse.SC_OK);
                             out = response.getWriter();
@@ -1892,6 +1909,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                                     addWebAnnotationHeaders(updateToReleasedID, isContainerType(safe_original), isLD(safe_original));
                                     response.addHeader("Access-Control-Allow-Origin", "*");
                                     response.setStatus(HttpServletResponse.SC_OK);
+                                    response.addHeader("Content-Type", "application/json; charset=utf-8");
+                                    response.setContentType("UTF-8");
                                     out = response.getWriter();
                                     out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
                                 } 
@@ -2424,6 +2443,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             addWebAnnotationHeaders(newRootID, isContainerType(newObjState), isLD(newObjState));
             response.addHeader("Access-Control-Allow-Origin", "*");
             response.setStatus(HttpServletResponse.SC_OK);
+            response.addHeader("Content-Type", "application/json; charset=utf-8");
+            response.setContentType("UTF-8");
             System.out.println("Object now internal to rerum: "+newRootID);
             out = response.getWriter();
             out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
