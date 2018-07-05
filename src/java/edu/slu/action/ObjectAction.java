@@ -174,7 +174,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 connection.setConnectTimeout(5*1000); 
                 connection.setDoOutput(true);
                 connection.setDoInput(true);
-                connection.setRequestProperty("Content-Type", "application/json");
+                connection.setRequestProperty("Content-Type", "application/json; charset=utf-8");
                 connection.connect();
                 DataOutputStream outStream = new DataOutputStream(connection.getOutputStream());
                 //Pass in the user provided JSON for the body 
@@ -2558,7 +2558,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     Verify the access code in the Bearer header of an action request.
     */
     private boolean verifyAccess(String access_token) throws IOException, ServletException, Exception{
-        System.out.println("verify a JWT access toekn");
+        System.out.println("verify a JWT access token");
         boolean verified = false;
         JSONObject userInfo;
         try {
@@ -2571,7 +2571,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             Algorithm algorithm = Algorithm.RSA256(pubKey, null);
             JWTVerifier verifier = JWT.require(algorithm).build(); //Reusable verifier instance
                //.withIssuer("auth0")
-            generatorID = receivedToken.getClaim("http://devstore.rerum.io/v1/agent").asString();
             System.out.println("Was I able to pull the agent claim from the token directly without userinfo without verifying?  Value below");
             System.out.println("Value: "+generatorID);
             if(botCheck(generatorID)){
@@ -2652,7 +2651,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             homepage = legacyUserObj.getString("website");
         }
         newAgent.element("@type", "foaf:Agent");
-        newAgent.element("@context", "http://store.rerum.io/v1/context.json");
+        newAgent.element("@context", "http://devstore.rerum.io/v1/context.json");
         newAgent.element("mbox", mbox); 
         newAgent.element("label", label); 
         newAgent.element("homepage", homepage); 
