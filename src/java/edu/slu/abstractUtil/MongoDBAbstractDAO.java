@@ -256,12 +256,12 @@ public abstract class MongoDBAbstractDAO implements MongoDBDAOInterface {
         for(int j=0; j<size; j++){
           //  System.out.println("set id "+j);
             DBObject targetEntity = (DBObject) entity_array[j];
-            targetEntity.put("@id", "http://devstore.rerum.io/v1/id/"+(targetEntity.get("_id").toString()));
+            targetEntity.put("@id", "http://store.rerum.io/v1/id/"+(targetEntity.get("_id").toString()));
             entity_array[j]=targetEntity; //update this so the updated object can be returned
             listAsArr.add(targetEntity);
             DBObject findThis = new BasicDBObject();
             DBObject toUpdate = new BasicDBObject();
-            toUpdate.put("@id", "http://devstore.rerum.io/v1/id/"+(targetEntity.get("_id").toString()));
+            toUpdate.put("@id", "http://store.rerum.io/v1/id/"+(targetEntity.get("_id").toString()));
             findThis.put("_id",targetEntity.get("_id").toString());
             coll.update(findThis, toUpdate);
         }

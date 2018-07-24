@@ -1,6 +1,6 @@
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix dcterms: <http://purl.org/dc/terms/> .
-@prefix rerum: <http://devstore.rerum.io/v1/terms> .
+@prefix rerum: <http://store.rerum.io/v1/terms> .
 
 
 rerum:__rerum

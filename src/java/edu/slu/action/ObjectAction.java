@@ -89,27 +89,14 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mongodb.DB;
-import com.mongodb.DBCollection;
-import com.mongodb.DBCursor;
-import edu.slu.util.MongoDBUtil;
 import java.io.DataOutputStream;
-import java.io.OutputStream;
 import java.net.ProtocolException;
-import java.net.URLEncoder;
-import java.nio.charset.Charset;
-import java.nio.charset.CharsetDecoder;
-import java.nio.charset.CodingErrorAction;
 import java.security.interfaces.RSAPublicKey;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 import javax.servlet.ServletInputStream;
-import javax.servlet.http.HttpSession;
-import org.apache.struts2.ServletActionContext;
 
 
 /**
@@ -166,7 +153,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             tokenRequestParams.element("client_id", getRerumProperty("clientID"));
             tokenRequestParams.element("code" , received.getString("authorization_code"));
             tokenRequestParams.element("client_secret", getRerumProperty("rerumSecret"));
-            tokenRequestParams.element("redirect_uri", "http://devstore.rerum.io");
+            tokenRequestParams.element("redirect_uri", "http://store.rerum.io");
             try{
                 URL auth0 = new URL(authTokenURL);
                 HttpURLConnection connection = (HttpURLConnection) auth0.openConnection();
@@ -232,7 +219,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             tokenRequestParams.element("client_id",getRerumProperty("clientID"));
             tokenRequestParams.element("client_secret",getRerumProperty("rerumSecret"));
             tokenRequestParams.element("refresh_token",received.getString("refresh_token"));
-            tokenRequestParams.element("redirect_uri", "http://devstore.rerum.io");
+            tokenRequestParams.element("redirect_uri", "http://store.rerum.io");
             try{
                 URL auth0 = new URL(authTokenURL);
                 HttpURLConnection connection = (HttpURLConnection) auth0.openConnection();
@@ -361,7 +348,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @return configuredObject The same object that was recieved but with the proper __rerum options.  This object is intended to be saved as a new object (@see versioning)
      */
     public JSONObject configureRerumOptions(JSONObject received, boolean update){
-        System.out.println("Configuring options...what is update:"+update);
         JSONObject configuredObject = received;
         JSONObject received_options;
         try{
@@ -724,7 +710,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             break;
             case "get":
                 auth_verified = true;
-                System.out.println("trying to get with method "+requestMethod);
                 if(requestMethod.equals("GET") || requestMethod.equals("HEAD")){
                     restful = true;
                 }
@@ -804,15 +789,15 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         //decoder.onMalformedInput(CodingErrorAction.REPLACE);
         InputStreamReader reader = new InputStreamReader(input, "utf-8");
         //bodyReader = new BufferedReader( reader );
-        System.out.println("Process req body...");
+        //System.out.println("Process req body...");
         bodyReader = new BufferedReader(reader);
-        System.out.println("...got reader");
+        //System.out.println("...got reader");
         bodyString = new StringBuilder();
         String line;
         JSONObject test;
         JSONArray test2;
         if(null!=cType && (cType.contains("application/json") || cType.contains("application/ld+json"))){
-            System.out.println("Processing because it was jsony");
+            //System.out.println("Processing because it was jsony");
             //Note special characters cause this to break right here. 
             try{
                 while ((line = bodyReader.readLine()) != null)
@@ -825,10 +810,10 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 System.out.println(e);
             }
             
-            System.out.println("built body string");
+            //System.out.println("built body string");
             requestBody = bodyString.toString();
-            System.out.println("here is the bodyString");
-            System.out.println(requestBody);
+            //System.out.println("here is the bodyString");
+            //System.out.println(requestBody);
             try{ 
               //JSONObject test
               test = JSONObject.fromObject(requestBody);
@@ -943,7 +928,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         else{
             response.addHeader("Link", "<http://www.w3.org/ns/ldp#Resource>; rel=\"type\""); 
         }
-        response.addHeader("Link", "<http://devstore.rerum.io/contexts/rerum.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
+        response.addHeader("Link", "<http://store.rerum.io/contexts/rerum.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
         response.addHeader("Allow", "GET,OPTIONS,HEAD,PUT,PATCH,DELETE,POST"); 
         if(!"".equals(etag)){
             response.addHeader("Etag", etag);
@@ -1277,7 +1262,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     // This is not Web Annotation standard as the specifications states you respond with a single object, not a list.  Not sure what to do with these.
     // @cubap answer: I asked on oac-discuss and was told Web Annotation hasn't handled lists yet, so just be nice.
     public void getByProperties() throws IOException, ServletException, Exception{
-        System.out.println("v1 getByProperties");
+        //System.out.println("v1 getByProperties");
         //want to use methodApproval(request, "get"), but these have body so...post
         if(null != processRequestBody(request, false) && methodApproval(request, "getProps")){
             JSONObject received = JSONObject.fromObject(content);
@@ -1350,7 +1335,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 writeErrorResponse("Object already contains an @id "+received.containsKey("@id")+".  Either remove this property for saving or if it is a RERUM object update instead.", HttpServletResponse.SC_BAD_REQUEST);
             }
             else{
-                System.out.println("We can create...");
                 JSONObject iiif_validation_response = checkIIIFCompliance(received, true); //This boolean should be provided by the user somehow.  It is a intended-to-be-iiif flag
                 configureRerumOptions(received, false);
                 received.remove("_id");
@@ -1363,7 +1347,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
                 //set @id from _id and update the annotation
                 BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
-                String newid = "http://devstore.rerum.io/v1/id/"+newObjectID;
+                String newid = "http://store.rerum.io/v1/id/"+newObjectID;
                 dboWithObjectID.put("@id", newid);
                 mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
                 JSONObject jo = new JSONObject();
@@ -1435,7 +1419,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                             //Since we ignore changes to __rerum for existing objects, we do no configureRerumOptions(updatedObject);
                             DBObject dbo = (DBObject) JSON.parse(newObject.toString());
                             String newNextID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
-                            String newNextAtID = "http://devstore.rerum.io/v1/id/"+newNextID;
+                            String newNextAtID = "http://store.rerum.io/v1/id/"+newNextID;
                             BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
                             dboWithObjectID.append("@id", newNextAtID);
                             newObject.element("@id", newNextAtID);
@@ -1541,7 +1525,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                             //Since we ignore changes to __rerum for existing objects, we do no configureRerumOptions(updatedObject);
                             DBObject dbo = (DBObject) JSON.parse(newObject.toString());
                             String newNextID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
-                            String newNextAtID = "http://devstore.rerum.io/v1/id/"+newNextID;
+                            String newNextAtID = "http://store.rerum.io/v1/id/"+newNextID;
                             BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
                             dboWithObjectID.append("@id", newNextAtID);
                             newObject.element("@id", newNextAtID);
@@ -1599,10 +1583,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         Boolean historyNextUpdatePassed = false;
         System.out.println("trying to patch...");
         if(null!= processRequestBody(request, true) && methodApproval(request, "patch")){
-            System.out.println("processed and method approval patch");
             BasicDBObject query = new BasicDBObject();
             JSONObject received = JSONObject.fromObject(content); 
-            System.out.println("parsed content");
             if(received.containsKey("@id")){
                 String updateHistoryNextID = received.getString("@id");
                 query.append("@id", updateHistoryNextID);
@@ -1652,7 +1634,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                             //Since we ignore changes to __rerum for existing objects, we do no configureRerumOptions(updatedObject);
                             DBObject dbo = (DBObject) JSON.parse(newObject.toString());
                             String newNextID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
-                            String newNextAtID = "http://devstore.rerum.io/v1/id/"+newNextID;
+                            String newNextAtID = "http://store.rerum.io/v1/id/"+newNextID;
                             BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
                             dboWithObjectID.append("@id", newNextAtID);
                             newObject.element("@id", newNextAtID);
@@ -1737,7 +1719,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         newObject.remove("_id");
                         DBObject dbo = (DBObject) JSON.parse(newObject.toString());
                         String newNextID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
-                        String newNextAtID = "http://devstore.rerum.io/v1/id/"+newNextID;
+                        String newNextAtID = "http://store.rerum.io/v1/id/"+newNextID;
                         BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
                         dboWithObjectID.append("@id", newNextAtID);
                         newObject.element("@id", newNextAtID);
@@ -2332,7 +2314,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         DBObject dbo = (DBObject) JSON.parse(objectToCheck.toString());
         BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
         String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
-        String uid = "http://devstore.rerum.io/v1/id/"+newObjectID;
+        String uid = "http://store.rerum.io/v1/id/"+newObjectID;
         dboWithObjectID.append("@id", uid);
         mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
         iiif_return = checkIIIFCompliance(uid, "2.1"); //If it is an object we are creating, this line means @context must point to Presentation API 2 or 2.1
@@ -2374,7 +2356,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         JSONObject iiif_return = new JSONObject();
         String iiif_validation_url = "https://iiif.io/api/presentation/validator/service/validate?format=json&version="+version+"&url="+objURL;
         System.out.println("IIIF validate URL wil be bypassed as it is timing out a lot.");
-        System.out.println(iiif_validation_url);
+//        System.out.println(iiif_validation_url);
 //        try{
 //            URL validator = new URL(iiif_validation_url);
 //            BufferedReader reader = null;
@@ -2417,7 +2399,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      */
     private void updateExternalObject(JSONObject externalObj){
         System.out.println("update on external object");
-        System.out.println(externalObj);
+        //System.out.println(externalObj);
         externalObj.remove("_id"); //Make sure not to pass this along to any save/update scenario.  
         try {
             JSONObject jo = new JSONObject();
@@ -2429,7 +2411,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
             //set @id from _id and update the annotation
             BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
-            newRootID = "http://devstore.rerum.io/v1/id/"+newObjectID;
+            newRootID = "http://store.rerum.io/v1/id/"+newObjectID;
             dboWithObjectID.append("@id", newRootID);
             newObjState.element("@id", newRootID);
             mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
@@ -2478,20 +2460,20 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     }
     
     public static String getAccessTokenWithAuth(String auth_code) throws UnsupportedEncodingException {
-            System.out.println("Getting an access token");
-            String token="";
-            int rcode = 0;
-            String tokenURL="https://cubap.auth0.com/oauth/token";
-            JSONObject body = new JSONObject();
-            //body.element("grant_type", "authorization_code");
-            body.element("grant_type", "client_credentials");
-            body.element("client_id", getRerumProperty("clientID"));
-            body.element("client_secret", getRerumProperty("rerumSecret"));
-            body.element("audience", "http://rerum.io/api");
-            //body.element("code", auth_code);
-            body.element("redirect_uri", "http://devstore.rerum.io/");
-            System.out.println("I will be using this body: ");
-            System.out.println(body);
+        System.out.println("Getting an access token");
+        String token="";
+        int rcode = 0;
+        String tokenURL="https://cubap.auth0.com/oauth/token";
+        JSONObject body = new JSONObject();
+        //body.element("grant_type", "authorization_code");
+        body.element("grant_type", "client_credentials");
+        body.element("client_id", getRerumProperty("clientID"));
+        body.element("client_secret", getRerumProperty("rerumSecret"));
+        body.element("audience", "http://rerum.io/api");
+        //body.element("code", auth_code);
+        body.element("redirect_uri", "http://store.rerum.io/");
+        //System.out.println("I will be using this body: ");
+        //System.out.println(body);
         try {           
             URL tURL = new URL(tokenURL);
             HttpURLConnection connection;
@@ -2559,6 +2541,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     */
     private boolean verifyAccess(String access_token) throws IOException, ServletException, Exception{
         System.out.println("verify a JWT access token");
+        System.out.println(access_token);
         boolean verified = false;
         JSONObject userInfo;
         try {
@@ -2571,8 +2554,9 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             Algorithm algorithm = Algorithm.RSA256(pubKey, null);
             JWTVerifier verifier = JWT.require(algorithm).build(); //Reusable verifier instance
                //.withIssuer("auth0")
-            System.out.println("Was I able to pull the agent claim from the token directly without userinfo without verifying?  Value below");
-            System.out.println("Value: "+generatorID);
+            generatorID = receivedToken.getClaim("http://store.rerum.io/v1/agent").asString();
+            //System.out.println("Was I able to pull the agent claim from the token directly without userinfo without verifying?  Value below");
+            //System.out.println("Value: "+generatorID);
             if(botCheck(generatorID)){
                 System.out.println("It passed the bot check, no need to verify the access token.  I have the generator ID.  ");
                 verified = true;
@@ -2608,8 +2592,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     System.out.println("We will generate a new agent to store with the registered server.");
                     userInfo = generateAgentForLegacyUser(JSONObject.fromObject(result));
                 }
-                System.out.println("Grab agent id from");
-                System.out.println(userInfo);
+                //System.out.println("Grab agent id from");
+                //System.out.println(userInfo);
                 generatorID = userInfo.getString("agent");
                 verified = true;
             }
@@ -2634,7 +2618,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
        
     private JSONObject generateAgentForLegacyUser(JSONObject legacyUserObj){
         System.out.println("Detected a legacy registration.  Creating an agent and storing it with this legacy object.");
-        System.out.println(legacyUserObj);
+        //System.out.println(legacyUserObj);
         JSONObject newAgent = new JSONObject();
         DBObject originalToUpdate = (DBObject)JSON.parse(legacyUserObj.toString());
         JSONObject orig = JSONObject.fromObject(originalToUpdate);
@@ -2651,16 +2635,16 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             homepage = legacyUserObj.getString("website");
         }
         newAgent.element("@type", "foaf:Agent");
-        newAgent.element("@context", "http://devstore.rerum.io/v1/context.json");
+        newAgent.element("@context", "http://store.rerum.io/v1/context.json");
         newAgent.element("mbox", mbox); 
         newAgent.element("label", label); 
         newAgent.element("homepage", homepage); 
         DBObject dbo = (DBObject) JSON.parse(newAgent.toString());
         String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
-        orig.element("agent", "http://devstore.rerum.io/v1/id/"+newObjectID);
-        newAgent.element("@id", "http://devstore.rerum.io/v1/id/"+newObjectID);
-        newAgent.element("agent", "http://devstore.rerum.io/v1/id/"+newObjectID);
-        generatorID = "http://devstore.rerum.io/v1/id/"+newObjectID;
+        orig.element("agent", "http://store.rerum.io/v1/id/"+newObjectID);
+        newAgent.element("@id", "http://store.rerum.io/v1/id/"+newObjectID);
+        newAgent.element("agent", "http://store.rerum.io/v1/id/"+newObjectID);
+        generatorID = "http://store.rerum.io/v1/id/"+newObjectID;
         DBObject updatedOrig = (DBObject) JSON.parse(orig.toString());
         DBObject idOnAgent = (DBObject) JSON.parse(newAgent.toString());
         mongoDBService.update(Constant.COLLECTION_ACCEPTEDSERVER, originalToUpdate, updatedOrig); //This update does not appear to work every time...

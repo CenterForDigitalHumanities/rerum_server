@@ -284,7 +284,7 @@
                 "response_type":"code",
                 //"response_type":"token",
                 "client_id":"62Jsa9MxHuqhRbO20gTHs9KpKr7Ue7sl",
-                "redirect_uri":"http://devstore.rerum.io",
+                "redirect_uri":"http://store.rerum.io",
                 "state":"statious123"           
             };
             var getURL = "https://cubap.auth0.com/authorize?" + $.param(params);
@@ -301,7 +301,7 @@
                 var params={
                     "refresh_token":r_t
                 };
-                var postURL = "http://devstore.rerum.io/v1/api/accessToken.action"; 
+                var postURL = "http://store.rerum.io/v1/api/accessToken.action"; 
                 var xhr = new XMLHttpRequest();
                 xhr.onreadystatechange = function() {
                     if (this.readyState === XMLHttpRequest.DONE) {
@@ -340,7 +340,7 @@
                 var params = {
                     "authorization_code":authCode
                 };
-                var postURL = "http://devstore.rerum.io/v1/api/refreshToken.action"; 
+                var postURL = "http://store.rerum.io/v1/api/refreshToken.action"; 
                 var xhr = new XMLHttpRequest();
                 xhr.onreadystatechange = function(){
                     if (this.readyState === XMLHttpRequest.DONE) {
@@ -376,7 +376,7 @@
                 "scope":"openid name email offline_access",
                 "response_type":"code",
                 "client_id":"62Jsa9MxHuqhRbO20gTHs9KpKr7Ue7sl",
-                "redirect_uri":"http://devstore.rerum.io",
+                "redirect_uri":"http://store.rerum.io",
                 "state":"statious123"            
             };
             //You can add prompt:none here to use the user stored with the cookie, but this forces login so our rules work better.
@@ -392,7 +392,7 @@
 //                "scope":"name email openid",
 //                "response_type":"code",
 //                "client_id":"62Jsa9MxHuqhRbO20gTHs9KpKr7Ue7sl",
-//                "redirect_uri":"http://devstore.rerum.io",
+//                "redirect_uri":"http://store.rerum.io",
 //                "state":"statious123"
 //            };
 //            var getURL = "https://cubap.auth0.com/authorize?" + $.param(params);
@@ -427,10 +427,10 @@
                 statusElem.html("WORKING...");
                 $("#a_t").css("border", "none");
                 var params = { 
-                    "@id" : "http://devstore.rerum.io/v1/id/5aff0348e4b071049759647c", 
-                    "tester" : "test_"+Date.now()
+                    "@id" : "http://store.rerum.io/v1/id/11111", 
+                    "access" : "test_"+Date.now()
                 }; 
-                var postURL = "http://devstore.rerum.io/v1/api/update.action"; 
+                var postURL = "http://store.rerum.io/v1/api/update.action"; 
                 var xhr = new XMLHttpRequest();
                 xhr.onreadystatechange = function() {
                     if (this.readyState === XMLHttpRequest.DONE) {

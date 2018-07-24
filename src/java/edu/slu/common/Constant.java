@@ -26,7 +26,7 @@ public class Constant {
     public static final String AGENT_DEPENDENCY_TYPE_USER = "user";
     public static final String AGENT_DEPENDENCY_TYPE_STRING = "string";
     
-    public static final String RERUM_REGISTRATION_URL = "http://devstore.rerum.io/v1/";
+    public static final String RERUM_REGISTRATION_URL = "http://store.rerum.io/v1/";
     
     //number of annotation versions
     public static final int NUMBER_OF_ANNO_VERSION = 10;
