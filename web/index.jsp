@@ -232,6 +232,7 @@
         var error_code = "";
         var responseJSON = {};
         var myURL = document.location.href;
+        var R_P = document.location.href;
 
         if(myURL.indexOf("access_token=") > -1){
             //The user registered or asked for a new token through the Client Credentials Grant flow https://auth0.com/docs/api-auth/tutorials/client-credentials
@@ -284,7 +285,7 @@
                 "response_type":"code",
                 //"response_type":"token",
                 "client_id":"62Jsa9MxHuqhRbO20gTHs9KpKr7Ue7sl",
-                "redirect_uri":"http://store.rerum.io",
+                "redirect_uri":R_P,
                 "state":"statious123"           
             };
             var getURL = "https://cubap.auth0.com/authorize?" + $.param(params);
@@ -301,7 +302,7 @@
                 var params={
                     "refresh_token":r_t
                 };
-                var postURL = "http://store.rerum.io/v1/api/accessToken.action"; 
+                var postURL = R_P+"api/accessToken.action"; 
                 var xhr = new XMLHttpRequest();
                 xhr.onreadystatechange = function() {
                     if (this.readyState === XMLHttpRequest.DONE) {
@@ -340,7 +341,7 @@
                 var params = {
                     "authorization_code":authCode
                 };
-                var postURL = "http://store.rerum.io/v1/api/refreshToken.action"; 
+                var postURL = R_P+"api/refreshToken.action"; 
                 var xhr = new XMLHttpRequest();
                 xhr.onreadystatechange = function(){
                     if (this.readyState === XMLHttpRequest.DONE) {
@@ -376,7 +377,7 @@
                 "scope":"openid name email offline_access",
                 "response_type":"code",
                 "client_id":"62Jsa9MxHuqhRbO20gTHs9KpKr7Ue7sl",
-                "redirect_uri":"http://store.rerum.io",
+                "redirect_uri":R_P,
                 "state":"statious123"            
             };
             //You can add prompt:none here to use the user stored with the cookie, but this forces login so our rules work better.
@@ -427,10 +428,10 @@
                 statusElem.html("WORKING...");
                 $("#a_t").css("border", "none");
                 var params = { 
-                    "@id" : "http://store.rerum.io/v1/id/11111", 
+                    "@id" : R_P+"id/11111", 
                     "access" : "test_"+Date.now()
                 }; 
-                var postURL = "http://store.rerum.io/v1/api/update.action"; 
+                var postURL = R_P+"api/update.action"; 
                 var xhr = new XMLHttpRequest();
                 xhr.onreadystatechange = function() {
                     if (this.readyState === XMLHttpRequest.DONE) {

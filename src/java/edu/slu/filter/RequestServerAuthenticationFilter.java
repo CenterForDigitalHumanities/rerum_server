@@ -57,7 +57,7 @@ public class RequestServerAuthenticationFilter extends MethodFilterInterceptor {
             respond_403.setStatus(403);
             respond_403.addHeader("Access-Control-Allow-Origin", "*");
             PrintWriter out = respond_403.getWriter();
-            out.write("You must register your IP with this service.  Visit <a>http://store.rerum.io/v1/</a>");
+            out.write("You must register with this service.  Visit <a>"+Constant.RERUM_PREFIX+"</a>");
             //return ai.invoke();
             return "403";
         }

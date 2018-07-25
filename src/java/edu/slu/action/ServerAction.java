@@ -209,7 +209,7 @@ public class ServerAction extends ActionSupport implements ServletRequestAware, 
     private String createAgent(){
         String uri = "";
         
-        String atContext = "http://store.rerum.io/v1/context.json";
+        String atContext = Constant.RERUM_PREFIX+"context.json";
         String atType = "foaf:Agent";
         // read agent bits from registration request
         String mbox = "email";

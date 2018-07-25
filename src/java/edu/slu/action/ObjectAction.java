@@ -153,7 +153,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             tokenRequestParams.element("client_id", getRerumProperty("clientID"));
             tokenRequestParams.element("code" , received.getString("authorization_code"));
             tokenRequestParams.element("client_secret", getRerumProperty("rerumSecret"));
-            tokenRequestParams.element("redirect_uri", "http://store.rerum.io");
+            tokenRequestParams.element("redirect_uri", Constant.RERUM_PREFIX);
             try{
                 URL auth0 = new URL(authTokenURL);
                 HttpURLConnection connection = (HttpURLConnection) auth0.openConnection();
@@ -219,7 +219,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             tokenRequestParams.element("client_id",getRerumProperty("clientID"));
             tokenRequestParams.element("client_secret",getRerumProperty("rerumSecret"));
             tokenRequestParams.element("refresh_token",received.getString("refresh_token"));
-            tokenRequestParams.element("redirect_uri", "http://store.rerum.io");
+            tokenRequestParams.element("redirect_uri", Constant.RERUM_ID_PREFIX);
             try{
                 URL auth0 = new URL(authTokenURL);
                 HttpURLConnection connection = (HttpURLConnection) auth0.openConnection();
@@ -537,7 +537,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
                     }
                     else{
-                        writeErrorResponse("Could not authorize you to perform this action.  Have you registered at "+Constant.RERUM_REGISTRATION_URL, HttpServletResponse.SC_UNAUTHORIZED);
+                        writeErrorResponse("Could not authorize you to perform this action.  Have you registered at "+Constant.RERUM_PREFIX, HttpServletResponse.SC_UNAUTHORIZED);
                     }
                 }
             break;
@@ -556,7 +556,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
                     }
                     else{
-                        writeErrorResponse("Could not authorize you to perform this action.  Have you registered at "+Constant.RERUM_REGISTRATION_URL, HttpServletResponse.SC_UNAUTHORIZED);
+                        writeErrorResponse("Could not authorize you to perform this action.  Have you registered at "+Constant.RERUM_PREFIX, HttpServletResponse.SC_UNAUTHORIZED);
                     }
                 }
             break;
@@ -590,7 +590,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
                     }
                     else{
-                        writeErrorResponse("Could not authorize you to perform this action.  Have you registered at "+Constant.RERUM_REGISTRATION_URL, HttpServletResponse.SC_UNAUTHORIZED);
+                        writeErrorResponse("Could not authorize you to perform this action.  Have you registered at "+Constant.RERUM_ID_PREFIX, HttpServletResponse.SC_UNAUTHORIZED);
                     }
                 }
             break;
@@ -618,7 +618,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
                     }
                     else{
-                        writeErrorResponse("Could not authorize you to perform this action.  Have you registered at "+Constant.RERUM_REGISTRATION_URL, HttpServletResponse.SC_UNAUTHORIZED);
+                        writeErrorResponse("Could not authorize you to perform this action.  Have you registered at "+Constant.RERUM_ID_PREFIX, HttpServletResponse.SC_UNAUTHORIZED);
                     }
                 }
             break;
@@ -647,7 +647,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
                     }
                     else{
-                        writeErrorResponse("Could not authorize you to perform this action.  Have you registered at "+Constant.RERUM_REGISTRATION_URL, HttpServletResponse.SC_UNAUTHORIZED);
+                        writeErrorResponse("Could not authorize you to perform this action.  Have you registered at "+Constant.RERUM_ID_PREFIX, HttpServletResponse.SC_UNAUTHORIZED);
                     }
                 }
             break;
@@ -666,7 +666,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
                     }
                     else{
-                        writeErrorResponse("Could not authorize you to perform this action.  Have you registered at "+Constant.RERUM_REGISTRATION_URL, HttpServletResponse.SC_UNAUTHORIZED);
+                        writeErrorResponse("Could not authorize you to perform this action.  Have you registered at "+Constant.RERUM_ID_PREFIX, HttpServletResponse.SC_UNAUTHORIZED);
                     }
                 }
             break;
@@ -685,7 +685,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
                     }
                     else{
-                        writeErrorResponse("Could not authorize you to perform this action.  Have you registered at "+Constant.RERUM_REGISTRATION_URL, HttpServletResponse.SC_UNAUTHORIZED);
+                        writeErrorResponse("Could not authorize you to perform this action.  Have you registered at "+Constant.RERUM_ID_PREFIX, HttpServletResponse.SC_UNAUTHORIZED);
                     }
                 }
             break;
@@ -704,7 +704,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
                     }
                     else{
-                        writeErrorResponse("Could not authorize you to perform this action.  Have you registered at "+Constant.RERUM_REGISTRATION_URL, HttpServletResponse.SC_UNAUTHORIZED);
+                        writeErrorResponse("Could not authorize you to perform this action.  Have you registered at "+Constant.RERUM_ID_PREFIX, HttpServletResponse.SC_UNAUTHORIZED);
                     }
                 }
             break;
@@ -1347,7 +1347,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
                 //set @id from _id and update the annotation
                 BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
-                String newid = "http://store.rerum.io/v1/id/"+newObjectID;
+                String newid = Constant.RERUM_ID_PREFIX+newObjectID;
                 dboWithObjectID.put("@id", newid);
                 mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
                 JSONObject jo = new JSONObject();
@@ -1419,7 +1419,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                             //Since we ignore changes to __rerum for existing objects, we do no configureRerumOptions(updatedObject);
                             DBObject dbo = (DBObject) JSON.parse(newObject.toString());
                             String newNextID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
-                            String newNextAtID = "http://store.rerum.io/v1/id/"+newNextID;
+                            String newNextAtID = Constant.RERUM_ID_PREFIX+newNextID;
                             BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
                             dboWithObjectID.append("@id", newNextAtID);
                             newObject.element("@id", newNextAtID);
@@ -1525,7 +1525,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                             //Since we ignore changes to __rerum for existing objects, we do no configureRerumOptions(updatedObject);
                             DBObject dbo = (DBObject) JSON.parse(newObject.toString());
                             String newNextID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
-                            String newNextAtID = "http://store.rerum.io/v1/id/"+newNextID;
+                            String newNextAtID = Constant.RERUM_ID_PREFIX+newNextID;
                             BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
                             dboWithObjectID.append("@id", newNextAtID);
                             newObject.element("@id", newNextAtID);
@@ -1634,7 +1634,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                             //Since we ignore changes to __rerum for existing objects, we do no configureRerumOptions(updatedObject);
                             DBObject dbo = (DBObject) JSON.parse(newObject.toString());
                             String newNextID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
-                            String newNextAtID = "http://store.rerum.io/v1/id/"+newNextID;
+                            String newNextAtID = Constant.RERUM_ID_PREFIX+newNextID;
                             BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
                             dboWithObjectID.append("@id", newNextAtID);
                             newObject.element("@id", newNextAtID);
@@ -1719,7 +1719,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         newObject.remove("_id");
                         DBObject dbo = (DBObject) JSON.parse(newObject.toString());
                         String newNextID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
-                        String newNextAtID = "http://store.rerum.io/v1/id/"+newNextID;
+                        String newNextAtID = Constant.RERUM_ID_PREFIX+newNextID;
                         BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
                         dboWithObjectID.append("@id", newNextAtID);
                         newObject.element("@id", newNextAtID);
@@ -2314,7 +2314,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         DBObject dbo = (DBObject) JSON.parse(objectToCheck.toString());
         BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
         String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
-        String uid = "http://store.rerum.io/v1/id/"+newObjectID;
+        String uid = Constant.RERUM_ID_PREFIX+newObjectID;
         dboWithObjectID.append("@id", uid);
         mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
         iiif_return = checkIIIFCompliance(uid, "2.1"); //If it is an object we are creating, this line means @context must point to Presentation API 2 or 2.1
@@ -2411,7 +2411,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
             //set @id from _id and update the annotation
             BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
-            newRootID = "http://store.rerum.io/v1/id/"+newObjectID;
+            newRootID = Constant.RERUM_ID_PREFIX+newObjectID;
             dboWithObjectID.append("@id", newRootID);
             newObjState.element("@id", newRootID);
             mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
@@ -2471,7 +2471,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         body.element("client_secret", getRerumProperty("rerumSecret"));
         body.element("audience", "http://rerum.io/api");
         //body.element("code", auth_code);
-        body.element("redirect_uri", "http://store.rerum.io/");
+        body.element("redirect_uri", Constant.RERUM_ID_PREFIX);
         //System.out.println("I will be using this body: ");
         //System.out.println(body);
         try {           
@@ -2554,7 +2554,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             Algorithm algorithm = Algorithm.RSA256(pubKey, null);
             JWTVerifier verifier = JWT.require(algorithm).build(); //Reusable verifier instance
                //.withIssuer("auth0")
-            generatorID = receivedToken.getClaim("http://store.rerum.io/v1/agent").asString();
+            generatorID = receivedToken.getClaim(Constant.RERUM_AGENT_ClAIM).asString();
             //System.out.println("Was I able to pull the agent claim from the token directly without userinfo without verifying?  Value below");
             //System.out.println("Value: "+generatorID);
             if(botCheck(generatorID)){
@@ -2635,16 +2635,16 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             homepage = legacyUserObj.getString("website");
         }
         newAgent.element("@type", "foaf:Agent");
-        newAgent.element("@context", "http://store.rerum.io/v1/context.json");
+        newAgent.element("@context", Constant.RERUM_PREFIX+"context.json");
         newAgent.element("mbox", mbox); 
         newAgent.element("label", label); 
         newAgent.element("homepage", homepage); 
         DBObject dbo = (DBObject) JSON.parse(newAgent.toString());
         String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
-        orig.element("agent", "http://store.rerum.io/v1/id/"+newObjectID);
-        newAgent.element("@id", "http://store.rerum.io/v1/id/"+newObjectID);
-        newAgent.element("agent", "http://store.rerum.io/v1/id/"+newObjectID);
-        generatorID = "http://store.rerum.io/v1/id/"+newObjectID;
+        orig.element("agent", Constant.RERUM_ID_PREFIX+newObjectID);
+        newAgent.element("@id", Constant.RERUM_ID_PREFIX+newObjectID);
+        newAgent.element("agent", Constant.RERUM_ID_PREFIX+newObjectID);
+        generatorID = Constant.RERUM_ID_PREFIX+newObjectID;
         DBObject updatedOrig = (DBObject) JSON.parse(orig.toString());
         DBObject idOnAgent = (DBObject) JSON.parse(newAgent.toString());
         mongoDBService.update(Constant.COLLECTION_ACCEPTEDSERVER, originalToUpdate, updatedOrig); //This update does not appear to work every time...

@@ -10,6 +10,7 @@ import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
+import edu.slu.common.Constant;
 import edu.slu.util.MongoDBUtil;
 import java.util.List;
 import java.util.Map;
@@ -256,12 +257,12 @@ public abstract class MongoDBAbstractDAO implements MongoDBDAOInterface {
         for(int j=0; j<size; j++){
           //  System.out.println("set id "+j);
             DBObject targetEntity = (DBObject) entity_array[j];
-            targetEntity.put("@id", "http://store.rerum.io/v1/id/"+(targetEntity.get("_id").toString()));
+            targetEntity.put("@id", Constant.RERUM_ID_PREFIX+(targetEntity.get("_id").toString()));
             entity_array[j]=targetEntity; //update this so the updated object can be returned
             listAsArr.add(targetEntity);
             DBObject findThis = new BasicDBObject();
             DBObject toUpdate = new BasicDBObject();
-            toUpdate.put("@id", "http://store.rerum.io/v1/id/"+(targetEntity.get("_id").toString()));
+            toUpdate.put("@id", Constant.RERUM_ID_PREFIX+(targetEntity.get("_id").toString()));
             findThis.put("_id",targetEntity.get("_id").toString());
             coll.update(findThis, toUpdate);
         }
