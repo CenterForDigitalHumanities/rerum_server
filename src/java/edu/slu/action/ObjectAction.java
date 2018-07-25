@@ -590,7 +590,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
                     }
                     else{
-                        writeErrorResponse("Could not authorize you to perform this action.  Have you registered at "+Constant.RERUM_ID_PREFIX, HttpServletResponse.SC_UNAUTHORIZED);
+                        writeErrorResponse("Could not authorize you to perform this action.  Have you registered at "+Constant.RERUM_PREFIX, HttpServletResponse.SC_UNAUTHORIZED);
                     }
                 }
             break;
@@ -618,7 +618,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
                     }
                     else{
-                        writeErrorResponse("Could not authorize you to perform this action.  Have you registered at "+Constant.RERUM_ID_PREFIX, HttpServletResponse.SC_UNAUTHORIZED);
+                        writeErrorResponse("Could not authorize you to perform this action.  Have you registered at "+Constant.RERUM_PREFIX, HttpServletResponse.SC_UNAUTHORIZED);
                     }
                 }
             break;
@@ -647,7 +647,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
                     }
                     else{
-                        writeErrorResponse("Could not authorize you to perform this action.  Have you registered at "+Constant.RERUM_ID_PREFIX, HttpServletResponse.SC_UNAUTHORIZED);
+                        writeErrorResponse("Could not authorize you to perform this action.  Have you registered at "+Constant.RERUM_PREFIX, HttpServletResponse.SC_UNAUTHORIZED);
                     }
                 }
             break;
@@ -666,7 +666,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
                     }
                     else{
-                        writeErrorResponse("Could not authorize you to perform this action.  Have you registered at "+Constant.RERUM_ID_PREFIX, HttpServletResponse.SC_UNAUTHORIZED);
+                        writeErrorResponse("Could not authorize you to perform this action.  Have you registered at "+Constant.RERUM_PREFIX, HttpServletResponse.SC_UNAUTHORIZED);
                     }
                 }
             break;
@@ -685,7 +685,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
                     }
                     else{
-                        writeErrorResponse("Could not authorize you to perform this action.  Have you registered at "+Constant.RERUM_ID_PREFIX, HttpServletResponse.SC_UNAUTHORIZED);
+                        writeErrorResponse("Could not authorize you to perform this action.  Have you registered at "+Constant.RERUM_PREFIX, HttpServletResponse.SC_UNAUTHORIZED);
                     }
                 }
             break;
@@ -704,7 +704,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         writeErrorResponse("Improper or missing Authorization header provided on request.  Required header must be 'Authorization: Bearer {token}'.", HttpServletResponse.SC_UNAUTHORIZED);
                     }
                     else{
-                        writeErrorResponse("Could not authorize you to perform this action.  Have you registered at "+Constant.RERUM_ID_PREFIX, HttpServletResponse.SC_UNAUTHORIZED);
+                        writeErrorResponse("Could not authorize you to perform this action.  Have you registered at "+Constant.RERUM_PREFIX, HttpServletResponse.SC_UNAUTHORIZED);
                     }
                 }
             break;
