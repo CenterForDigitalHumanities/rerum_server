@@ -232,7 +232,8 @@
         var error_code = "";
         var responseJSON = {};
         var myURL = document.location.href;
-        var R_P = document.location.href;
+        var R_B = document.location.origin;
+        var R_P = document.location.origin+"/v1/";
 
         if(myURL.indexOf("access_token=") > -1){
             //The user registered or asked for a new token through the Client Credentials Grant flow https://auth0.com/docs/api-auth/tutorials/client-credentials
@@ -285,7 +286,7 @@
                 "response_type":"code",
                 //"response_type":"token",
                 "client_id":"62Jsa9MxHuqhRbO20gTHs9KpKr7Ue7sl",
-                "redirect_uri":R_P,
+                "redirect_uri":R_B,
                 "state":"statious123"           
             };
             var getURL = "https://cubap.auth0.com/authorize?" + $.param(params);
@@ -377,7 +378,7 @@
                 "scope":"openid name email offline_access",
                 "response_type":"code",
                 "client_id":"62Jsa9MxHuqhRbO20gTHs9KpKr7Ue7sl",
-                "redirect_uri":R_P,
+                "redirect_uri":R_B,
                 "state":"statious123"            
             };
             //You can add prompt:none here to use the user stored with the cookie, but this forces login so our rules work better.
@@ -385,20 +386,6 @@
             console.log(getURL);
             document.location.href = getURL;
         });
-        
-//        $("#login").click(function(){
-//            //This means they want to register (or prove they are registered) with the RERUM Server Auth0 client.  They do not want an access token.
-//            var params = {
-//                "audience":"http://rerum.io/api",
-//                "scope":"name email openid",
-//                "response_type":"code",
-//                "client_id":"62Jsa9MxHuqhRbO20gTHs9KpKr7Ue7sl",
-//                "redirect_uri":"http://store.rerum.io",
-//                "state":"statious123"
-//            };
-//            var getURL = "https://cubap.auth0.com/authorize?" + $.param(params);
-//            document.location.href = getURL;
-//        });
                 
         function getURLVariable(variable){
             var query = window.location.search.substring(1);

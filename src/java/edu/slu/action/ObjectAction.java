@@ -153,7 +153,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             tokenRequestParams.element("client_id", getRerumProperty("clientID"));
             tokenRequestParams.element("code" , received.getString("authorization_code"));
             tokenRequestParams.element("client_secret", getRerumProperty("rerumSecret"));
-            tokenRequestParams.element("redirect_uri", Constant.RERUM_PREFIX);
+            tokenRequestParams.element("redirect_uri", Constant.RERUM_BASE);
             try{
                 URL auth0 = new URL(authTokenURL);
                 HttpURLConnection connection = (HttpURLConnection) auth0.openConnection();
@@ -219,7 +219,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             tokenRequestParams.element("client_id",getRerumProperty("clientID"));
             tokenRequestParams.element("client_secret",getRerumProperty("rerumSecret"));
             tokenRequestParams.element("refresh_token",received.getString("refresh_token"));
-            tokenRequestParams.element("redirect_uri", Constant.RERUM_ID_PREFIX);
+            tokenRequestParams.element("redirect_uri", Constant.RERUM_BASE);
             try{
                 URL auth0 = new URL(authTokenURL);
                 HttpURLConnection connection = (HttpURLConnection) auth0.openConnection();
@@ -2471,7 +2471,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         body.element("client_secret", getRerumProperty("rerumSecret"));
         body.element("audience", "http://rerum.io/api");
         //body.element("code", auth_code);
-        body.element("redirect_uri", Constant.RERUM_ID_PREFIX);
+        body.element("redirect_uri", Constant.RERUM_BASE);
         //System.out.println("I will be using this body: ");
         //System.out.println(body);
         try {           
