@@ -239,6 +239,9 @@ public abstract class MongoDBAbstractDAO implements MongoDBDAOInterface {
         for(int i=0; i<entity_array.size();i++){
            // System.out.println("Add object "+i);
             DBObject objectToAdd = (DBObject) entity_array.get(i);
+            String generatedID = new ObjectId().toHexString(); //Should always be a hex string for our purposes.
+            //If you do not explicitly create a new objectID hexidecimal string here, it could be a date.
+            objectToAdd.put("_id", generatedID);
            // objectToAdd.put("copy", "bulkCopy");
             listAsObj[i] = objectToAdd;
         }
