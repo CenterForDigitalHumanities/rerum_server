@@ -967,50 +967,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             addLocationHeader(arr.getJSONObject(j)); 
         }
     }
-
-    /** 
-        * TODO @see batchSaveMetadataForm.  Do both methods need to exist?  Combine if possible. This is the method we use for generic bulk saving.
-        * Each canvas has an annotation list with 0 - infinity annotations.  A copy requires a new annotation list with the copied annotations and a new @id.
-        * Mongo allows us to bulk save.  
-        * The content is from an HTTP request posting in an array filled with annotations to copy.  
-     * @throws java.io.UnsupportedEncodingException
-     * @throws javax.servlet.ServletException
-        * @see MongoDBAbstractDAO.bulkSaveFromCopy(String collectionName, BasicDBList entity_array);
-        * @see MongoDBAbstractDAO.bulkSetIDProperty(String collectionName, BasicDBObject[] entity_array);
-    */ 
-    public void batchSaveFromCopy() throws UnsupportedEncodingException, IOException, ServletException, Exception{
-        if(null != processRequestBody(request, false) && methodApproval(request, "create")){
-            JSONArray received_array = JSONArray.fromObject(content);
-            for(int b=0; b<received_array.size(); b++){ //Configure __rerum on each object
-                JSONObject configureMe = received_array.getJSONObject(b);
-                configureMe = configureRerumOptions(configureMe, false); //configure this object
-                received_array.set(b, configureMe); //Replace the current iterated object in the array with the configured object
-            }
-            BasicDBList dbo = (BasicDBList) JSON.parse(received_array.toString()); //tricky cause can't use JSONArray here
-            JSONArray newResources = new JSONArray();
-            //if the size is 0, no need to bulk save.  Nothing is there.
-            if(dbo.size() > 0){
-                newResources = mongoDBService.bulkSaveFromCopy(Constant.COLLECTION_ANNOTATION, dbo);
-            }
-            else {
-                // empty array
-            }
-            //bulk save will automatically call bulk update 
-            JSONObject jo = new JSONObject();
-            jo.element("code", HttpServletResponse.SC_CREATED);
-            jo.element("new_resources", newResources);
-            addLocationHeader(newResources);
-            try {
-                out = response.getWriter();
-                response.setStatus(HttpServletResponse.SC_CREATED);
-                response.addHeader("Content-Type", "application/json; charset=utf-8");
-                response.setContentType("UTF-8");
-                out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
-            } catch (IOException ex) {
-                Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }
-    }
     
     /**
      * Public facing servlet action to find all upstream versions of an object.  This is the action the user hits with the API.
@@ -1317,6 +1273,54 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 writeErrorResponse("Object(s) not found using provided properties '"+received+"'.", HttpServletResponse.SC_NOT_FOUND);
             }
             */
+        }
+    }
+    
+        /** 
+        * TODO @see batchSaveMetadataForm.  Do both methods need to exist?  Combine if possible. This is the method we use for generic bulk saving.
+        * Each canvas has an annotation list with 0 - infinity annotations.  A copy requires a new annotation list with the copied annotations and a new @id.
+        * Mongo allows us to bulk save.  
+        * The content is from an HTTP request posting in an array filled with annotations to copy.  
+     * @throws java.io.UnsupportedEncodingException
+     * @throws javax.servlet.ServletException
+        * @see MongoDBAbstractDAO.bulkSaveFromCopy(String collectionName, BasicDBList entity_array);
+        * @see MongoDBAbstractDAO.bulkSetIDProperty(String collectionName, BasicDBObject[] entity_array);
+    */ 
+    public void batchSaveFromCopy() throws UnsupportedEncodingException, IOException, ServletException, Exception{
+        System.out.println("Object action batch save");
+        if(null != processRequestBody(request, false) && methodApproval(request, "create")){
+            JSONArray received_array = JSONArray.fromObject(content);
+            for(int b=0; b<received_array.size(); b++){ //Configure __rerum on each object
+                JSONObject configureMe = received_array.getJSONObject(b);
+                configureMe = configureRerumOptions(configureMe, false); //configure this object
+                received_array.set(b, configureMe); //Replace the current iterated object in the array with the configured object
+            }
+            BasicDBList dbo = (BasicDBList) JSON.parse(received_array.toString()); //tricky cause can't use JSONArray here
+            JSONArray newResources = new JSONArray();
+            //if the size is 0, no need to bulk save.  Nothing is there.
+            if(dbo.size() > 0){
+                System.out.println("batch save from copy off to bulk save from copy sending");
+                System.out.println(dbo.toString());
+                newResources = mongoDBService.bulkSaveFromCopy(Constant.COLLECTION_ANNOTATION, dbo);
+            }
+            else {
+                // empty array
+            }
+            //bulk save will automatically call bulk update 
+            
+            JSONObject jo = new JSONObject();
+            jo.element("code", HttpServletResponse.SC_CREATED);
+            jo.element("new_resources", newResources);
+            addLocationHeader(newResources);
+            try {
+                response.setStatus(HttpServletResponse.SC_CREATED);
+                response.addHeader("Content-Type", "application/json; charset=utf-8");
+                response.setContentType("UTF-8");
+                out = response.getWriter();
+                out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
+            } catch (IOException ex) {
+                Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
     }
     

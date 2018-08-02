@@ -12,6 +12,7 @@ import com.mongodb.DBCursor;
 import com.mongodb.DBObject;
 import edu.slu.common.Constant;
 import edu.slu.util.MongoDBUtil;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -233,6 +234,7 @@ public abstract class MongoDBAbstractDAO implements MongoDBDAOInterface {
     /* Bulk save objects into collection */
     public JSONArray bulkSaveFromCopy(String collectionName, BasicDBList entity_array ){
         DBCollection coll = db.getCollection(collectionName);
+        
         //DBObject arrayAsObject = (DBObject) entity_array;
        // System.out.println("Bulk Save From Copy.  Size: "+entity_array.size());
         DBObject[] listAsObj = new DBObject[entity_array.size()];
@@ -253,7 +255,6 @@ public abstract class MongoDBAbstractDAO implements MongoDBDAOInterface {
     
     /* Go through each newly copied object and update its @id property */
     public JSONArray bulkSetIDProperty(String collectionName, DBObject[] entity_array){
-       // System.out.println("Bulk Set ID");
         int size = entity_array.length;
         DBCollection coll = db.getCollection(collectionName);
         JSONArray listAsArr = new JSONArray();
