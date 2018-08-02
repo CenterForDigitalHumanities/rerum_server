@@ -320,7 +320,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         System.out.println(jo);
         try {
             response.addHeader("Access-Control-Allow-Origin", "*");
-            response.setContentType("application/json");
+            response.setContentType("application/json; charset=utf-8");
             response.setStatus(status);
             out = response.getWriter();
             out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
@@ -898,7 +898,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         }
         */
         content = requestBody;
-        response.setContentType("application/json"); // We create JSON objects for the return body in most cases.  
+        response.setContentType("application/json; charset=utf-8"); // We create JSON objects for the return body in most cases.  
         response.addHeader("Access-Control-Allow-Headers", "Content-Type");
         response.addHeader("Access-Control-Allow-Methods", "GET,OPTIONS,HEAD,PUT,PATCH,DELETE,POST"); // Must have OPTIONS for @webanno 
         return requestBody;
@@ -1171,6 +1171,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @throws javax.servlet.ServletException
      */
     public void getByID() throws IOException, ServletException, Exception{
+        request.setCharacterEncoding("UTF-8");
         if(null != oid && methodApproval(request, "get")){
             //find one version by objectID
             BasicDBObject query = new BasicDBObject();
@@ -1194,7 +1195,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 try {
                     addWebAnnotationHeaders(oid, isContainerType(jo), isLD(jo));
                     response.addHeader("Content-Type", "application/json; charset=utf-8");
-                    response.setContentType("UTF-8");
                     response.addHeader("Access-Control-Allow-Origin", "*");
                     response.setStatus(HttpServletResponse.SC_OK);
                     out = response.getWriter();
@@ -1299,8 +1299,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             JSONArray newResources = new JSONArray();
             //if the size is 0, no need to bulk save.  Nothing is there.
             if(dbo.size() > 0){
-                System.out.println("batch save from copy off to bulk save from copy sending");
-                System.out.println(dbo.toString());
+                //System.out.println("batch save from copy off to bulk save from copy sending");
+                //System.out.println(dbo.toString());
                 newResources = mongoDBService.bulkSaveFromCopy(Constant.COLLECTION_ANNOTATION, dbo);
             }
             else {
@@ -1315,7 +1315,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             try {
                 response.setStatus(HttpServletResponse.SC_CREATED);
                 response.addHeader("Content-Type", "application/json; charset=utf-8");
-                response.setContentType("UTF-8");
                 out = response.getWriter();
                 out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
             } catch (IOException ex) {
@@ -2430,7 +2429,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             response.addHeader("Access-Control-Allow-Origin", "*");
             response.setStatus(HttpServletResponse.SC_OK);
             response.addHeader("Content-Type", "application/json; charset=utf-8");
-            response.setContentType("UTF-8");
             System.out.println("Object now internal to rerum: "+newRootID);
             out = response.getWriter();
             out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
