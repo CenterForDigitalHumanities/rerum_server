@@ -49,7 +49,7 @@ you do), the base URL is `http://store.rerum.io/v1`.
 - **`_id`**—the id of the object in RERUM.
 - **Response: `{JSON}`**—The object at `_id`
 
-Example: http://store.rerum.io/v1/id/aee33434bbc333444ff
+Example: http://store.rerum.io/v1/id/11111
 
 ### History tree before this version
 
@@ -63,7 +63,7 @@ Example: http://store.rerum.io/v1/id/aee33434bbc333444ff
 As objects in RERUM are altered, the previous state is retained in
 a history tree. Request returns all ancestors of a given version.
 
-Example: http://store.rerum.io/v1/history/aee33434bbc333444ff
+Example: http://store.rerum.io/v1/history/11111
 
 ### History tree since this version
 
@@ -77,7 +77,7 @@ Example: http://store.rerum.io/v1/history/aee33434bbc333444ff
 As objects in RERUM are altered, the previous state is retained in
 a history tree.  Request returns all descendants of a given version.
 
-Example:  http://store.rerum.io/v1/since/aee33434bbc333444ff
+Example:  http://store.rerum.io/v1/since/11111
 
 ## POST
 
@@ -98,13 +98,13 @@ the API will direct the user to use [update](#update) instead.
 
 Example Response:
 
-- **Header:** `Location: Created @ http://store.rerum.io/v1/id/aee33434bbc333444ff`
+- **Header:** `Location: Created @ http://store.rerum.io/v1/id/11111`
 - **Body:**
 
 ~~~ (json)
 {
   "code" : 201,
-  "@id" : "http://store.rerum.io/v1/since/aee33434bbc333444ff",
+  "@id" : "http://store.rerum.io/v1/since/11111",
   "iiif_validation" : {
     "warnings" : ["Array of warnings from IIIF validator"],
     "error" : "Error for why this object failed validation",
@@ -199,7 +199,7 @@ so `{ "@type" : "sc:Canvas", "label" : "page 46" }` will match
 
 ~~~ (json)
 [{
-  "@id": "https://store.rerum.io/v1/id/ae33ffee5656789",
+  "@id": "https://store.rerum.io/v1/id/11111",
   "otherContent": [],
   "label": "page 46",
   "width": 730,
@@ -254,15 +254,15 @@ version will maintain its place in the history of that object.
 
 Example Response:
 
-- **Header:** `Location: Updated @ http://store.rerum.io/v1/id/aee33434bbc333444ff`
+- **Header:** `Location: Updated @ http://store.rerum.io/v1/id/11111`
 - **Body:**
 
 ~~~ (json)
 {
   "code" : 200,
-  "original_object_id" : "http://store.rerum.io/v1/id/aee33434bbc333444ff",
+  "original_object_id" : "http://store.rerum.io/v1/id/11111",
   "new_obj_state" : {
-    @id: http://store.rerum.io/v1/id/aee33434bbc33344500
+    @id: http://store.rerum.io/v1/id/11111
     ...
   },
   "iiif_validation" : {
@@ -366,10 +366,10 @@ A deleted object is easily recognized:
 
 ~~~ (json)
 {
-  "@id" : "http://store.rerum.io/v1/id/5a57a30fe4b09163a80a0a67",
+  "@id" : "http://store.rerum.io/v1/id/11111",
   "__deleted" : {
     "object" : {
-      "@id" : "http://store.rerum.io/v1/id/5a57a30fe4b09163a80a0a67",
+      "@id" : "http://store.rerum.io/v1/id/11111",
       "@type": "sc:Canvas"
       "label": "page 46",
       "width": 730,
