@@ -36,7 +36,7 @@
 All the following interactions will take place between
 the server running RERUM and the application server. If
 you prefer to use the public RERUM server (which I hope
-you do), the base URL is `http://store.rerum.io/v1`. 
+you do), the base URL is `http://devstore.rerum.io/v1`. 
 
 ## GET
 
@@ -49,7 +49,7 @@ you do), the base URL is `http://store.rerum.io/v1`.
 - **`_id`**—the id of the object in RERUM.
 - **Response: `{JSON}`**—The object at `_id`
 
-Example: http://store.rerum.io/v1/id/11111
+Example: http://devstore.rerum.io/v1/id/11111
 
 ### History tree before this version
 
@@ -63,7 +63,7 @@ Example: http://store.rerum.io/v1/id/11111
 As objects in RERUM are altered, the previous state is retained in
 a history tree. Request returns all ancestors of a given version.
 
-Example: http://store.rerum.io/v1/history/11111
+Example: http://devstore.rerum.io/v1/history/11111
 
 ### History tree since this version
 
@@ -77,7 +77,7 @@ Example: http://store.rerum.io/v1/history/11111
 As objects in RERUM are altered, the previous state is retained in
 a history tree.  Request returns all descendants of a given version.
 
-Example:  http://store.rerum.io/v1/since/11111
+Example:  http://devstore.rerum.io/v1/since/11111
 
 ## POST
 
@@ -98,13 +98,13 @@ the API will direct the user to use [update](#update) instead.
 
 Example Response:
 
-- **Header:** `Location: Created @ http://store.rerum.io/v1/id/11111`
+- **Header:** `Location: Created @ http://devstore.rerum.io/v1/id/11111`
 - **Body:**
 
 ~~~ (json)
 {
   "code" : 201,
-  "@id" : "http://store.rerum.io/v1/since/11111",
+  "@id" : "http://devstore.rerum.io/v1/since/11111",
   "iiif_validation" : {
     "warnings" : ["Array of warnings from IIIF validator"],
     "error" : "Error for why this object failed validation",
@@ -199,7 +199,7 @@ so `{ "@type" : "sc:Canvas", "label" : "page 46" }` will match
 
 ~~~ (json)
 [{
-  "@id": "https://store.rerum.io/v1/id/11111",
+  "@id": "https://devstore.rerum.io/v1/id/11111",
   "otherContent": [],
   "label": "page 46",
   "width": 730,
@@ -254,15 +254,15 @@ version will maintain its place in the history of that object.
 
 Example Response:
 
-- **Header:** `Location: Updated @ http://store.rerum.io/v1/id/11111`
+- **Header:** `Location: Updated @ http://devstore.rerum.io/v1/id/11111`
 - **Body:**
 
 ~~~ (json)
 {
   "code" : 200,
-  "original_object_id" : "http://store.rerum.io/v1/id/11111",
+  "original_object_id" : "http://devstore.rerum.io/v1/id/11111",
   "new_obj_state" : {
-    @id: http://store.rerum.io/v1/id/11111
+    @id: http://devstore.rerum.io/v1/id/11111
     ...
   },
   "iiif_validation" : {
@@ -366,10 +366,10 @@ A deleted object is easily recognized:
 
 ~~~ (json)
 {
-  "@id" : "http://store.rerum.io/v1/id/11111",
+  "@id" : "http://devstore.rerum.io/v1/id/11111",
   "__deleted" : {
     "object" : {
-      "@id" : "http://store.rerum.io/v1/id/11111",
+      "@id" : "http://devstore.rerum.io/v1/id/11111",
       "@type": "sc:Canvas"
       "label": "page 46",
       "width": 730,
@@ -436,7 +436,7 @@ The API key at Auth0 persists for each application, which may manage its own ses
 
 Objects in RERUM should be JSON-LD, which means they should have an `@context` provided when they are created.  However, ordinary JSON documents are allowed in the store. These JSON documents can be interpreted as JSON-LD by referencing a JSON-LD context document in an [HTTP Link Header](https://www.w3.org/TR/json-ld/#h3_interpreting-json-as-json-ld). RERUM provides this `@context` in the `Link` header and also provides an `@context` for the `__rerum` terms mentioned above.
 
-http://store.rerum.io/v1/context.json
+http://devstore.rerum.io/v1/context.json
 
 ## IIIF
 

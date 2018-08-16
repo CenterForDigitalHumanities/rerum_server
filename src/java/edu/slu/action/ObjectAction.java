@@ -268,8 +268,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         }
     }
    
-
-    
     /**
      * Check if the proposed object is a container type.
      * Related to Web Annotation compliance.  
@@ -317,6 +315,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         JSONObject jo = new JSONObject();
         jo.element("code", status);
         jo.element("message", msg);
+        System.out.println("Here is the error response json object to return with status "+status);
         System.out.println(jo);
         try {
             response.addHeader("Access-Control-Allow-Origin", "*");
@@ -325,8 +324,10 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             out = response.getWriter();
             out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
             out.write(System.getProperty("line.separator"));
+            System.out.println("Write errore response completed");
         } 
         catch (IOException ex) {
+            System.out.println("Write error response failed on IO exception");
             Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
@@ -1357,21 +1358,23 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 JSONObject newObjWithID = JSONObject.fromObject(dboWithObjectID);
                 jo.element("code", HttpServletResponse.SC_CREATED);
                 jo.element("@id", newid);
+                jo.element("new_obj_state", newObjWithID);
                 jo.element("iiif_validation", iiif_validation_response);
-                try {
-                    System.out.println("Object created: "+newid);
-                    response.addHeader("Access-Control-Allow-Origin", "*");
-                    addWebAnnotationHeaders(newObjectID, isContainerType(received), isLD(received));
-                    addLocationHeader(newObjWithID);
-                    response.addHeader("Content-Type", "application/json; charset=utf-8");
-                    response.setContentType("UTF-8");
-                    response.setStatus(HttpServletResponse.SC_CREATED);
-                    out = response.getWriter();
-                    out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
-                }
-                catch (IOException ex) {
-                    Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
-                }
+                //try {
+                System.out.println("Object created: "+newid);
+                response.addHeader("Access-Control-Allow-Origin", "*");
+                addWebAnnotationHeaders(newObjectID, isContainerType(received), isLD(received));
+                addLocationHeader(newObjWithID);
+                response.addHeader("Content-Type", "application/json; charset=utf-8");
+                response.setContentType("UTF-8");
+                response.setStatus(HttpServletResponse.SC_CREATED);
+                out = response.getWriter();
+                out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
+               // }
+                //catch (IOException ex) {
+                 //   System.out.println("Save new obj failed on IO Exception.");
+                //    Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
+                //}
             }
         }
     }
@@ -1679,7 +1682,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 }
             }
             else{
-                writeErrorResponse("Object did not contains an @id, could not patch update.", HttpServletResponse.SC_BAD_REQUEST);
+                writeErrorResponse("Object did not contain an @id, could not patch update.", HttpServletResponse.SC_BAD_REQUEST);
             }
         }
     }
@@ -2435,7 +2438,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             addWebAnnotationHeaders(newRootID, isContainerType(newObjState), isLD(newObjState));
             addLocationHeader(newObjState);
             response.addHeader("Access-Control-Allow-Origin", "*");
-            response.setStatus(HttpServletResponse.SC_OK);
+            response.setStatus(HttpServletResponse.SC_CREATED);
             response.addHeader("Content-Type", "application/json; charset=utf-8");
             System.out.println("Object now internal to rerum: "+newRootID);
             out = response.getWriter();
