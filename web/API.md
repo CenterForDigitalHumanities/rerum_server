@@ -186,7 +186,7 @@ will attempt to continue for all submitted items.
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/getByProperties` | `{JSON}` | 200: `[{JSON}]`
+| `/v1/getByProperties` | `{JSON}` | 200: `[{JSON}]`
 
 - **`{JSON}`**—the properties in JSON format for the query
 - **Response: `[{JSON}]`**—an array of the resolved objects of all objects that match the query
