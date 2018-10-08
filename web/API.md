@@ -81,6 +81,8 @@ Example:  http://devstore.rerum.io/v1/since/11111
 
 ## POST
 
+ > All `POST` actions require a valid Bearer Token. 
+
 ### Create
 
 | Patterns | Payloads | Responses
@@ -186,7 +188,7 @@ will attempt to continue for all submitted items.
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/getByProperties` | `{JSON}` | 200: `[{JSON}]`
+| `/v1/getByProperties` | `{JSON}` | 200: `[{JSON}]`
 
 - **`{JSON}`**—the properties in JSON format for the query
 - **Response: `[{JSON}]`**—an array of the resolved objects of all objects that match the query
@@ -236,6 +238,8 @@ This grants software that is otherwise unable to make these requests the ability
 to so.
 
 ## PUT
+
+ > All `PUT` actions require a valid Bearer Token. 
 
 ### Update
 
@@ -292,6 +296,8 @@ same order.
  >**NB:** `__rerum`, `@id` and `_id` updates are ignored.
  >
  > Updates to released or deleted objects fail with an error.
+ >
+ > All `PATCH` actions require a valid Bearer Token. 
 
 ### Patch Update
 
@@ -347,6 +353,8 @@ Example Response:
 %)($NF)D*NS_$
 
 ## DELETE
+
+ > All `Delete` actions require a valid Bearer Token. 
 
 RERUM allows the `generator` of an object to delete that object.  
 Requests can be made by the string `@id` or a JSON object containing the `@id`.
