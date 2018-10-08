@@ -1288,7 +1288,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         * @see MongoDBAbstractDAO.bulkSetIDProperty(String collectionName, BasicDBObject[] entity_array);
     */ 
     public void batchSaveFromCopy() throws UnsupportedEncodingException, IOException, ServletException, Exception{
-        System.out.println("Object action batch save");
+        System.out.println("batch save");
         if(null != processRequestBody(request, false) && methodApproval(request, "create")){
             JSONArray received_array = JSONArray.fromObject(content);
             for(int b=0; b<received_array.size(); b++){ //Configure __rerum on each object
@@ -1340,7 +1340,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             }
             else{
                 JSONObject iiif_validation_response = checkIIIFCompliance(received, true); //This boolean should be provided by the user somehow.  It is a intended-to-be-iiif flag
-                configureRerumOptions(received, false);
+                received = configureRerumOptions(received, false);
                 received.remove("_id");
                 DBObject dbo = (DBObject) JSON.parse(received.toString());
                 if(null!=request.getHeader("Slug")){
@@ -1357,7 +1357,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 JSONObject jo = new JSONObject();
                 JSONObject newObjWithID = JSONObject.fromObject(dboWithObjectID);
                 jo.element("code", HttpServletResponse.SC_CREATED);
-                jo.element("@id", newid);
                 jo.element("new_obj_state", newObjWithID);
                 jo.element("iiif_validation", iiif_validation_response);
                 //try {
@@ -1387,7 +1386,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      */
     public void patchSetUpdate()throws IOException, ServletException, Exception{
         Boolean historyNextUpdatePassed = false;
-        System.out.println("patch set update object");
+        System.out.println("patch set update");
         if(null!= processRequestBody(request, true) && methodApproval(request, "set")){
             BasicDBObject query = new BasicDBObject();
             JSONObject received = JSONObject.fromObject(content); 
@@ -1589,7 +1588,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      */
     public void patchUpdateObject() throws ServletException, Exception{
         Boolean historyNextUpdatePassed = false;
-        System.out.println("trying to patch...");
+        System.out.println("trying to patch");
         if(null!= processRequestBody(request, true) && methodApproval(request, "patch")){
             BasicDBObject query = new BasicDBObject();
             JSONObject received = JSONObject.fromObject(content); 
