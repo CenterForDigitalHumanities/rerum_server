@@ -430,7 +430,7 @@ Applications are _strongly_ encouraged to record their own assertions within the
 ## Authentication
 
 RERUM creates an `agent` for each successful registration. This `agent` is in JSON-LD format and stored publicly. Authentication is managed by [Auth0](https://auth0.com/). 
-When RERUM creates an `agent`, Auth0 generates a refresh token and an access token.  Applications are responsible for providing their access tokens via a `Authentication` Header in their CRUD requests.  Get requests do not require this header.  As access tokens expire every hour, the applications are responsible for requesting and keeping track of valid access tokens.  For an example on how to do this, see this from [TinyThings](https://github.com/CenterForDigitalHumanities/TinyThings/blob/master/Source%20Packages/io/rerum/tokens/TinyTokenManager.java)
+When RERUM creates an `agent`, Auth0 generates a refresh token and an access token.  Applications are responsible for providing their access tokens via a `Authentication` Header in their CRUD requests.  Get requests do not require this header.  As access tokens expire every hour, the applications are responsible for requesting and keeping track of valid access tokens.  For an example on how to do this, see this example from [TinyThings](https://github.com/CenterForDigitalHumanities/TinyThings/blob/master/Source%20Packages/io/rerum/tokens/TinyTokenManager.java).
 The API key at Auth0 persists for each application, which may manage its own sessions. Expired (unauthorized) sessions receive a `401 Unauthorized` response with instructions to refresh the session or to register the application.
 
 ## @context
