@@ -106,7 +106,7 @@ Example Response:
   "code" : 201,
   "@id" : "http://devstore.rerum.io/v1/since/11111",
   "new_obj_state" : {
-    @id: http://devstore.rerum.io/v1/id/11111
+    "@id": "http://devstore.rerum.io/v1/id/11111",
     ...
   },
   "iiif_validation" : {
@@ -249,7 +249,7 @@ Example Response:
   "code" : 200,
   "original_object_id" : "http://devstore.rerum.io/v1/id/11111",
   "new_obj_state" : {
-    @id: http://devstore.rerum.io/v1/id/22222
+    "@id": "http://devstore.rerum.io/v1/id/22222"
     ...
   },
   "iiif_validation" : {
@@ -287,7 +287,7 @@ Example Response:
   "code" : 200,
   "original_object_id" : "http://devstore.rerum.io/v1/id/11111",
   "new_obj_state" : {
-    @id: http://devstore.rerum.io/v1/id/22222
+    "@id": "http://devstore.rerum.io/v1/id/22222",
     ...
   },
   "iiif_validation" : {
@@ -342,7 +342,7 @@ Example Response:
   "code" : 200,
   "original_object_id" : "http://devstore.rerum.io/v1/id/11111",
   "new_obj_state" : {
-    @id: http://devstore.rerum.io/v1/id/22222
+    "@id": "http://devstore.rerum.io/v1/id/22222",
     ...
   },
   "iiif_validation" : {
