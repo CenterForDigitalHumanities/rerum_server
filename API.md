@@ -85,7 +85,7 @@ Example:  http://devstore.rerum.io/v1/since/11111
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/v1/create` | `{JSON}` | 201: `header.Location` "Created @ `[@id]`", `{JSON}`
+| `/create` | `{JSON}` | 201: `header.Location` "Created @ `[@id]`", `{JSON}`
 
 - **`{JSON}`**—The object to create
 - **Response: `{JSON}`**—Containing various bits of information about the create.
@@ -105,6 +105,10 @@ Example Response:
 {
   "code" : 201,
   "@id" : "http://devstore.rerum.io/v1/since/11111",
+  "new_obj_state" : {
+    @id: http://devstore.rerum.io/v1/id/11111
+    ...
+  },
   "iiif_validation" : {
     "warnings" : ["Array of warnings from IIIF validator"],
     "error" : "Error for why this object failed validation",
@@ -117,7 +121,7 @@ Example Response:
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/v1/accessToken` | `{JSON}` | 200: `{JSON}`
+| `/accessToken` | `{JSON}` | 200: `{JSON}`
 
 - **`{JSON}`**— Auth0 requirements [here](https://auth0.com/docs/tokens/refresh-token/current#use-a-refresh-token)
 - **Response: `{JSON}`**— Containing the Auth0 /oauth/token `JSON` response
@@ -143,7 +147,7 @@ Example Response:
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/v1/refreshToken` | `{JSON}` | 200: `{JSON}`
+| `/refreshToken` | `{JSON}` | 200: `{JSON}`
 
 - **`{JSON}`**— Auth0 requirements [here](https://auth0.com/docs/tokens/refresh-token/current#get-a-refresh-token)
 - **Response: `{JSON}`**— Containing the Auth0 /oauth/token `JSON` response
@@ -171,7 +175,7 @@ Example Response:
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/v1/batchCreate` | `[{JSON}]` | 200: `[{JSON}]`
+| `/batchCreate` | `[{JSON}]` | 200: `[{JSON}]`
 
 - **`[{JSON}]`**—an array of objects to create in RERUM
 - **Response: `[{JSON}]`**—an array of the resolved objects from the creation process
@@ -213,7 +217,7 @@ so `{ "@type" : "sc:Canvas", "label" : "page 46" }` will match
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/v1/patch` | `{JSON}` | 201: `header.Location` "Created @ `[@id]`", `{JSON}`
+| `/patch` | `{JSON}` | 201: `header.Location` "Created @ `[@id]`", `{JSON}`
 
 - **`{JSON}`**—The object to patch update. 
 - **Response: `{JSON}`**—Containing various bits of information about the patch.
@@ -235,6 +239,27 @@ Example Method Override Request:
 This grants software that is otherwise unable to make these requests the ability
 to so.
 
+Example Response:
+
+- **Header:** `Location: Updated @ http://devstore.rerum.io/v1/id/22222`
+- **Body:**
+
+~~~ (json)
+{
+  "code" : 200,
+  "original_object_id" : "http://devstore.rerum.io/v1/id/11111",
+  "new_obj_state" : {
+    @id: http://devstore.rerum.io/v1/id/22222
+    ...
+  },
+  "iiif_validation" : {
+    "warnings" : ["Array of warnings from IIIF validator"],
+    "error" : "Error for why this object failed validation",
+    "okay" : 1 // 0 or 1 as to whether or not it passed IIIF validation
+  }
+}
+~~~
+
 ## PUT
 
 ### Update
@@ -254,7 +279,7 @@ version will maintain its place in the history of that object.
 
 Example Response:
 
-- **Header:** `Location: Updated @ http://devstore.rerum.io/v1/id/11111`
+- **Header:** `Location: Updated @ http://devstore.rerum.io/v1/id/22222`
 - **Body:**
 
 ~~~ (json)
@@ -262,7 +287,7 @@ Example Response:
   "code" : 200,
   "original_object_id" : "http://devstore.rerum.io/v1/id/11111",
   "new_obj_state" : {
-    @id: http://devstore.rerum.io/v1/id/11111
+    @id: http://devstore.rerum.io/v1/id/22222
     ...
   },
   "iiif_validation" : {
@@ -306,6 +331,27 @@ A single object is updated by altering the set or subset of properties in the JS
 payload. This method only updates existing keys. If a property submitted in the payload which does not exist, an error will be returned to the user. If
 `{key:null}` is submitted, the value will be set to `null`.
 Properties not mentioned in the payload object remain unaltered.
+
+Example Response:
+
+- **Header:** `Location: Updated @ http://devstore.rerum.io/v1/id/22222`
+- **Body:**
+
+~~~ (json)
+{
+  "code" : 200,
+  "original_object_id" : "http://devstore.rerum.io/v1/id/11111",
+  "new_obj_state" : {
+    @id: http://devstore.rerum.io/v1/id/22222
+    ...
+  },
+  "iiif_validation" : {
+    "warnings" : ["Array of warnings from IIIF validator"],
+    "error" : "Error for why this object failed validation",
+    "okay" : 1 // 0 or 1 as to whether or not it passed IIIF validation
+  }
+}
+~~~
 
 ### Add Properties
 
@@ -355,7 +401,7 @@ Objects marked as deleted do not return in query results and may only be directl
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/delete.action` | `String @id` or `{JSON}` | 204
+| `/delete` | `String @id` or `{JSON}` | 204
 
 - **`String @id`**—The @id of the object.
 - **`{JSON}`**—The object to delete.  Must contain `@id`.
