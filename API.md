@@ -85,7 +85,7 @@ Example:  http://devstore.rerum.io/v1/since/11111
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/create` | `{JSON}` | 201: `header.Location` "Created @ `[@id]`", `{JSON}`
+| `/create.action` | `{JSON}` | 201: `header.Location` "Created @ `[@id]`", `{JSON}`
 
 - **`{JSON}`**—The object to create
 - **Response: `{JSON}`**—Containing various bits of information about the create.
@@ -121,7 +121,7 @@ Example Response:
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/accessToken` | `{JSON}` | 200: `{JSON}`
+| `/accessToken.action` | `{JSON}` | 200: `{JSON}`
 
 - **`{JSON}`**— Auth0 requirements [here](https://auth0.com/docs/tokens/refresh-token/current#use-a-refresh-token)
 - **Response: `{JSON}`**— Containing the Auth0 /oauth/token `JSON` response
@@ -147,7 +147,7 @@ Example Response:
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/refreshToken` | `{JSON}` | 200: `{JSON}`
+| `/refreshToken.action` | `{JSON}` | 200: `{JSON}`
 
 - **`{JSON}`**— Auth0 requirements [here](https://auth0.com/docs/tokens/refresh-token/current#get-a-refresh-token)
 - **Response: `{JSON}`**— Containing the Auth0 /oauth/token `JSON` response
@@ -175,7 +175,7 @@ Example Response:
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/batchCreate` | `[{JSON}]` | 200: `[{JSON}]`
+| `/batchCreate.action` | `[{JSON}]` | 200: `[{JSON}]`
 
 - **`[{JSON}]`**—an array of objects to create in RERUM
 - **Response: `[{JSON}]`**—an array of the resolved objects from the creation process
@@ -190,7 +190,7 @@ will attempt to continue for all submitted items.
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/getByProperties` | `{JSON}` | 200: `[{JSON}]`
+| `/getByProperties.action` | `{JSON}` | 200: `[{JSON}]`
 
 - **`{JSON}`**—the properties in JSON format for the query
 - **Response: `[{JSON}]`**—an array of the resolved objects of all objects that match the query
@@ -217,7 +217,7 @@ so `{ "@type" : "sc:Canvas", "label" : "page 46" }` will match
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/patch` | `{JSON}` | 201: `header.Location` "Created @ `[@id]`", `{JSON}`
+| `/patch.action` | `{JSON}` | 201: `header.Location` "Created @ `[@id]`", `{JSON}`
 
 - **`{JSON}`**—The object to patch update. 
 - **Response: `{JSON}`**—Containing various bits of information about the patch.
@@ -272,7 +272,7 @@ version will maintain its place in the history of that object.
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/update` | `{JSON}` | 200: `header.Location` New state `{JSON}`
+| `/update.action` | `{JSON}` | 200: `header.Location` New state `{JSON}`
 
 - **`{JSON}`**—The requested new state for the object.
 - **Response Body: `{JSON}`**—Containing various bits of information about the PUT update.
@@ -302,7 +302,7 @@ Example Response:
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/batch_update` | `[{JSON}]` | 200: "[header.Location]" New state `[{JSON}]`
+| `/batch_update.action` | `[{JSON}]` | 200: "[header.Location]" New state `[{JSON}]`
 
 - **`[{JSON}]`**—an array of objects to update in RERUM.  Each object MUST contain an `@id`.
 - **Response: `[{JSON}]`**—an array of the resolved objects in their new state from the update process
@@ -322,7 +322,7 @@ same order.
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/patch` | `{JSON}` | 200: `header.Location` New state `{JSON}`
+| `/patch.action` | `{JSON}` | 200: `header.Location` New state `{JSON}`
 
 - **`{JSON}`**—The requested new state for the object.  MUST contain an `@id`
 - **Response Body: `{JSON}`**—Containing various bits of information about the PATCH update.
@@ -357,7 +357,7 @@ Example Response:
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/set` | `{JSON}` | 200: `header.Location` New state `{JSON}`
+| `/set.action` | `{JSON}` | 200: `header.Location` New state `{JSON}`
 
 - **`{JSON}`**—The requested new state for the object MUST contain an `@id`
 - **Response: `{JSON}`**—Containing various bits of information about the PATCH update. (see PUT Update for example)
@@ -369,7 +369,7 @@ payload. If a property already exists, a warning is returned to the user.
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/unset` | `{JSON}` | 202: `header.Location` New state `{JSON}`
+| `/unset.action` | `{JSON}` | 202: `header.Location` New state `{JSON}`
 
 - **`{JSON}`**—The requested new state for the object.  Must contain an `@id`.
 - **`{JSON}`**—Containing various bits of information about the PATCH update. (see PUT Update for example)
@@ -382,7 +382,7 @@ to be dropped otherwise a warning is returned to the user.
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/release` | `String @id` or `{JSON}` | 200: `header.Location` New state `{JSON}`
+| `/release.action` | `String @id` or `{JSON}` | 200: `header.Location` New state `{JSON}`
 
 - **`String @id`**—The `@id` of the version to be released.
 - **`{JSON}`**—The object.  Must contain `@id`.
@@ -401,7 +401,7 @@ Objects marked as deleted do not return in query results and may only be directl
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/delete` | `String @id` or `{JSON}` | 204
+| `/delete.action` | `String @id` or `{JSON}` | 204
 
 - **`String @id`**—The @id of the object.
 - **`{JSON}`**—The object to delete.  Must contain `@id`.
