@@ -76,7 +76,7 @@ Example: http://devstore.rerum.io/v1/history/11111
 - **`_id`**—the id of the object in RERUM.
 - **Response: `[{JSON}]`**—an array of the resolved objects of all child history objects
 
-As objects in RERUM are altered, the previous state is retained in
+As objects in RERUM are altered, the next state is retained in
 a history tree.  Requests return all descendants of this object from all branches.  
 The objects in the array are listed in preorder traversal.
 
