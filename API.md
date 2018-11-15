@@ -61,7 +61,9 @@ Example: http://devstore.rerum.io/v1/id/11111
 - **Response: `[{JSON}]`**—an array of the resolved objects of all parent history objects
 
 As objects in RERUM are altered, the previous state is retained in
-a history tree. Request returns all ancestors of a given version.
+a history tree. Requests return ancestors of this object on it's
+branch.  The objects in the array are listed in inorder traversal but 
+ignoring other branches.
 
 Example: http://devstore.rerum.io/v1/history/11111
 
@@ -75,7 +77,8 @@ Example: http://devstore.rerum.io/v1/history/11111
 - **Response: `[{JSON}]`**—an array of the resolved objects of all child history objects
 
 As objects in RERUM are altered, the previous state is retained in
-a history tree.  Request returns all descendants of a given version.
+a history tree.  Requests return all descendants of this object from all branches.  
+The objects in the array are listed in preorder traversal.
 
 Example:  http://devstore.rerum.io/v1/since/11111
 
