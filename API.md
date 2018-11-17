@@ -34,9 +34,23 @@
 
 <!-- /TOC -->
 All the following interactions will take place between
-the server running RERUM and the application server. If
-you prefer to use the public RERUM server (which I hope
-you do), the base URL is `http://devstore.rerum.io/v1`. 
+the server running RERUM and the application server.  A call
+to one of these APIs from a front end will fail.
+
+If you would like to see an example application front end that uses
+its back end as a proxy to the RERUM API, visit http://tinydev.rerum.io.
+
+If you want to see what an application API proxy looks like
+that uses the RERUM API, visit our TinyThings GitHub example at
+https://github.com/CenterForDigitalHumanities/TinyThings/tree/master/Source%20Packages/io/rerum/crud
+
+To have simple CRUD ability from a front end without using a back end proxy, you can
+use our public test endpoints.  Note: Your data could be removed at any time, this is for testing only.
+- http://tinydev.rerum.io/app/create   Uses the rules established by RERUM [create](#create)
+- http://tinydev.rerum.io/app/update   Uses the rules established by RERUM PUT [update](#update)
+- http://tinydev.rerum.io/app/delete   Uses the rules established by RERUM [delete](#delete)
+- http://tinydev.rerum.io/app/query    Uses the rules established by RERUM [Custom Query](#custom-query-beta)
+
 
 ## GET
 
