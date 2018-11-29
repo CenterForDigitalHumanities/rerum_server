@@ -68,6 +68,9 @@
     </filter>
     <filter-mapping>
         <filter-name>struts2</filter-name>
+        <!-- I believe we can remove this so we don't need .action on everything.  However, I find that it works nice to separate out
+            whether or not I am using a proxy or hitting RERUM directly.  If you are ever hitting anything.action directly, 
+            you are doing it wrong -->
         <url-pattern>*.action</url-pattern>
         <dispatcher>REQUEST</dispatcher>
         <dispatcher>FORWARD</dispatcher>

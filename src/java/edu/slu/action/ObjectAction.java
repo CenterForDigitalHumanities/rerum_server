@@ -50,6 +50,7 @@
 package edu.slu.action;
 
 import com.auth0.jwk.Jwk;
+import com.auth0.jwk.JwkException;
 import com.auth0.jwk.JwkProvider;
 import com.auth0.jwk.UrlJwkProvider;
 import com.mongodb.BasicDBList;
@@ -79,6 +80,10 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+
+import org.apache.commons.jcs.JCS;
+import org.apache.commons.jcs.access.CacheAccess;
+import org.apache.commons.jcs.access.exception.CacheException;
 
 //import org.apache.commons.codec.*;
 //import com.sun.org.apache.xerces.internal.impl.dv.util.Base64;
@@ -117,7 +122,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     private PrintWriter out;
     private String generatorID = "unknown";
     private final ObjectMapper mapper = new ObjectMapper();
-    
+    private CacheAccess<String, RSAPublicKey> cache = null;
    /**
     * Private function to get information from the rerum properties file
     
@@ -258,7 +263,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             }
             catch (IOException ex) {
                 Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
-                jsonReturn = new JSONObject(); //We were never going to get a response, so return an empty object.
+                jsonReturn = new JSONObject();
                 jsonReturn.element("error", "Couldn't access output stream");
                 jsonReturn.element("msg", ex.toString());
                 out = response.getWriter();
@@ -929,7 +934,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         else{
             response.addHeader("Link", "<http://www.w3.org/ns/ldp#Resource>; rel=\"type\""); 
         }
-        response.addHeader("Link", "<http://store.rerum.io/contexts/rerum.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
+        response.addHeader("Link", "<http://devstore.rerum.io/contexts/rerum.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
         response.addHeader("Allow", "GET,OPTIONS,HEAD,PUT,PATCH,DELETE,POST"); 
         if(!"".equals(etag)){
             response.addHeader("Etag", etag);
@@ -1247,13 +1252,13 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 ja.add((BasicDBObject) itemToAdd);
             }
             try {
-                    response.addHeader("Content-Type","application/json; charset=utf-8"); // not ld+json because it is an array
-                    response.setCharacterEncoding("UTF-8");
-                    response.addHeader("Access-Control-Allow-Origin", "*");
-                    response.setStatus(HttpServletResponse.SC_OK);
-                    out = response.getWriter();
-                    out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(ja));
-                } 
+                response.addHeader("Content-Type","application/json; charset=utf-8"); // not ld+json because it is an array
+                response.setCharacterEncoding("UTF-8");
+                response.addHeader("Access-Control-Allow-Origin", "*");
+                response.setStatus(HttpServletResponse.SC_OK);
+                out = response.getWriter();
+                out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(ja));
+            } 
             catch (IOException ex) {
                 Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -2549,7 +2554,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     }
 
     /*
-    Verify the access code in the Bearer header of an action request.
+        Verify the access code in the Bearer header of an action request.
     */
     private boolean verifyAccess(String access_token) throws IOException, ServletException, Exception{
         System.out.println("verify a JWT access token");
@@ -2558,11 +2563,26 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         JSONObject userInfo;
         try {
             DecodedJWT receivedToken = JWT.decode(access_token);
+            System.out.println("initialize cache...");
+            cache = JCS.getInstance("jwksCache");
             String KID = receivedToken.getKeyId();
-            //FIXME catch a timeout or fail to get jwks.json and handle gracefully.
-            JwkProvider provider = new UrlJwkProvider("https://cubap.auth0.com/.well-known/jwks.json");
-            Jwk jwk = provider.get(KID); //throws Exception when not found or can't get one
-            RSAPublicKey pubKey = (RSAPublicKey) jwk.getPublicKey();      
+            // FIXME catch a timeout or fail to get jwks.json and handle gracefully.
+            // Could cache this so we don't have to keep grabbing it since it has to happen on every call. 
+            // https://crunchify.com/how-to-create-a-simple-in-memory-cache-in-java-lightweight-cache/
+            // https://commons.apache.org/proper/commons-jcs/
+            Jwk jwk; 
+            JwkProvider provider;
+            System.out.println("check cache for key...");
+            RSAPublicKey pubKey = cache.get("pubKey");
+            //Cache the key so we don't have to keep requesting auth0 for it.  Expires in cache every 10 hours.  
+            if(null==pubKey){
+                System.out.println("key not in cache, ask auth0...");
+                provider = new UrlJwkProvider("https://cubap.auth0.com/.well-known/jwks.json");
+                jwk = provider.get(KID);
+                pubKey = (RSAPublicKey) jwk.getPublicKey();     
+                cache.put("pubKey", pubKey);
+                System.out.println("key in cache...");
+            }
             Algorithm algorithm = Algorithm.RSA256(pubKey, null);
             JWTVerifier verifier = JWT.require(algorithm).build(); //Reusable verifier instance
                //.withIssuer("auth0")
@@ -2578,9 +2598,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 System.out.println("We were able to verify the access token. ");
                 verified = true;
             }
-            
         } 
-        catch (Exception exception){
+        catch ( CacheException e )
+        {
+            System.out.println("Problem initializing cache: "+e.getMessage());
+        }
+        catch (JwkException | JWTVerificationException | IllegalArgumentException exception){
             //Invalid signature/claims/token.  Try to authenticate the old way
             System.out.println("Verification failed.  We were given a bad token.  IP fallback.  Exception below, but caught.");
             Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, exception);
@@ -2600,6 +2623,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 else{
                     //This is a legacy user.
                     //Create agent and write back to server collection
+                    //_id is messed up so adding the agent in doesn't always work.
                     System.out.println("The registered server did not have an agent ID.  It must be from the old system.");
                     System.out.println("We will generate a new agent to store with the registered server.");
                     userInfo = generateAgentForLegacyUser(JSONObject.fromObject(result));
@@ -2666,7 +2690,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         return newAgent;
     }
     
-
     @Override
     public void setServletRequest(HttpServletRequest hsr) {
         this.request = hsr;
