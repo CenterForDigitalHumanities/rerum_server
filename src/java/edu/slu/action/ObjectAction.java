@@ -2566,9 +2566,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             System.out.println("initialize cache...");
             cache = JCS.getInstance("jwksCache");
             String KID = receivedToken.getKeyId();
-            // FIXME catch a timeout or fail to get jwks.json and handle gracefully.
             // Could cache this so we don't have to keep grabbing it since it has to happen on every call. 
-            // https://crunchify.com/how-to-create-a-simple-in-memory-cache-in-java-lightweight-cache/
+            // http://commons.apache.org/proper/commons-jcs/getting_started/intro.html
             // https://commons.apache.org/proper/commons-jcs/
             Jwk jwk; 
             JwkProvider provider;
