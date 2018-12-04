@@ -35,7 +35,10 @@
 <!-- /TOC -->
 All the following interactions will take place between
 the server running RERUM and the application server.  A call
-to one of these APIs from a front end will fail.
+to one of these APIs from a front end will fail.  Please note that all
+examples are pointing at the development version of the RERUM API, not the
+production version.  Only point to the production version once you have
+tested with the development version.
 
 If you would like to see an example application front end that uses
 its back end as a proxy to the RERUM API, visit http://tinydev.rerum.io.
@@ -63,7 +66,7 @@ use our public test endpoints.  Note: Your data could be removed at any time, th
 - **`_id`**—the id of the object in RERUM.
 - **Response: `{JSON}`**—The object at `_id`
 
-Example: http://store.rerum.io/v1/id/11111
+Example: http://devstore.rerum.io/v1/id/11111
 
 ### History tree before this version
 
@@ -79,7 +82,7 @@ a history tree. Requests return ancestors of this object on it's
 branch.  The objects in the array are listed in inorder traversal but 
 ignoring other branches.
 
-Example: http://store.rerum.io/v1/history/11111
+Example: http://devstore.rerum.io/v1/history/11111
 
 ### History tree since this version
 
@@ -94,7 +97,7 @@ As objects in RERUM are altered, the next state is retained in
 a history tree.  Requests return all descendants of this object from all branches.  
 The objects in the array are listed in preorder traversal.
 
-Example:  http://store.rerum.io/v1/since/11111
+Example:  http://devstore.rerum.io/v1/since/11111
 
 ## POST
 
@@ -115,7 +118,7 @@ the API will direct the user to use [update](#update) instead.
 
 Example Response:
 
-- **Header:** `Location: Created @ http://store.rerum.io/v1/id/11111`
+- **Header:** `Location: Created @ http://devstore.rerum.io/v1/id/11111`
 - **Body:**
 
 ~~~ (json)
@@ -220,7 +223,7 @@ so `{ "@type" : "sc:Canvas", "label" : "page 46" }` will match
 
 ~~~ (json)
 [{
-  "@id": "https://store.rerum.io/v1/id/11111",
+  "@id": "https://devstore.rerum.io/v1/id/11111",
   "otherContent": [],
   "label": "page 46",
   "width": 730,
@@ -302,7 +305,7 @@ Example Response:
 ~~~ (json)
 {
   "code" : 200,
-  "original_object_id" : "http://store.rerum.io/v1/id/11111",
+  "original_object_id" : "http://devstore.rerum.io/v1/id/11111",
   "new_obj_state" : {
     "@id": "http://devstore.rerum.io/v1/id/22222",
     ...
@@ -429,10 +432,10 @@ A deleted object is easily recognized:
 
 ~~~ (json)
 {
-  "@id" : "http://store.rerum.io/v1/id/11111",
+  "@id" : "http://devstore.rerum.io/v1/id/11111",
   "__deleted" : {
     "object" : {
-      "@id" : "http://store.rerum.io/v1/id/11111",
+      "@id" : "http://devstore.rerum.io/v1/id/11111",
       "@type": "sc:Canvas"
       "label": "page 46",
       "width": 730,
@@ -500,7 +503,7 @@ The API key at Auth0 persists for each application, which may manage its own ses
 
 Objects in RERUM should be JSON-LD, which means they should have an `@context` provided when they are created.  However, ordinary JSON documents are allowed in the store. These JSON documents can be interpreted as JSON-LD by referencing a JSON-LD context document in an [HTTP Link Header](https://www.w3.org/TR/json-ld/#h3_interpreting-json-as-json-ld). RERUM provides this `@context` in the `Link` header and also provides an `@context` for the `__rerum` terms mentioned above.
 
-http://store.rerum.io/v1/context.json
+http://devstore.rerum.io/v1/context.json
 
 ## IIIF
 
