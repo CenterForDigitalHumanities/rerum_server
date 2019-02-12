@@ -94,6 +94,7 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.io.DataOutputStream;
 import java.net.ProtocolException;
 import java.security.interfaces.RSAPublicKey;
@@ -1249,6 +1250,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 itemToAdd.remove("forkFromID"); // retained for legacy v0 objects
                 itemToAdd.remove("serverName");// retained for legacy v0 objects
                 itemToAdd.remove("serverIP");// retained for legacy v0 objects
+                System.out.println("Item to add to response:");
+                System.out.println(itemToAdd);
                 ja.add((BasicDBObject) itemToAdd);
             }
             try {
@@ -1362,6 +1365,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 JSONObject jo = new JSONObject();
                 JSONObject newObjWithID = JSONObject.fromObject(dboWithObjectID);
                 jo.element("code", HttpServletResponse.SC_CREATED);
+                newObjWithID.remove("_id");
                 jo.element("new_obj_state", newObjWithID);
                 jo.element("iiif_validation", iiif_validation_response);
                 //try {
@@ -1475,7 +1479,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 }
             }
             else{
-                writeErrorResponse("Object did not contains an @id, could not update.", HttpServletResponse.SC_BAD_REQUEST);
+                writeErrorResponse("Object did not contain an @id, could not update.", HttpServletResponse.SC_BAD_REQUEST);
             }
         }
     }
@@ -1582,7 +1586,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 }
             }
             else{
-                writeErrorResponse("Object did not contains an @id, could not update.", HttpServletResponse.SC_BAD_REQUEST);
+                writeErrorResponse("Object did not contain an @id, could not update.", HttpServletResponse.SC_BAD_REQUEST);
             }
         }
     }
@@ -1771,7 +1775,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 }
             }
             else{
-                writeErrorResponse("Object did not contains an @id, could not update.", HttpServletResponse.SC_BAD_REQUEST);
+                writeErrorResponse("Object did not contain an @id, could not update.", HttpServletResponse.SC_BAD_REQUEST);
             }
         }
     }
@@ -1933,7 +1937,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 }    
             }
             else{
-                writeErrorResponse("Object did not contains an @id, could not release.", HttpServletResponse.SC_BAD_REQUEST);
+                writeErrorResponse("Object did not contain an @id, could not release.", HttpServletResponse.SC_BAD_REQUEST);
             }
         }
     }
