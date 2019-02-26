@@ -249,6 +249,8 @@ public abstract class MongoDBAbstractDAO implements MongoDBDAOInterface {
         }
         //System.out.println("Perform bulk insert in bulk save");
         //coll.save(listAsObj); //this should decide whether it is an insert or an update
+        System.out.println("Bulk save this list of stuff");
+        System.out.println(listAsObj);
         coll.insert(listAsObj);      
         return bulkSetIDProperty(collectionName, listAsObj);
     }
@@ -265,10 +267,8 @@ public abstract class MongoDBAbstractDAO implements MongoDBDAOInterface {
             entity_array[j]=targetEntity; //update this so the updated object can be returned
             listAsArr.add(targetEntity);
             DBObject findThis = new BasicDBObject();
-            DBObject toUpdate = new BasicDBObject();
-            toUpdate.put("@id", Constant.RERUM_ID_PREFIX+(targetEntity.get("_id").toString()));
             findThis.put("_id",targetEntity.get("_id").toString());
-            coll.update(findThis, toUpdate);
+            coll.update(findThis, targetEntity);
         }
         return listAsArr;
     }
