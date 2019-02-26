@@ -249,8 +249,6 @@ public abstract class MongoDBAbstractDAO implements MongoDBDAOInterface {
         }
         //System.out.println("Perform bulk insert in bulk save");
         //coll.save(listAsObj); //this should decide whether it is an insert or an update
-        System.out.println("Bulk save this list of stuff");
-        System.out.println(listAsObj);
         coll.insert(listAsObj);      
         return bulkSetIDProperty(collectionName, listAsObj);
     }

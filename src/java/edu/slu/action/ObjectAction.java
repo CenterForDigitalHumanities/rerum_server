@@ -475,8 +475,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         JSONObject annoToUpdate = JSONObject.fromObject(myAnno);
         if(null != myAnno){
             try{
-                System.out.println("Try to overwrite the history piece of");
-                System.out.println(annoToUpdate);
                 annoToUpdate.getJSONObject("__rerum").getJSONObject("history").getJSONArray("next").add(newNextID); //write back to the anno from mongo
                 myAnnoWithHistoryUpdate = (DBObject)JSON.parse(annoToUpdate.toString()); //make the JSONObject a DB object
                 System.out.println("Update in Mongo");
