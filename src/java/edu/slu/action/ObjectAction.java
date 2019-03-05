@@ -183,6 +183,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     sb.append(line);
                 }
                 reader.close();
+                connection.disconnect();
                 jsonReturn = JSONObject.fromObject(sb.toString());
                 out = response.getWriter();
                 response.setStatus(HttpServletResponse.SC_OK);
@@ -249,6 +250,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     sb.append(line);
                 }
                 reader.close();
+                connection.disconnect();
                 jsonReturn = JSONObject.fromObject(sb.toString());
                 out = response.getWriter();
                 response.setStatus(HttpServletResponse.SC_OK);
@@ -735,7 +737,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     restful = true;
                 }
                 else{
-                    writeErrorResponse("Improper request method for the Auth0 proxy, please use post.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+                    writeErrorResponse("Improper request method for the Auth0 proxy, please use POST.", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
                 }
             break;
             case "getProps":
@@ -751,7 +753,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             default:
                 writeErrorResponse("Improper request method for this type of request (unknown).", HttpServletResponse.SC_METHOD_NOT_ALLOWED);
         }   
-        System.out.println("Method approved? "+restful);
+        System.out.println(request_type+ " approved? "+restful);
         return restful;
     }
     
@@ -909,6 +911,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             }
         }
         */
+        reader.close();
+        input.close();
         content = requestBody;
         response.setContentType("application/json; charset=utf-8"); // We create JSON objects for the return body in most cases.  
         response.addHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -2481,6 +2485,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
           stringBuilder.append(line);
         }
         connection.disconnect();
+        reader.close();
         jwksFile = JSONObject.fromObject(stringBuilder.toString());
         return jwksFile;
     }
