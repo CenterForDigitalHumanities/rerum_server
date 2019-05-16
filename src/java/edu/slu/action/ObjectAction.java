@@ -430,7 +430,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         rerumOptions.element("history", history);
         rerumOptions.element("releases", releases);      
         //The access token is in the header  "Authorization: Bearer {YOUR_ACCESS_TOKEN}"
-        rerumOptions.element("generatedBy",generatorID); //TODO get the @id of the public agent of the API key
+        rerumOptions.element("generatedBy",generatorID); 
         configuredObject.element("__rerum", rerumOptions); //.element will replace the __rerum that is there OR create a new one
         return configuredObject; //The mongo save/update has not been called yet.  The object returned here will go into mongo.save or mongo.update
     }
@@ -2185,7 +2185,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         String preserveID = safe_received.getString("@id");
                         JSONObject deletedFlag = new JSONObject(); //The __deleted flag is a JSONObject
                         deletedFlag.element("object", originalObject);
-                        deletedFlag.element("deletor", "TODO"); //@cubap I assume this will be an API key?
+                        deletedFlag.element("deletor", generatorID); 
                         deletedFlag.element("time", System.currentTimeMillis());
                         updatedWithFlag.element("@id", preserveID);
                         updatedWithFlag.element("__deleted", deletedFlag); //We want everything wrapped in deleted except the @id.
