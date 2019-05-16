@@ -704,6 +704,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 }
             break;
             case "delete":
+                System.out.println("Method delete detected");
                 auth_verified =  verifyAccess(access_token);
                 if(auth_verified){
                     if(requestMethod.equals("DELETE")){
@@ -944,7 +945,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         else{
             response.addHeader("Link", "<http://www.w3.org/ns/ldp#Resource>; rel=\"type\""); 
         }
-        response.addHeader("Link", "<http://devstore.rerum.io/contexts/rerum.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
+        response.addHeader("Link", "<http://store.rerum.io/contexts/rerum.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
         response.addHeader("Allow", "GET,OPTIONS,HEAD,PUT,PATCH,DELETE,POST"); 
         if(!"".equals(etag)){
             response.addHeader("Etag", etag);
