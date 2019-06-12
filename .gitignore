@@ -5,3 +5,4 @@ dist/
 build.xml
 *.properties
 src/java/rerum.properties
+.vscode/settings.json
