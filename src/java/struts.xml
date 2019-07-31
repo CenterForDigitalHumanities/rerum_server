@@ -12,14 +12,16 @@
     <constant name="struts.multipart.saveDir" value="/tmp"></constant>
     
     <package name="default" extends="struts-default"></package>
+    
     <!-- This package is open to public -->
     <package name="getObject" extends="default" namespace="/id">
         <!-- INTERCEPTOR -->
         <interceptors>
-            <!--<interceptor name="downTimeOverride" class="edu.slu.filter.DownTimeOverride"></interceptor>-->
+            <interceptor name="downTimeOverride" class="edu.slu.filter.DownTimeOverride"></interceptor>
             <interceptor name="responseEncoding" class="edu.slu.filter.ResponseEncoding"></interceptor>
+
             <interceptor-stack name="myDefault">
-                <interceptor-ref name="downTimeOverride" />
+                <!--<interceptor-ref name="downTimeOverride" />-->
                 <interceptor-ref name="responseEncoding" />
             </interceptor-stack>
         </interceptors>
@@ -31,10 +33,10 @@
     <package name="getAncestors" extends="default" namespace="/history">
         <!-- INTERCEPTOR -->
         <interceptors>
-            <!--<interceptor name="downTimeOverride" class="edu.slu.filter.DownTimeOverride"></interceptor>-->
+            <interceptor name="downTimeOverride" class="edu.slu.filter.DownTimeOverride"></interceptor>
             <interceptor name="responseEncoding" class="edu.slu.filter.ResponseEncoding"></interceptor>
             <interceptor-stack name="myDefault">
-                <interceptor-ref name="downTimeOverride" />
+                <!--<interceptor-ref name="downTimeOverride" />-->
                 <interceptor-ref name="responseEncoding" />
             </interceptor-stack>
         </interceptors>
@@ -46,10 +48,10 @@
     <package name="getDescendents" extends="default" namespace="/since">
         <!-- INTERCEPTOR -->
         <interceptors>
-            <!--<interceptor name="downTimeOverride" class="edu.slu.filter.DownTimeOverride"></interceptor>-->
+<!--            <interceptor name="downTimeOverride" class="edu.slu.filter.DownTimeOverride"></interceptor>-->
             <interceptor name="responseEncoding" class="edu.slu.filter.ResponseEncoding"></interceptor>
             <interceptor-stack name="myDefault">
-                <interceptor-ref name="downTimeOverride" />
+                <!--<interceptor-ref name="downTimeOverride" />-->
                 <interceptor-ref name="responseEncoding" />
             </interceptor-stack>
         </interceptors>
@@ -64,7 +66,7 @@
 <!--            <interceptor name="requestServerAuthenticationFilter" class="edu.slu.filter.RequestServerAuthenticationFilter">
                 <param name="includeMethods">saveNewObject, batchSaveFromCopy, patchUpdateObject, putUpdateObject, patchSetUpdate, deleteObject, releaseObject </param>
             </interceptor>-->
-            <!--<interceptor name="downTimeOverride" class="edu.slu.filter.DownTimeOverride"></interceptor>-->
+            <interceptor name="downTimeOverride" class="edu.slu.filter.DownTimeOverride"></interceptor>
             <interceptor name="getRequestClientInfoRecorder" class="edu.slu.filter.GetRequestClientInfoRecorder">
                 <param name="includeMethods">askAuth0, getByProperties, getByID, getAllAncestors, getAllDescendents, getAllVersions</param>
             </interceptor>
@@ -74,7 +76,7 @@
                 <!--<interceptor-ref name="responseEncoding" />-->
                 <!--<interceptor-ref name="inSessionFilter" />-->
                 <!--<interceptor-ref name="requestServerAuthenticationFilter" />-->
-                <interceptor-ref name="downTimeOverride" />
+                <!--<interceptor-ref name="downTimeOverride" />-->
                 <interceptor-ref name="getRequestClientInfoRecorder" />
             </interceptor-stack>
         </interceptors>
@@ -108,10 +110,10 @@
     <package name="acceptedServer" extends="default" namespace="/acceptedServer">
         <!-- INTERCEPTOR -->
         <interceptors>
-            <!--<interceptor name="downTimeOverride" class="edu.slu.filter.DownTimeOverride"></interceptor>-->
+            <interceptor name="downTimeOverride" class="edu.slu.filter.DownTimeOverride"></interceptor>
             <interceptor name="responseEncoding" class="edu.slu.filter.ResponseEncoding"></interceptor>
             <interceptor-stack name="myDefault">
-                <interceptor-ref name="downTimeOverride" />
+                <!--<interceptor-ref name="downTimeOverride" />-->
                 <interceptor-ref name="responseEncoding" />
             </interceptor-stack>
         </interceptors>
