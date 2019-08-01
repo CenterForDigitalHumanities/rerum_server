@@ -1,7 +1,7 @@
 {
     "@context":{
         "@version": "0.8.0",
-        "rerum": "http://devstore.rerum.io/v1/terms/",
+        "rerum": "http://store.rerum.io/v1/terms/",
         "dcterms": "http://purl.org/dc/terms/",
         "prov"   : "",
         "as": "http://www.w3.org/ns/activitystreams#",
