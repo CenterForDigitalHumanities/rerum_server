@@ -19,7 +19,7 @@ public class DownTimeOverride extends MethodFilterInterceptor {
     @Override
     protected String doIntercept(ActionInvocation ai) throws Exception {
         HttpServletResponse response = ServletActionContext.getResponse();
-        String body = "We are performing maintainance right now.  Please try again later.  Sorry for the inconvenience.";
+        String body = "We are performing maintenance right now.  Please try again later.  Sorry for the inconvenience.";
         response.setStatus(500);
         throw new Exception(body);
     }
