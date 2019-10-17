@@ -19,10 +19,10 @@
         <interceptors>
             <interceptor name="downTimeOverride" class="edu.slu.filter.DownTimeOverride"></interceptor>
             <interceptor name="responseEncoding" class="edu.slu.filter.ResponseEncoding"></interceptor>
-
             <interceptor-stack name="myDefault">
-                <interceptor-ref name="downTimeOverride" />
+                <!--<interceptor-ref name="downTimeOverride" />-->
                 <interceptor-ref name="responseEncoding" />
+                <interceptor-ref name="defaultStack" />
             </interceptor-stack>
         </interceptors>
         <default-interceptor-ref name="myDefault" />
@@ -36,8 +36,9 @@
             <interceptor name="downTimeOverride" class="edu.slu.filter.DownTimeOverride"></interceptor>
             <interceptor name="responseEncoding" class="edu.slu.filter.ResponseEncoding"></interceptor>
             <interceptor-stack name="myDefault">
-                <interceptor-ref name="downTimeOverride" />
+                <!--<interceptor-ref name="downTimeOverride" />-->
                 <interceptor-ref name="responseEncoding" />
+                <interceptor-ref name="defaultStack" />
             </interceptor-stack>
         </interceptors>
         <default-interceptor-ref name="myDefault" />
@@ -51,8 +52,9 @@
             <interceptor name="downTimeOverride" class="edu.slu.filter.DownTimeOverride"></interceptor>
             <interceptor name="responseEncoding" class="edu.slu.filter.ResponseEncoding"></interceptor>
             <interceptor-stack name="myDefault">
-                <interceptor-ref name="downTimeOverride" />
+                <!--<interceptor-ref name="downTimeOverride" />-->
                 <interceptor-ref name="responseEncoding" />
+                <interceptor-ref name="defaultStack" />
             </interceptor-stack>
         </interceptors>
         <default-interceptor-ref name="myDefault" />
@@ -76,8 +78,9 @@
                 <!--<interceptor-ref name="responseEncoding" />-->
                 <!--<interceptor-ref name="inSessionFilter" />-->
                 <!--<interceptor-ref name="requestServerAuthenticationFilter" />-->
-                <interceptor-ref name="downTimeOverride" />
+                <!--<interceptor-ref name="downTimeOverride" />-->
                 <interceptor-ref name="getRequestClientInfoRecorder" />
+                <interceptor-ref name="defaultStack" />
             </interceptor-stack>
         </interceptors>
         <default-interceptor-ref name="myDefault" />
@@ -110,11 +113,12 @@
     <package name="acceptedServer" extends="default" namespace="/acceptedServer">
         <!-- INTERCEPTOR -->
         <interceptors>
-            <interceptor name="downTimeOverride" class="edu.slu.filter.DownTimeOverride"></interceptor>
+            <!--<interceptor name="downTimeOverride" class="edu.slu.filter.DownTimeOverride"></interceptor>-->
             <interceptor name="responseEncoding" class="edu.slu.filter.ResponseEncoding"></interceptor>
             <interceptor-stack name="myDefault">
-                <interceptor-ref name="downTimeOverride" />
+                <!--<interceptor-ref name="downTimeOverride" />-->
                 <interceptor-ref name="responseEncoding" />
+                <interceptor-ref name="defaultStack" />
             </interceptor-stack>
         </interceptors>
         <default-interceptor-ref name="myDefault" />
