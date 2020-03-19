@@ -1945,7 +1945,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                             safe_original.getJSONObject("__rerum").element("isReleased", formattedReleasedDateTime);
                             safe_original.getJSONObject("__rerum").getJSONObject("releases").element("replaces", previousReleasedID);
                             releasedObject = (BasicDBObject) JSON.parse(safe_original.toString());
-                            if(!"".equals(previousReleasedID)){// A releases tree exists and an acestral object is being released.  
+                            if(!"".equals(previousReleasedID)){// A releases tree exists and an ancestral object is being released.  
                                 treeHealed  = healReleasesTree(safe_original); 
                             }
                             else{ //There was no releases previous value. 
