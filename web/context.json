@@ -31,7 +31,7 @@
             },
             "isReleased":{
                "@id":"dcterms:issued",
-               "@type":"xsd:boolean"
+               "@type":"xsd:dateTime"
             },
             "isOverwritten":{
                "@id":"rerum_v1:isOverwritten",
@@ -89,7 +89,7 @@
       },
       "isReleased":{
          "@id":"dcterms:issued",
-         "@type":"xsd:boolean"
+         "@type":"xsd:dateTime"
       },
       "isOverwritten":{
          "@id":"rerum_v1:isOverwritten",
