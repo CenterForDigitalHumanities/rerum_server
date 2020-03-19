@@ -1,78 +1,71 @@
 {
-    "@context" :{
-        "iiif_prezi_3":"http://iiif.io/api/presentation/3#",
-        "iiif_prezi_2":"http://iiif.io/api/presentation/2#",
-        "rerum_v1":"http://store.rerum.io/v1/#",
-        "iiif_image":"http://iiif.io/api/image/3#",
-        "exif": "http://www.w3.org/2003/12/exif/ns#",
-        "oa": "http://www.w3.org/ns/oa#",
-        "dc": "http://purl.org/dc/elements/1.1/",
-        "dcterms": "http://purl.org/dc/terms/",
-        "dctypes": "http://purl.org/dc/dcmitype/",
-        "foaf": "http://xmlns.com/foaf/0.1/",
-        "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
-        "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
-        "xsd": "http://www.w3.org/2001/XMLSchema#",
-        "as": "http://www.w3.org/ns/activitystreams#",
-        "ebu": "http://www.ebu.ch/metadata/ontologies/ebucore/ebucore#",
-        "schema": "https://schema.org/",
-	"prov"   : "",
-	"geojson":"http://geojson.org/geojson-ld/",
-
-        "id": "@id",
-        "type": "@type",
-
-        "__rerum":{
-            "@id":"rerum:__rerum",
-            "@type": "@vocab",
-            "container": "@set"
-        },
-        "createdAt": {
-      	    "@id": "dcterms:created",
-            "@type": "@id"  
-        },
-        "generator":{
-            "@id": "as:generator",
-            "@type": "@id"
-        },
-        "isReleased": {
-      	    "@id": "dcterms:issued",
-            "@type": "@id"  
-        },
-	"isOverwritten" : {
-            "@id": "dcterms:modified",
-            "@type": "@id"
-        },
-        "releases" : {
-            "@id": "rerum:releases",
-            "@type": "@vocab",
-            "container":"@set"
-        },
-        "history":{
-            "@id": "rerum:history",
-            "@type": "@vocab",
-            "container":"@set"
-        },
-	"APIversion":{
-  	    "@id":"rerum:APIversion",
-            "@type":"@id"          
-        },
-        "previous":{
-    	     "@id":"prov:wasRevisionOf",
-             "@type": "@id"
-        },
-        "next":{
-             "@id":"dcterms:isVersionOf",
-             "container": "@list"
-        },
-        "prime":{
-             "@id":"dcterms:isVersionOf",
-             "@type": "@id"
-        },
-        "replaces":{
-	    "@id":"dcterms:replaces",
-            "@type": "@id"
-        }     
-
-    }
+   "@context":{
+      "as":"http://www.w3.org/ns/activitystreams#",
+      "xsd":"http://www.w3.org/2001/XMLSchema#",
+      "dcterms":"http://purl.org/dc/terms/",
+      "prov":"https://www.w3.org/TR/prov/#",
+      "rerum_v1":"https://github.com/CenterForDigitalHumanities/rerum_server/blob/master/API.md#",
+      "id":"@id",
+      "type":"@type",
+      "__rerum":{
+         "@id":"rerum_v1:__rerum",
+         "@type":"@id"
+      },
+      "alpha":{
+         "@id":"rerum_v1:alpha",
+         "@type":"xsd:boolean"
+      },
+      "createdAt":{
+         "@id":"dcterms:created",
+         "@type":"xsd:dateTime"
+      },
+      "generatedBy":{
+         "@id":"as:generator",
+         "@type":"@id"
+      },
+      "isReleased":{
+         "@id":"dcterms:issued",
+         "@type":"xsd:boolean"
+      },
+      "isOverwritten":{
+         "@id":"rerum_v1:isOverwritten",
+         "@type":"xsd:dateTime"
+      },
+      "releases":{
+         "@id":"rerum_v1:releases",
+         "@context":{
+            "previous":{
+               "@id":"rerum_v1:releases.previous",
+               "@type":"@id"
+            },
+            "next":{
+               "@id":"rerum_v1:releases.next",
+               "@container":"@set"
+            },
+            "replaces":{
+               "@id":"rerum_v1:releases.replaces",
+               "@type":"@id"
+            }
+         }
+      },
+      "history":{
+         "@id":"rerum_v1:history",
+         "@context":{
+            "previous":{
+               "@id":"prov:wasRevisionOf",
+               "@type":"@id"
+            },
+            "next":{
+               "@id":"dcterms:isVersionOf",
+               "@container":"@set"
+            },
+            "prime":{
+               "@id":"rerum_v1:prime"
+            }
+         }
+      },
+      "APIversion":{
+         "@id":"rerum_v1:APIversion"
+      }
+   }
 }
