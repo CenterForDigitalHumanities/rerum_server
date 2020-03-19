@@ -935,11 +935,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @param isLD  the object is either plain JSON or is JSON-LD ("ld+json")
      */
     private void addWebAnnotationHeaders(String etag, Boolean isContainerType, Boolean isLD){
+        response.setContentType("UTF-8");
         if(isLD){
-            response.addHeader("Content-Type", "application/ld+json;profile=\"http://www.w3.org/ns/anno.jsonld\""); 
+            response.addHeader("Content-Type", "application/ld+json;charset=utf-8;profile=\"http://www.w3.org/ns/anno.jsonld\""); 
         } 
         else {
-            response.addHeader("Content-Type", "application/json;"); 
+            response.addHeader("Content-Type", "application/json;charset=utf-8;"); 
             // This breaks Web Annotation compliance, but allows us to return requested
             // objects without misrepresenting the content.
         }
@@ -968,11 +969,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @param isLD  the object is either plain JSON or is JSON-LD ("ld+json")
      */
     private void addSupportHeaders(String etag, Boolean isLD){
+        response.setContentType("UTF-8");
         if(isLD){
-            response.addHeader("Content-Type", "application/ld+json;profile=\"http://www.w3.org/ns/anno.jsonld\""); 
+            response.addHeader("Content-Type", "application/ld+json;charset=utf-8;profile=\"http://www.w3.org/ns/anno.jsonld\""); 
         } 
         else {
-            response.addHeader("Content-Type", "application/json;"); 
+            response.addHeader("Content-Type", "application/json;charset=utf-8;"); 
             // This breaks Web Annotation compliance, but allows us to return requested
             // objects without misrepresenting the content.
         }
@@ -1039,8 +1041,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     //@cubap @theHabes TODO how can we make this Web Annotation compliant?
                     addSupportHeaders("", true);
                     addLocationHeader(ancestors);
-                    response.addHeader("Access-Control-Allow-Origin", "*");
-                    response.setContentType("application/json; charset=utf-8"); // We create JSON objects for the return body in most cases.  
+                    response.addHeader("Access-Control-Allow-Origin", "*"); 
                     response.setStatus(HttpServletResponse.SC_OK);
                     out = response.getWriter();
                     out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(ancestors));
@@ -1122,7 +1123,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     addSupportHeaders("", true);
                     addLocationHeader(descendents);
                     response.addHeader("Access-Control-Allow-Origin", "*");
-                    response.setContentType("application/json; charset=utf-8"); // We create JSON objects for the return body in most cases.  
                     response.setStatus(HttpServletResponse.SC_OK);
                     out = response.getWriter();
                     out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(descendents));
@@ -1255,7 +1255,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 try {
                     addWebAnnotationHeaders(oid, isContainerType(jo), isLD(jo));
                     addLocationHeader(jo);
-                    response.addHeader("Content-Type", "application/json; charset=utf-8");
                     response.addHeader("Access-Control-Allow-Origin", "*");
                     response.setStatus(HttpServletResponse.SC_OK);
                     out = response.getWriter();
@@ -1310,8 +1309,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             try {
                 addSupportHeaders("", true);
                 addLocationHeader(ja);
-                response.addHeader("Content-Type","application/json; charset=utf-8"); // not ld+json because it is an array
-                response.setCharacterEncoding("UTF-8");
                 response.addHeader("Access-Control-Allow-Origin", "*");
                 response.setStatus(HttpServletResponse.SC_OK);
                 out = response.getWriter();
@@ -1377,11 +1374,11 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             JSONObject jo = new JSONObject();
             jo.element("code", HttpServletResponse.SC_CREATED);
             jo.element("new_resources", newResources);
-            addSupportHeaders("", true);
-            addLocationHeader(newResources);
             try {
+                addSupportHeaders("", true);
+                addLocationHeader(newResources);
                 response.setStatus(HttpServletResponse.SC_CREATED);
-                response.addHeader("Content-Type", "application/json; charset=utf-8");
+                response.addHeader("Access-Control-Allow-Origin", "*");
                 out = response.getWriter();
                 out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
             } catch (IOException ex) {
@@ -1429,19 +1426,17 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 jo.element("iiif_validation", iiif_validation_response);
                 //try {
                 System.out.println("Object created: "+newid);
-                response.addHeader("Access-Control-Allow-Origin", "*");
-                addWebAnnotationHeaders(newObjectID, isContainerType(received), isLD(received));
-                addLocationHeader(newObjWithID);
-                response.addHeader("Content-Type", "application/json; charset=utf-8");
-                response.setContentType("UTF-8");
-                response.setStatus(HttpServletResponse.SC_CREATED);
-                out = response.getWriter();
-                out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
-               // }
-                //catch (IOException ex) {
-                 //   System.out.println("Save new obj failed on IO Exception.");
-                //    Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
-                //}
+                try {
+                    addWebAnnotationHeaders(newObjectID, isContainerType(received), isLD(received));
+                    addLocationHeader(newObjWithID);
+                    response.addHeader("Access-Control-Allow-Origin", "*");
+                    response.setStatus(HttpServletResponse.SC_CREATED);
+                    out = response.getWriter();
+                    out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
+                } 
+                catch (IOException ex) {
+                    Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
         }
     }
@@ -1511,8 +1506,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                                 try {
                                     addWebAnnotationHeaders(newNextID, isContainerType(newObject), isLD(newObject));
                                     addLocationHeader(newObject);
-                                    response.addHeader("Content-Type", "application/json; charset=utf-8");
-                                    response.setContentType("UTF-8");
                                     response.addHeader("Access-Control-Allow-Origin", "*");
                                     response.setStatus(HttpServletResponse.SC_OK);
                                     out = response.getWriter();
@@ -1621,8 +1614,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                                     addLocationHeader(newObject);
                                     response.addHeader("Access-Control-Allow-Origin", "*");
                                     response.setStatus(HttpServletResponse.SC_OK);
-                                    response.addHeader("Content-Type", "application/json; charset=utf-8");
-                                    response.setContentType("UTF-8");
                                     out = response.getWriter();
                                     out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
                                 } 
@@ -1734,8 +1725,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                                     addLocationHeader(newObject);
                                     response.addHeader("Access-Control-Allow-Origin", "*");
                                     response.setStatus(HttpServletResponse.SC_OK);
-                                    response.addHeader("Content-Type", "application/json; charset=utf-8");
-                                    response.setContentType("UTF-8");
                                     out = response.getWriter();
                                     out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
                                 } 
@@ -1821,8 +1810,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                                 addLocationHeader(newObject);
                                 response.addHeader("Access-Control-Allow-Origin", "*");
                                 response.setStatus(HttpServletResponse.SC_OK);
-                                response.addHeader("Content-Type", "application/json; charset=utf-8");
-                                response.setContentType("UTF-8");
                                 out = response.getWriter();
                                 out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
                             }
@@ -1902,8 +1889,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         try {
                             addWebAnnotationHeaders(receivedID, isContainerType(newObject), isLD(newObject));
                             addLocationHeader(newObject);
-                            response.addHeader("Content-Type", "application/json; charset=utf-8");
-                            response.setContentType("UTF-8");
                             response.addHeader("Access-Control-Allow-Origin", "*");
                             response.setStatus(HttpServletResponse.SC_OK);
                             out = response.getWriter();
@@ -1983,9 +1968,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                                     addWebAnnotationHeaders(updateToReleasedID, isContainerType(safe_original), isLD(safe_original));
                                     addLocationHeader(newObject);
                                     response.addHeader("Access-Control-Allow-Origin", "*");
-                                    response.setStatus(HttpServletResponse.SC_OK);
-                                    response.addHeader("Content-Type", "application/json; charset=utf-8");
-                                    response.setContentType("UTF-8");
+                                    response.setStatus(HttpServletResponse.SC_OK);                                   
                                     out = response.getWriter();
                                     out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
                                 } 
@@ -2520,7 +2503,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             addLocationHeader(newObjState);
             response.addHeader("Access-Control-Allow-Origin", "*");
             response.setStatus(HttpServletResponse.SC_CREATED);
-            response.addHeader("Content-Type", "application/json; charset=utf-8");
             System.out.println("Object now internal to rerum: "+newRootID);
             out = response.getWriter();
             out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
