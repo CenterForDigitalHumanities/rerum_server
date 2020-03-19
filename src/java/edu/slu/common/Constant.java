@@ -31,6 +31,7 @@ public class Constant {
     public static final String RERUM_ID_PREFIX="http://devstore.rerum.io/v1/id/";
     public static final String RERUM_AGENT_PREFIX="http://devstore.rerum.io/v1/agent/";
     public static final String RERUM_AGENT_ClAIM="http://devstore.rerum.io/v1/agent";
+    public static final String RERUM_API_DOC="https://github.com/CenterForDigitalHumanities/rerum_server/blob/master/API.md#__rerum";
     
     //number of annotation versions
     public static final int NUMBER_OF_ANNO_VERSION = 10;

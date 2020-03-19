@@ -1053,6 +1053,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     break;
                 }
                 else{
+                    expandPrivateRerumProperty(thisObject);
+                    thisObject.remove("_id");
                     discoveredAncestors.add(thisObject);
                     //Recurse with what you have discovered so far and this object as the new keyObj
                     getAllAncestors(ls_versions, thisObject, discoveredAncestors);
@@ -1120,8 +1122,10 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             for (DBObject thisVersion : ls_versions) {
                 JSONObject thisObject = JSONObject.fromObject(thisVersion);
                 if(thisObject.getString("@id").equals(nextID)){ //If it is equal, add it to the known descendents
-                    discoveredDescendants.add(thisObject);
+                    expandPrivateRerumProperty(thisObject);
+                    thisObject.remove("_id");
                     //Recurse with what you have discovered so far and this object as the new keyObj
+                    discoveredDescendants.add(thisObject);
                     getAllDescendents(ls_versions, thisObject, discoveredDescendants);
                     break;
                 }
@@ -1156,6 +1160,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 ls_versions.set(i, version);
             }
             rootObj = (BasicDBObject) JSON.parse(obj.toString()); 
+            expandPrivateRerumProperty(rootObj);
             rootObj.remove("_id");
             //Prepend the rootObj we know about
             ls_versions.add(0, rootObj);
@@ -1172,6 +1177,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             }
             queryForRoot.append("@id", primeID);
             rootObj = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, queryForRoot);
+            expandPrivateRerumProperty(rootObj);
             //Prepend the rootObj whose ID we knew and we queried for
             rootObj.remove("_id");
             ls_versions.add(0, rootObj);
@@ -1207,6 +1213,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 jo.remove("forkFromID"); // retained for legacy v0 objects
                 jo.remove("serverName");
                 jo.remove("serverIP");
+                expandPrivateRerumProperty(jo);
                 // @context may not be here and shall not be added, but the response
                 // will not be ld+json without it.
                 try {
@@ -1260,6 +1267,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 itemToAdd.remove("forkFromID"); // retained for legacy v0 objects
                 itemToAdd.remove("serverName");// retained for legacy v0 objects
                 itemToAdd.remove("serverIP");// retained for legacy v0 objects
+                expandPrivateRerumProperty(itemToAdd);
                 ja.add((BasicDBObject) itemToAdd);
             }
             try {
@@ -1310,6 +1318,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             for(int b=0; b<received_array.size(); b++){ //Configure __rerum on each object
                 JSONObject configureMe = received_array.getJSONObject(b);
                 configureMe = configureRerumOptions(configureMe, false); //configure this object
+                
                 received_array.set(b, configureMe); //Replace the current iterated object in the array with the configured object
             }
             BasicDBList dbo = (BasicDBList) JSON.parse(received_array.toString()); //tricky cause can't use JSONArray here
@@ -1323,8 +1332,9 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             else {
                 // empty array
             }
-            //bulk save will automatically call bulk update 
-            
+            for(int x=0; x<newResources.size(); x++){
+                expandPrivateRerumProperty(newResources.getJSONObject(x));
+            }
             JSONObject jo = new JSONObject();
             jo.element("code", HttpServletResponse.SC_CREATED);
             jo.element("new_resources", newResources);
@@ -1372,6 +1382,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
                 JSONObject jo = new JSONObject();
                 JSONObject newObjWithID = JSONObject.fromObject(dboWithObjectID);
+                expandPrivateRerumProperty(newObjWithID);
                 jo.element("code", HttpServletResponse.SC_CREATED);
                 newObjWithID.remove("_id");
                 jo.element("new_obj_state", newObjWithID);
@@ -1445,6 +1456,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                             BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
                             dboWithObjectID.append("@id", newNextAtID);
                             newObject.element("@id", newNextAtID);
+                            expandPrivateRerumProperty(newObject);
                             newObject.remove("_id");
                             mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
                             historyNextUpdatePassed = alterHistoryNext(updateHistoryNextID, newNextAtID); //update history.next or original object to include the newObject @id
@@ -1552,6 +1564,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                             BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
                             dboWithObjectID.append("@id", newNextAtID);
                             newObject.element("@id", newNextAtID);
+                            expandPrivateRerumProperty(newObject);
                             newObject.remove("_id");
                             mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
                             historyNextUpdatePassed = alterHistoryNext(updateHistoryNextID, newNextAtID); //update history.next or original object to include the newObject @id
@@ -1664,6 +1677,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                             BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
                             dboWithObjectID.append("@id", newNextAtID);
                             newObject.element("@id", newNextAtID);
+                            expandPrivateRerumProperty(newObject);
                             newObject.remove("_id");
                             mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
                             historyNextUpdatePassed = alterHistoryNext(updateHistoryNextID, newNextAtID); //update history.next or original object to include the newObject @id
@@ -1750,6 +1764,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
                         dboWithObjectID.append("@id", newNextAtID);
                         newObject.element("@id", newNextAtID);
+                        expandPrivateRerumProperty(newObject);
                         newObject.remove("_id");
                         mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
                         historyNextUpdatePassed = alterHistoryNext(updateHistoryNextID, newNextAtID); //update history.next or original object to include the newObject @id
@@ -1834,6 +1849,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         JSONObject jo = new JSONObject();
                         JSONObject iiif_validation_response = checkIIIFCompliance(receivedID, "2.1");
                         System.out.println("object overwritten: "+receivedID);
+                        expandPrivateRerumProperty(newObject);
                         newObject.remove("_id");
                         jo.element("code", HttpServletResponse.SC_OK);
                         jo.element("new_obj_state", newObject); //FIXME: @webanno standards say this should be the response.
@@ -1909,6 +1925,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                             if(treeHealed){ //If the tree was established/healed
                                 //perform the update to isReleased of the object being released.  Its releases.next[] and releases.previous are already correct.
                                 mongoDBService.update(Constant.COLLECTION_ANNOTATION, originalObject, releasedObject);
+                                expandPrivateRerumProperty(releasedObject);
                                 releasedObject.remove("_id");
                                 JSONObject newObject = JSONObject.fromObject(releasedObject);
                                 System.out.println("Object released: "+updateToReleasedID);
@@ -2448,6 +2465,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
             newObjState = configureRerumOptions(newObjState, false);
             newObjState = alterHistoryPrevious(newObjState, exernalObjID); //update history.previous of the new object to contain the external object's @id.
+            expandPrivateRerumProperty(newObjState);
             newObjState.remove("_id");
             jo.element("code", HttpServletResponse.SC_CREATED);
             jo.element("original_object_id", exernalObjID);
@@ -2768,6 +2786,20 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      */
     public void setOid(String oid) {
         this.oid = oid;
+    }
+
+    private JSONObject expandPrivateRerumProperty(JSONObject thisObject) {
+        JSONObject rerumProperty = thisObject.getJSONObject("__rerum");
+        thisObject.element(Constant.RERUM_API_DOC, rerumProperty);
+        thisObject.remove("__rerum");
+        return thisObject;
+    }
+    
+    private BasicDBObject expandPrivateRerumProperty(BasicDBObject thisObject) {
+        Object rerumProps = thisObject.get("__rerum");
+        thisObject.put(Constant.RERUM_API_DOC, rerumProps);
+        thisObject.remove("__rerum");
+        return thisObject;
     }
 
 }
