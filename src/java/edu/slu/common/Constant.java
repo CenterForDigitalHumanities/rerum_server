@@ -32,6 +32,7 @@ public class Constant {
     public static final String RERUM_AGENT_PREFIX="http://devstore.rerum.io/v1/agent/";
     public static final String RERUM_AGENT_ClAIM="http://devstore.rerum.io/v1/agent";
     public static final String RERUM_CONTEXT="http://devstore.rerum.io/v1/context.json";
+    public static final String RERUM_API_VERSION="1.0.0";
     //The location of the public API documents.  This is necessary for JSON-LD context purposes.
     public static final String RERUM_API_DOC="https://github.com/CenterForDigitalHumanities/rerum_server/blob/master/API.md#__rerum";
     

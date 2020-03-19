@@ -463,15 +463,15 @@ Each object carries a protected property called `__rerum` containing a metadata
 object about the version retrieved.
 
 | Property         | Type      | Description
-| ---              | ---       | --- 
+| ---              | ---       | ---
 | @context         | String    | The RERUM context file http://store.rerum.io/v1/context.json
 | history.prime    | String    | The URI of the object initializing this history.
 | history.next     | [String]  | An array of URIs for the immediate derivatives of this version. A length > 1 indicates a branch.
 | history.previous | String    | The URI of the immediately previous version.
 | generatedBy      | String    | Reference to the authenticated application which committed this version.
 | createdAt        | timestamp | Though the object may also assert this about itself, RERUM controls this value.
-| isOverwritten    | timestamp | Written when PUT update is used. Does not expose the delta, just the time of the change.
-| isReleased       | boolean   | Simple reference for locked versions of this object.
+| isOverwritten    | timestamp | Written when the overwrite endpoint is used. Exposes the date and time of the change.
+| isReleased       | timestamp | Written when the release endpoint is used.  Exposes the date and time this node was released.
 | releases.previous| String    | URI of the most recent released version from which this version is derived.
 | releases.next    | [String]  | Array of URIs for the first `released` decendant in the downstream branches
 | releases.replaces| String    | URI of the previous release this node is motivated to replace. This is only present on released versions and will always match the value of `releases.previous`.

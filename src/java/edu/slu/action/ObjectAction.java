@@ -342,20 +342,20 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     }
     
     /**
-     * Add the __rerum properties object to a given JSONObject. If __rerum already exists, it will be overwritten because this method is only called on new objects.
-     * Properties for consideration are:
-     *   APIversion        —1.0.0
-     *   history.prime     —if it has an @id, import from that, else "root"
-     *   history.next      —always [] 
-     *   history.previous  —if it has an @id, @id
-     *   releases.previous —if it has an @id, import from that, else ""
-     *   releases.next     —always [] 
-     *   generatedBy       —set to the @id of the public agent of the API Key.
-     *   createdAt         —DateTime of right now.
-     *   isOverwritten     —always ""
-     *   isReleased        —always false
+     * Add the __rerum properties object to a given JSONObject.If __rerum already exists, it will be overwritten because this method is only called on new objects. Properties for consideration are:
+   APIversion        —1.0.0
+   history.prime     —if it has an @id, import from that, else "root"
+   history.next      —always [] 
+   history.previous  —if it has an @id, @id
+   releases.previous —if it has an @id, import from that, else ""
+   releases.next     —always [] 
+   generatedBy       —set to the @id of the public agent of the API Key.
+   createdAt         —DateTime of right now.
+   isOverwritten     —always ""
+   isReleased        —always false
      * 
      * @param received A potentially optionless JSONObject from the Mongo Database (not the user).  This prevents tainted __rerum's
+     * @param update A trigger for special handling from update actions
      * @return configuredObject The same object that was recieved but with the proper __rerum options.  This object is intended to be saved as a new object (@see versioning)
      */
     public JSONObject configureRerumOptions(JSONObject received, boolean update){
@@ -379,13 +379,13 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         String[] emptyArray = new String[0];
         rerumOptions.element("@context", Constant.RERUM_CONTEXT); // alpha sandbox
         rerumOptions.element("alpha", true); // alpha sandbox
-        rerumOptions.element("APIversion", "1.0.0");
+        rerumOptions.element("APIversion", Constant.RERUM_API_VERSION);
         LocalDateTime dt = LocalDateTime.now();
-        DateTimeFormatter dtFormat = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
+        DateTimeFormatter dtFormat = DateTimeFormatter.ISO_DATE_TIME;
         String formattedCreationDateTime = dt.format(dtFormat);
         rerumOptions.element("createdAt", formattedCreationDateTime);
         rerumOptions.element("isOverwritten", "");
-        rerumOptions.element("isReleased", false);
+        rerumOptions.element("isReleased", "");
         if(received_options.containsKey("history")){
             history = received_options.getJSONObject("history");
             if(update){
@@ -1873,7 +1873,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         JSONObject originalProperties = originalJSONObj.getJSONObject("__rerum");
                         
                         LocalDateTime dt = LocalDateTime.now();
-                        DateTimeFormatter dtFormat = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
+                        DateTimeFormatter dtFormat = DateTimeFormatter.ISO_DATE_TIME;
                         String formattedOverwrittenDateTime = dt.format(dtFormat);
                         originalProperties.getJSONObject("__rerum").element("isOverwritten", formattedOverwrittenDateTime);
                         newObject.element("__rerum", originalProperties);
@@ -1939,7 +1939,10 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         String origObjGenerator = safe_original.getJSONObject("__rerum").getString("generatedBy");
                         isGenerator = (origObjGenerator.equals(generatorID));
                         if(isGenerator){
-                            safe_original.getJSONObject("__rerum").element("isReleased", true);
+                            LocalDateTime dt = LocalDateTime.now();
+                            DateTimeFormatter dtFormat = DateTimeFormatter.ISO_DATE_TIME;
+                            String formattedReleasedDateTime = dt.format(dtFormat);
+                            safe_original.getJSONObject("__rerum").element("isReleased", formattedReleasedDateTime);
                             safe_original.getJSONObject("__rerum").getJSONObject("releases").element("replaces", previousReleasedID);
                             releasedObject = (BasicDBObject) JSON.parse(safe_original.toString());
                             if(!"".equals(previousReleasedID)){// A releases tree exists and an acestral object is being released.  
@@ -2020,7 +2023,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 //If the descendent's previous matches the node I am releasing's releases.previous, swap the descendent releses.previous with node I am releasing's @id. 
                 desc.getJSONObject("__rerum").getJSONObject("releases").element("previous", releasingNode.getString("@id"));
                 if(!desc.getJSONObject("__rerum").getString("isReleased").equals("")){ 
-                    //If this descendent is released, it replaces thr node being released
+                    //If this descendent is released, it replaces the node being released
                     if(desc.getJSONObject("__rerum").getJSONObject("releases").getString("previous").equals(releasingNode.getString("@id"))){
                         desc.getJSONObject("__rerum").getJSONObject("releases").element("replaces", releasingNode.getString("@id")); 
                     }
