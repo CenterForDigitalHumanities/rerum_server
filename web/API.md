@@ -503,7 +503,7 @@ The API key at Auth0 persists for each application, which may manage its own ses
 
 Objects in RERUM should be JSON-LD, which means they should have an `@context` provided when they are created.  However, ordinary JSON documents are allowed in the store. These JSON documents can be interpreted as JSON-LD by referencing a JSON-LD context document in an [HTTP Link Header](https://www.w3.org/TR/json-ld/#h3_interpreting-json-as-json-ld). RERUM provides this `@context` in the `Link` header and also provides an `@context` for the `__rerum` terms mentioned above.
 
-http://devstore.rerum.io/v1/context.json
+http://store.rerum.io/v1/context.json
 
 ## IIIF
 
