@@ -2141,17 +2141,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         return permission;
     }
     
-    /**
-     * An internal helper function to check if an object is released.
-     * This should only be fed reliable objects from mongo.
-     * check that the API keys match and that this application has permission to delete the object. These are internal and the objects passed in are
-     * first taken from mongo, they are not the obj provided by the application.
-    */
-    private boolean checkApplicationPermission(String obj_id){
-        boolean permission = true;
-        //@cubap @theHabes TODO check that the API keys match and that this application has permission to delete the object
-        return permission;
-    }
     
     /**
      * A helper function that gathers an object by its id and determines whether or not it is flagged as released. These are internal and the objects passed in are
@@ -2206,7 +2195,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 BasicDBObject mongo_obj = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query);
                 safe_received = JSONObject.fromObject(mongo_obj); //We can trust this is the object as it exists in mongo
                 boolean alreadyDeleted = checkIfDeleted(safe_received);
-                boolean permission = false;
                 boolean isReleased = false;
                 boolean passedAllChecks = false;
                 if(alreadyDeleted){
