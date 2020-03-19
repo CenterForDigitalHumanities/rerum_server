@@ -934,7 +934,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @param isContainerType A boolean noting whether or not the object is a container type.
      * @param isLD  the object is either plain JSON or is JSON-LD ("ld+json")
      */
-    private void addWebAnnotationHeaders(Boolean isContainerType, Boolean isLD){
+    private void addWebAnnotationHeaders(String etag, Boolean isContainerType, Boolean isLD){
         if(isLD){
             response.addHeader("Content-Type", "application/ld+json;profile=\"http://www.w3.org/ns/anno.jsonld\""); 
         } 
@@ -950,10 +950,32 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         else{
             response.addHeader("Link", "<http://www.w3.org/ns/ldp#Resource>; rel=\"type\""); 
         }
+        response.addHeader("Allow", "GET,OPTIONS,HEAD,PUT,PATCH,DELETE,POST"); 
+        if(!"".equals(etag)){
+            response.addHeader("Etag", etag);
+        }
         
     }
     
-    private void addSupportHeaders(String etag, Boolean isContainerType, Boolean isLD){
+     /**
+     * Creates and appends headers to the HTTP response required by JSON-LD. 
+     * This is specifically for responses that are not Web Annotation compliant (getByProperties, getAllDescendents(), getAllAncestors()).
+     * They still need the JSON-LD support headers.
+     * Headers are attached and read from {@link #response}. 
+     * 
+     * @param etag A unique fingerprint for the object for the Etag header.
+     * @param isContainerType A boolean noting whether or not the object is a container type.
+     * @param isLD  the object is either plain JSON or is JSON-LD ("ld+json")
+     */
+    private void addSupportHeaders(String etag, Boolean isLD){
+        if(isLD){
+            response.addHeader("Content-Type", "application/ld+json;profile=\"http://www.w3.org/ns/anno.jsonld\""); 
+        } 
+        else {
+            response.addHeader("Content-Type", "application/json;"); 
+            // This breaks Web Annotation compliance, but allows us to return requested
+            // objects without misrepresenting the content.
+        }
         response.addHeader("Link", "<http://store.rerum.io/v1/context.json>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
         response.addHeader("Allow", "GET,OPTIONS,HEAD,PUT,PATCH,DELETE,POST"); 
         if(!"".equals(etag)){
@@ -1009,11 +1031,13 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             if(null != mongo_obj){
                 JSONObject safe_received = JSONObject.fromObject(mongo_obj); //We can trust this is the object as it exists in mongo
                 List<DBObject> ls_versions = getAllVersions(safe_received);
-                JSONArray ancestors = getAllAncestors(ls_versions, safe_received, new JSONArray());
+                JSONArray ancestors = JSONArray.fromObject(getAllAncestors(ls_versions, safe_received, new JSONArray()));
+                for(int x=0; x<ancestors.size(); x++){
+                    expandPrivateRerumProperty(ancestors.getJSONObject(x));
+                }
                 try {
                     //@cubap @theHabes TODO how can we make this Web Annotation compliant?
-                    //addWebAnnotationHeaders(oid, isContainerType(ancestors), isLD(ancestors));
-                    addSupportHeaders("", true, true);
+                    addSupportHeaders("", true);
                     addLocationHeader(ancestors);
                     response.addHeader("Access-Control-Allow-Origin", "*");
                     response.setContentType("application/json; charset=utf-8"); // We create JSON objects for the return body in most cases.  
@@ -1089,11 +1113,13 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             if(null != mongo_obj){
                 JSONObject safe_received = JSONObject.fromObject(mongo_obj); //We can trust this is the object as it exists in mongo
                 List<DBObject> ls_versions = getAllVersions(safe_received);
-                JSONArray descendents = getAllDescendents(ls_versions, safe_received, new JSONArray());
+                JSONArray descendents = JSONArray.fromObject(getAllDescendents(ls_versions, safe_received, new JSONArray()));
+                for(int x=0; x<descendents.size(); x++){
+                    expandPrivateRerumProperty(descendents.getJSONObject(x));
+                }
                 try {
                     //@cubap @theHabes TODO how can we make this Web Annotation compliant?
-                    //addWebAnnotationHeaders(oid, isContainerType(descendents), isLD(descendents));
-                    addSupportHeaders("", true, true);
+                    addSupportHeaders("", true);
                     addLocationHeader(descendents);
                     response.addHeader("Access-Control-Allow-Origin", "*");
                     response.setContentType("application/json; charset=utf-8"); // We create JSON objects for the return body in most cases.  
@@ -1171,7 +1197,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 ls_versions.set(i, version);
             }
             rootObj = (BasicDBObject) JSON.parse(obj.toString()); 
-            expandPrivateRerumProperty(rootObj);
             rootObj.remove("_id");
             //Prepend the rootObj we know about
             ls_versions.add(0, rootObj);
@@ -1189,7 +1214,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             queryForRoot.append("@id", primeID);
             rootObj = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, queryForRoot);
             //This is called by getAllAncestors and getAllDescendents which is why they do not expandPrivateRerumProperty for their return.
-            expandPrivateRerumProperty(rootObj);
             rootObj.remove("_id");
             //Prepend the rootObj whose ID we knew and we queried for
             ls_versions.add(0, rootObj);
@@ -1229,8 +1253,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 // @context may not be here and shall not be added, but the response
                 // will not be ld+json without it.
                 try {
-                    addWebAnnotationHeaders(isContainerType(jo), isLD(jo));
-                    addSupportHeaders(oid, isContainerType(jo), isLD(jo));
+                    addWebAnnotationHeaders(oid, isContainerType(jo), isLD(jo));
+                    addLocationHeader(jo);
                     response.addHeader("Content-Type", "application/json; charset=utf-8");
                     response.addHeader("Access-Control-Allow-Origin", "*");
                     response.setStatus(HttpServletResponse.SC_OK);
@@ -1284,7 +1308,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 ja.add((BasicDBObject) itemToAdd);
             }
             try {
-                addSupportHeaders("", true, true);
+                addSupportHeaders("", true);
                 addLocationHeader(ja);
                 response.addHeader("Content-Type","application/json; charset=utf-8"); // not ld+json because it is an array
                 response.setCharacterEncoding("UTF-8");
@@ -1353,7 +1377,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             JSONObject jo = new JSONObject();
             jo.element("code", HttpServletResponse.SC_CREATED);
             jo.element("new_resources", newResources);
-            addSupportHeaders("", true, true);
+            addSupportHeaders("", true);
             addLocationHeader(newResources);
             try {
                 response.setStatus(HttpServletResponse.SC_CREATED);
@@ -1406,8 +1430,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 //try {
                 System.out.println("Object created: "+newid);
                 response.addHeader("Access-Control-Allow-Origin", "*");
-                addWebAnnotationHeaders(isContainerType(received), isLD(received));
-                addSupportHeaders(newObjectID, isContainerType(received), isLD(received));
+                addWebAnnotationHeaders(newObjectID, isContainerType(received), isLD(received));
                 addLocationHeader(newObjWithID);
                 response.addHeader("Content-Type", "application/json; charset=utf-8");
                 response.setContentType("UTF-8");
@@ -1486,8 +1509,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                                 jo.element("new_obj_state", newObject); //FIXME: @webanno standards say this should be the response.
                                 jo.element("iiif_validation", iiif_validation_response);
                                 try {
-                                    addWebAnnotationHeaders(isContainerType(newObject), isLD(newObject));
-                                    addSupportHeaders(newNextID, isContainerType(newObject), isLD(newObject));
+                                    addWebAnnotationHeaders(newNextID, isContainerType(newObject), isLD(newObject));
                                     addLocationHeader(newObject);
                                     response.addHeader("Content-Type", "application/json; charset=utf-8");
                                     response.setContentType("UTF-8");
@@ -1595,8 +1617,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                                 jo.element("new_obj_state", newObject); //FIXME: @webanno standards say this should be the response.
                                 jo.element("iiif_validation", iiif_validation_response);
                                 try {
-                                    addWebAnnotationHeaders(isContainerType(newObject), isLD(newObject));
-                                    addSupportHeaders(newNextID, isContainerType(newObject), isLD(newObject));
+                                    addWebAnnotationHeaders(newNextID, isContainerType(newObject), isLD(newObject));
                                     addLocationHeader(newObject);
                                     response.addHeader("Access-Control-Allow-Origin", "*");
                                     response.setStatus(HttpServletResponse.SC_OK);
@@ -1709,8 +1730,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                                 jo.element("new_obj_state", newObject); //FIXME: @webanno standards say this should be the response.
                                 jo.element("iiif_validation", iiif_validation_response);
                                 try {
-                                    addWebAnnotationHeaders(isContainerType(newObject), isLD(newObject));
-                                    addSupportHeaders(newNextID, isContainerType(newObject), isLD(newObject));
+                                    addWebAnnotationHeaders(newNextID, isContainerType(newObject), isLD(newObject));                                  
                                     addLocationHeader(newObject);
                                     response.addHeader("Access-Control-Allow-Origin", "*");
                                     response.setStatus(HttpServletResponse.SC_OK);
@@ -1797,8 +1817,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                             jo.element("new_obj_state", newObject); //FIXME: @webanno standards say this should be the response.
                             jo.element("iiif_validation", iiif_validation_response);
                             try {
-                                addWebAnnotationHeaders(isContainerType(newObject), isLD(newObject));
-                                addSupportHeaders(newNextID, isContainerType(newObject), isLD(newObject));
+                                addWebAnnotationHeaders(newNextID, isContainerType(newObject), isLD(newObject));
                                 addLocationHeader(newObject);
                                 response.addHeader("Access-Control-Allow-Origin", "*");
                                 response.setStatus(HttpServletResponse.SC_OK);
@@ -1881,8 +1900,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         jo.element("new_obj_state", newObject); //FIXME: @webanno standards say this should be the response.
                         jo.element("iiif_validation", iiif_validation_response);
                         try {
-                            addWebAnnotationHeaders(isContainerType(newObject), isLD(newObject));
-                            addSupportHeaders(receivedID, isContainerType(newObject), isLD(newObject));
+                            addWebAnnotationHeaders(receivedID, isContainerType(newObject), isLD(newObject));
                             addLocationHeader(newObject);
                             response.addHeader("Content-Type", "application/json; charset=utf-8");
                             response.setContentType("UTF-8");
@@ -1962,8 +1980,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                                 jo.element("previously_released_id", previousReleasedID); 
                                 jo.element("next_releases_ids", nextReleases);                           
                                 try {
-                                    addWebAnnotationHeaders(isContainerType(safe_original), isLD(safe_original));
-                                    addSupportHeaders(updateToReleasedID, isContainerType(safe_original), isLD(safe_original));
+                                    addWebAnnotationHeaders(updateToReleasedID, isContainerType(safe_original), isLD(safe_original));
                                     addLocationHeader(newObject);
                                     response.addHeader("Access-Control-Allow-Origin", "*");
                                     response.setStatus(HttpServletResponse.SC_OK);
@@ -2499,8 +2516,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             jo.element("original_object_id", exernalObjID);
             jo.element("new_obj_state", newObjState); 
             jo.element("iiif_validation", iiif_validation_response);
-            addWebAnnotationHeaders(isContainerType(newObjState), isLD(newObjState));
-            addSupportHeaders(newRootID, isContainerType(newObjState), isLD(newObjState));
+            addWebAnnotationHeaders(newRootID, isContainerType(newObjState), isLD(newObjState));
             addLocationHeader(newObjState);
             response.addHeader("Access-Control-Allow-Origin", "*");
             response.setStatus(HttpServletResponse.SC_CREATED);
