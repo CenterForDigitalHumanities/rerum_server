@@ -4,9 +4,15 @@
       "xsd":"http://www.w3.org/2001/XMLSchema#",
       "dcterms":"http://purl.org/dc/terms/",
       "prov":"https://www.w3.org/TR/prov/#",
+      "foaf:":"http://xmlns.com/foaf/spec/#term_",
       "rerum_v1":"https://github.com/CenterForDigitalHumanities/rerum_server/blob/master/API.md#",
       "id":"@id",
       "type":"@type",
+      "foaf:Agent":"Agent",
+      "Agent":{
+         "@id":"foaf:Agent",
+         "@type":"@id"
+      },
       "__rerum":{
          "@id":"rerum_v1:__rerum",
          "@type":"@id",

@@ -99,6 +99,8 @@ import java.io.DataOutputStream;
 import java.net.ProtocolException;
 import java.security.interfaces.RSAPublicKey;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
@@ -345,13 +347,14 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * Properties for consideration are:
      *   APIversion        —1.0.0
      *   history.prime     —if it has an @id, import from that, else "root"
-     *   history.next      —always [] (or null, perhaps)
+     *   history.next      —always [] 
      *   history.previous  —if it has an @id, @id
-     *   releases.previous —if it has an @id, import from that, else null
-     *   releases.next     —always [] (or null, perhaps)
+     *   releases.previous —if it has an @id, import from that, else ""
+     *   releases.next     —always [] 
      *   generatedBy       —set to the @id of the public agent of the API Key.
-     *   createdAt         —"addedTime" timestamp in milliseconds
-     *   isOverwritten, isReleased   —always null
+     *   createdAt         —DateTime of right now.
+     *   isOverwritten     —always ""
+     *   isReleased        —always false
      * 
      * @param received A potentially optionless JSONObject from the Mongo Database (not the user).  This prevents tainted __rerum's
      * @return configuredObject The same object that was recieved but with the proper __rerum options.  This object is intended to be saved as a new object (@see versioning)
@@ -375,11 +378,14 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         String releases_previous = "";
         String releases_replaces = releases_previous;
         String[] emptyArray = new String[0];
-        rerumOptions.element("alpha", "true"); // alpha sandbox
-        rerumOptions.element("APIversion", "0.8.0");
-        rerumOptions.element("createdAt", System.currentTimeMillis());
+        rerumOptions.element("alpha", true); // alpha sandbox
+        rerumOptions.element("APIversion", "1.0.0");
+        LocalDateTime dt = LocalDateTime.now();
+        DateTimeFormatter dtFormat = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
+        String formattedCreationDateTime = dt.format(dtFormat);
+        rerumOptions.element("createdAt", formattedCreationDateTime);
         rerumOptions.element("isOverwritten", "");
-        rerumOptions.element("isReleased", "");
+        rerumOptions.element("isReleased", false);
         if(received_options.containsKey("history")){
             history = received_options.getJSONObject("history");
             if(update){
@@ -1053,8 +1059,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     break;
                 }
                 else{
-                    expandPrivateRerumProperty(thisObject);
-                    thisObject.remove("_id");
                     discoveredAncestors.add(thisObject);
                     //Recurse with what you have discovered so far and this object as the new keyObj
                     getAllAncestors(ls_versions, thisObject, discoveredAncestors);
@@ -1122,8 +1126,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             for (DBObject thisVersion : ls_versions) {
                 JSONObject thisObject = JSONObject.fromObject(thisVersion);
                 if(thisObject.getString("@id").equals(nextID)){ //If it is equal, add it to the known descendents
-                    expandPrivateRerumProperty(thisObject);
-                    thisObject.remove("_id");
                     //Recurse with what you have discovered so far and this object as the new keyObj
                     discoveredDescendants.add(thisObject);
                     getAllDescendents(ls_versions, thisObject, discoveredDescendants);
@@ -1177,9 +1179,10 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             }
             queryForRoot.append("@id", primeID);
             rootObj = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, queryForRoot);
+            //This is called by getAllAncestors and getAllDescendents which is why they do not expandPrivateRerumProperty for their return.
             expandPrivateRerumProperty(rootObj);
-            //Prepend the rootObj whose ID we knew and we queried for
             rootObj.remove("_id");
+            //Prepend the rootObj whose ID we knew and we queried for
             ls_versions.add(0, rootObj);
         }
         return ls_versions;
@@ -1843,6 +1846,11 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         JSONObject newObject = received;//The edited original object meant to be saved as a new object (versioning)
                         newObject.remove("_id");
                         JSONObject originalProperties = originalJSONObj.getJSONObject("__rerum");
+                        
+                        LocalDateTime dt = LocalDateTime.now();
+                        DateTimeFormatter dtFormat = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
+                        String formattedOverwrittenDateTime = dt.format(dtFormat);
+                        originalProperties.getJSONObject("__rerum").element("isOverwritten", formattedOverwrittenDateTime);
                         newObject.element("__rerum", originalProperties);
                         DBObject udbo = (DBObject) JSON.parse(newObject.toString());
                         mongoDBService.update(Constant.COLLECTION_ANNOTATION, originalObject, udbo);
@@ -1908,7 +1916,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         String origObjGenerator = safe_original.getJSONObject("__rerum").getString("generatedBy");
                         isGenerator = (origObjGenerator.equals(generatorID));
                         if(isGenerator){
-                            safe_original.getJSONObject("__rerum").element("isReleased", System.currentTimeMillis()+"");
+                            safe_original.getJSONObject("__rerum").element("isReleased", true);
                             safe_original.getJSONObject("__rerum").getJSONObject("releases").element("replaces", previousReleasedID);
                             releasedObject = (BasicDBObject) JSON.parse(safe_original.toString());
                             if(!"".equals(previousReleasedID)){// A releases tree exists and an acestral object is being released.  
