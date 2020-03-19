@@ -1016,6 +1016,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     addSupportHeaders("", true, true);
                     addLocationHeader(ancestors);
                     response.addHeader("Access-Control-Allow-Origin", "*");
+                    response.setContentType("application/json; charset=utf-8"); // We create JSON objects for the return body in most cases.  
                     response.setStatus(HttpServletResponse.SC_OK);
                     out = response.getWriter();
                     out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(ancestors));
@@ -1095,6 +1096,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     addSupportHeaders("", true, true);
                     addLocationHeader(descendents);
                     response.addHeader("Access-Control-Allow-Origin", "*");
+                    response.setContentType("application/json; charset=utf-8"); // We create JSON objects for the return body in most cases.  
                     response.setStatus(HttpServletResponse.SC_OK);
                     out = response.getWriter();
                     out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(descendents));
