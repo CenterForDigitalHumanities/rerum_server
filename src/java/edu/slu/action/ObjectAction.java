@@ -377,7 +377,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         String releases_previous = "";
         String releases_replaces = releases_previous;
         String[] emptyArray = new String[0];
-        rerumOptions.element("@context", Constant.RERUM_CONTEXT); // alpha sandbox
+        rerumOptions.element("@context", Constant.RERUM_CONTEXT); // RERUM context file
         rerumOptions.element("alpha", true); // alpha sandbox
         rerumOptions.element("APIversion", Constant.RERUM_API_VERSION);
         LocalDateTime dt = LocalDateTime.now();
@@ -961,7 +961,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     
      /**
      * Creates and appends headers to the HTTP response required by JSON-LD. 
-     * This is specifically for responses that are not Web Annotation compliant (getByProperties, getAllDescendents(), getAllAncestors()).
+     * This is specifically for responses that are not Web Annotation compliant (getByProperties, getAllDescendants(), getAllAncestors()).
      * They still need the JSON-LD support headers.
      * Headers are attached and read from {@link #response}. 
      * 
@@ -1107,7 +1107,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @throws java.lang.Exception
      * @respond JSONArray to the response out for parsing by the client application.
      */
-    public void getAllDescendents() throws Exception {
+    public void getAllDescendants() throws Exception {
        if(null != oid && methodApproval(request, "get")){
             BasicDBObject query = new BasicDBObject();
             query.append("_id", oid);
@@ -1115,18 +1115,18 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             if(null != mongo_obj){
                 JSONObject safe_received = JSONObject.fromObject(mongo_obj); //We can trust this is the object as it exists in mongo
                 List<DBObject> ls_versions = getAllVersions(safe_received);
-                JSONArray descendents = JSONArray.fromObject(getAllDescendents(ls_versions, safe_received, new JSONArray()));
-                for(int x=0; x<descendents.size(); x++){
-                    expandPrivateRerumProperty(descendents.getJSONObject(x));
+                JSONArray descendants = JSONArray.fromObject(getAllDescendants(ls_versions, safe_received, new JSONArray()));
+                for(int x=0; x<descendants.size(); x++){
+                    expandPrivateRerumProperty(descendants.getJSONObject(x));
                 }
                 try {
                     //@cubap @theHabes TODO how can we make this Web Annotation compliant?
                     addSupportHeaders("", true);
-                    addLocationHeader(descendents);
+                    addLocationHeader(descendants);
                     response.addHeader("Access-Control-Allow-Origin", "*");
                     response.setStatus(HttpServletResponse.SC_OK);
                     out = response.getWriter();
-                    out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(descendents));
+                    out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(descendants));
                 } 
                 catch (IOException ex) {
                     Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
@@ -1143,28 +1143,28 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * If this object is the last, the return will be an empty JSONArray.  The keyObj WILL NOT be a part of the array.  
      * @param  ls_versions All the given versions, including root, of a provided object.
      * @param  keyObj The provided object
-     * @param  discoveredDescendants The array storing the descendents objects discovered by the recursion.
-     * @return All the objects that were deemed descendents in a JSONArray
+     * @param  discoveredDescendants The array storing the descendants objects discovered by the recursion.
+     * @return All the objects that were deemed descendants in a JSONArray
      */
 
-    private JSONArray getAllDescendents(List<DBObject> ls_versions, JSONObject keyObj, JSONArray discoveredDescendants){
+    private JSONArray getAllDescendants(List<DBObject> ls_versions, JSONObject keyObj, JSONArray discoveredDescendants){
         JSONArray nextIDarr = new JSONArray();
         //@cubap @theHabes #44.  What if obj does not have __rerum or __rerum.history
         if(keyObj.getJSONObject("__rerum").getJSONObject("history").getJSONArray("next").isEmpty()){
             //essentially, do nothing.  This branch is done.
         }
         else{
-            //The provided object has nexts, get them to add them to known descendents then check their descendents.
+            //The provided object has nexts, get them to add them to known descendants then check their descendants.
             nextIDarr = keyObj.getJSONObject("__rerum").getJSONObject("history").getJSONArray("next");
         }      
         for(int m=0; m<nextIDarr.size(); m++){ //For each id in the array
             String nextID = nextIDarr.getString(m);
             for (DBObject thisVersion : ls_versions) {
                 JSONObject thisObject = JSONObject.fromObject(thisVersion);
-                if(thisObject.getString("@id").equals(nextID)){ //If it is equal, add it to the known descendents
+                if(thisObject.getString("@id").equals(nextID)){ //If it is equal, add it to the known descendants
                     //Recurse with what you have discovered so far and this object as the new keyObj
                     discoveredDescendants.add(thisObject);
-                    getAllDescendents(ls_versions, thisObject, discoveredDescendants);
+                    getAllDescendants(ls_versions, thisObject, discoveredDescendants);
                     break;
                 }
             }
@@ -1214,7 +1214,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             }
             queryForRoot.append("@id", primeID);
             rootObj = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, queryForRoot);
-            //This is called by getAllAncestors and getAllDescendents which is why they do not expandPrivateRerumProperty for their return.
+            //This is called by getAllAncestors and getAllDescendants which is why they do not expandPrivateRerumProperty for their return.
             rootObj.remove("_id");
             //Prepend the rootObj whose ID we knew and we queried for
             ls_versions.add(0, rootObj);
@@ -1949,7 +1949,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                                 treeHealed  = healReleasesTree(safe_original); 
                             }
                             else{ //There was no releases previous value. 
-                                if(nextReleases.size() > 0){ //The release tree has been established and a descendent object is now being released.
+                                if(nextReleases.size() > 0){ //The release tree has been established and a descendant object is now being released.
                                     treeHealed  = healReleasesTree(safe_original);
                                 }
                                 else{ //The release tree has not been established
@@ -2013,17 +2013,17 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     private boolean healReleasesTree (JSONObject releasingNode) throws Exception{
         Boolean success = true;
         List<DBObject> ls_versions = getAllVersions(releasingNode);
-        JSONArray descendents = getAllDescendents(ls_versions, releasingNode, new JSONArray());
+        JSONArray descendants = getAllDescendants(ls_versions, releasingNode, new JSONArray());
         JSONArray anscestors = getAllAncestors(ls_versions, releasingNode, new JSONArray());
-        for(int d=0; d<descendents.size(); d++){ //For each descendent
-            JSONObject desc = descendents.getJSONObject(d);
+        for(int d=0; d<descendants.size(); d++){ //For each descendant
+            JSONObject desc = descendants.getJSONObject(d);
             boolean prevMatchCheck = desc.getJSONObject("__rerum").getJSONObject("releases").getString("previous").equals(releasingNode.getJSONObject("__rerum").getJSONObject("releases").getString("previous"));
             DBObject origDesc = (DBObject) JSON.parse(desc.toString());
             if(prevMatchCheck){ 
-                //If the descendent's previous matches the node I am releasing's releases.previous, swap the descendent releses.previous with node I am releasing's @id. 
+                //If the descendant's previous matches the node I am releasing's releases.previous, swap the descendant releses.previous with node I am releasing's @id. 
                 desc.getJSONObject("__rerum").getJSONObject("releases").element("previous", releasingNode.getString("@id"));
                 if(!desc.getJSONObject("__rerum").getString("isReleased").equals("")){ 
-                    //If this descendent is released, it replaces the node being released
+                    //If this descendant is released, it replaces the node being released
                     if(desc.getJSONObject("__rerum").getJSONObject("releases").getString("previous").equals(releasingNode.getString("@id"))){
                         desc.getJSONObject("__rerum").getJSONObject("releases").element("replaces", releasingNode.getString("@id")); 
                     }
@@ -2070,7 +2070,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     
     /**
      * Internal helper method to establish the releases tree from a given object that is being released.  
-     * This can probably be collapsed into healReleasesTree.  It contains no checks, it is brute force update ancestors and descendents.
+     * This can probably be collapsed into healReleasesTree.  It contains no checks, it is brute force update ancestors and descendants.
      * It is significantly cleaner and slightly faster than healReleaseTree() which is why I think we should keep them separate. 
      *  
      * This method only receives reliable objects from mongo.
@@ -2081,10 +2081,10 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     private boolean establishReleasesTree (JSONObject obj) throws Exception{
         Boolean success = true;
         List<DBObject> ls_versions = getAllVersions(obj);
-        JSONArray descendents = getAllDescendents(ls_versions, obj, new JSONArray());
+        JSONArray descendants = getAllDescendants(ls_versions, obj, new JSONArray());
         JSONArray anscestors = getAllAncestors(ls_versions, obj, new JSONArray());
-        for(int d=0; d<descendents.size(); d++){
-            JSONObject desc = descendents.getJSONObject(d);
+        for(int d=0; d<descendants.size(); d++){
+            JSONObject desc = descendants.getJSONObject(d);
             DBObject origDesc = (DBObject) JSON.parse(desc.toString());
             desc.getJSONObject("__rerum").getJSONObject("releases").element("previous", obj.getString("@id"));
             DBObject descToUpdate = (DBObject) JSON.parse(desc.toString());
@@ -2346,20 +2346,20 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      }
      
      /**
-     * An internal method to make all descendents of this JSONObject take on a new history.prime = this object's @id
+     * An internal method to make all descendants of this JSONObject take on a new history.prime = this object's @id
      * This should only be fed a reliable object from mongo
-     * @param obj A new prime object whose descendents must take on its id
+     * @param obj A new prime object whose descendants must take on its id
      */
      private boolean newTreePrime(JSONObject obj){
          boolean success = true;
          String primeID = obj.getString("@id");
-         JSONArray descendents = new JSONArray();
-         for(int n=0; n< descendents.size(); n++){
-             JSONObject descendentForUpdate = descendents.getJSONObject(n);
-             JSONObject originalDescendant = descendents.getJSONObject(n);
+         JSONArray descendants = new JSONArray();
+         for(int n=0; n< descendants.size(); n++){
+             JSONObject descendantForUpdate = descendants.getJSONObject(n);
+             JSONObject originalDescendant = descendants.getJSONObject(n);
              BasicDBObject objToUpdate = (BasicDBObject)JSON.parse(originalDescendant.toString());;
-             descendentForUpdate.getJSONObject("__rerum").getJSONObject("history").element("prime", primeID);
-             BasicDBObject objWithUpdate = (BasicDBObject)JSON.parse(descendentForUpdate.toString());
+             descendantForUpdate.getJSONObject("__rerum").getJSONObject("history").element("prime", primeID);
+             BasicDBObject objWithUpdate = (BasicDBObject)JSON.parse(descendantForUpdate.toString());
              mongoDBService.update(Constant.COLLECTION_ANNOTATION, objToUpdate, objWithUpdate);
          }
          return success;
