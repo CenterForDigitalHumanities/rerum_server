@@ -464,6 +464,7 @@ object about the version retrieved.
 
 | Property         | Type      | Description
 | ---              | ---       | ---
+| @context         | String    | The RERUM context file http://store.rerum.io/v1/context.json
 | history.prime    | String    | The URI of the object initializing this history.
 | history.next     | [String]  | An array of URIs for the immediate derivatives of this version. A length > 1 indicates a branch.
 | history.previous | String    | The URI of the immediately previous version.
