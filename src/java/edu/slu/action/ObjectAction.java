@@ -2787,18 +2787,32 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     public void setOid(String oid) {
         this.oid = oid;
     }
-
+    
+    /**
+     * Expand the __rerum property for JSON-LD context purposes.
+     * @param thisObject A JSONObject that needs direct manipulation.
+     * @return The manipulated JSONObject
+     */
     private JSONObject expandPrivateRerumProperty(JSONObject thisObject) {
-        JSONObject rerumProperty = thisObject.getJSONObject("__rerum");
-        thisObject.element(Constant.RERUM_API_DOC, rerumProperty);
-        thisObject.remove("__rerum");
+        if(thisObject.has("__rerum")){
+            JSONObject rerumProperty = thisObject.getJSONObject("__rerum");
+            thisObject.element(Constant.RERUM_API_DOC, rerumProperty);
+            thisObject.remove("__rerum");
+        }
         return thisObject;
     }
     
+    /**
+     * Expand the __rerum property for JSON-LD context purposes.
+     * @param thisObject A BasicDBObject that needs direct manipulation.
+     * @return The manipulated BasicDBObject
+     */
     private BasicDBObject expandPrivateRerumProperty(BasicDBObject thisObject) {
-        Object rerumProps = thisObject.get("__rerum");
-        thisObject.put(Constant.RERUM_API_DOC, rerumProps);
-        thisObject.remove("__rerum");
+        if(thisObject.containsField("__rerum")){
+            Object rerumProps = thisObject.get("__rerum");
+            thisObject.put(Constant.RERUM_API_DOC, rerumProps);
+            thisObject.remove("__rerum");
+        }
         return thisObject;
     }
 
