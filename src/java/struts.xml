@@ -46,7 +46,7 @@
     </package>
     
     <!-- This package is open to public -->
-    <package name="getDescendents" extends="default" namespace="/since">
+    <package name="getDescendants" extends="default" namespace="/since">
         <!-- INTERCEPTOR -->
         <interceptors>
             <interceptor name="downTimeOverride" class="edu.slu.filter.DownTimeOverride"></interceptor>
@@ -58,7 +58,7 @@
             </interceptor-stack>
         </interceptors>
         <default-interceptor-ref name="myDefault" />
-        <action name="getAllDescendents" class="objectAction" method="getAllDescendents"></action>
+        <action name="getAllDescendants" class="objectAction" method="getAllDescendants"></action>
     </package>
     
     <!-- OBJECTS -->
@@ -70,7 +70,7 @@
             </interceptor>-->
             <interceptor name="downTimeOverride" class="edu.slu.filter.DownTimeOverride"></interceptor>
             <interceptor name="getRequestClientInfoRecorder" class="edu.slu.filter.GetRequestClientInfoRecorder">
-                <param name="includeMethods">askAuth0, getByProperties, getByID, getAllAncestors, getAllDescendents, getAllVersions</param>
+                <param name="includeMethods">askAuth0, getByProperties, getByID, getAllAncestors, getAllDescendants, getAllVersions</param>
             </interceptor>
             <!--<interceptor name="responseEncoding" class="edu.slu.filter.ResponseEncoding"></interceptor>-->
             <!--<interceptor name="inSessionFilter" class="edu.slu.filter.InSessionFilter"></interceptor>-->
@@ -93,7 +93,7 @@
         <action name="getByProperties" class="objectAction" method="getByProperties"></action>
         <action name="getByID" class="objectAction" method="getByID"></action>
         <action name="getAllAncestors" class="objectAction" method="getAllAncestors"></action>
-        <action name="getAllDescendents" class="objectAction" method="getAllDescendents"></action>
+        <action name="getAllDescendants" class="objectAction" method="getAllDescendants"></action>
         <action name="create" class="objectAction" method="saveNewObject"></action>
         <!-- TPEN_NL support -->
         <action name="batch_create" class="objectAction" method="batchSaveFromCopy"></action>

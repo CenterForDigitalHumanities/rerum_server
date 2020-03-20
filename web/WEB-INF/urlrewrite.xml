@@ -32,7 +32,7 @@
             Redirect find descendant branch from provided object id.
         </note>
         <from>^/since/([a-z0-9]+)$</from>
-        <to type="forward">/since/getAllDescendents.action?oid=$1</to>
+        <to type="forward">/since/getAllDescendants.action?oid=$1</to>
     </rule>
     
     <rule>

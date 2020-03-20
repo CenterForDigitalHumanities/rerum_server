@@ -94,11 +94,12 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.io.DataOutputStream;
 import java.net.ProtocolException;
 import java.security.interfaces.RSAPublicKey;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
@@ -341,19 +342,20 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     }
     
     /**
-     * Add the __rerum properties object to a given JSONObject. If __rerum already exists, it will be overwritten because this method is only called on new objects.
-     * Properties for consideration are:
-     *   APIversion        —1.0.0
-     *   history.prime     —if it has an @id, import from that, else "root"
-     *   history.next      —always [] (or null, perhaps)
-     *   history.previous  —if it has an @id, @id
-     *   releases.previous —if it has an @id, import from that, else null
-     *   releases.next     —always [] (or null, perhaps)
-     *   generatedBy       —set to the @id of the public agent of the API Key.
-     *   createdAt         —"addedTime" timestamp in milliseconds
-     *   isOverwritten, isReleased   —always null
+     * Add the __rerum properties object to a given JSONObject.If __rerum already exists, it will be overwritten because this method is only called on new objects. Properties for consideration are:
+   APIversion        —1.0.0
+   history.prime     —if it has an @id, import from that, else "root"
+   history.next      —always [] 
+   history.previous  —if it has an @id, @id
+   releases.previous —if it has an @id, import from that, else ""
+   releases.next     —always [] 
+   generatedBy       —set to the @id of the public agent of the API Key.
+   createdAt         —DateTime of right now.
+   isOverwritten     —always ""
+   isReleased        —always false
      * 
      * @param received A potentially optionless JSONObject from the Mongo Database (not the user).  This prevents tainted __rerum's
+     * @param update A trigger for special handling from update actions
      * @return configuredObject The same object that was recieved but with the proper __rerum options.  This object is intended to be saved as a new object (@see versioning)
      */
     public JSONObject configureRerumOptions(JSONObject received, boolean update){
@@ -375,9 +377,13 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         String releases_previous = "";
         String releases_replaces = releases_previous;
         String[] emptyArray = new String[0];
-        rerumOptions.element("alpha", "true"); // alpha sandbox
-        rerumOptions.element("APIversion", "0.8.0");
-        rerumOptions.element("createdAt", System.currentTimeMillis());
+        rerumOptions.element("@context", Constant.RERUM_CONTEXT); // RERUM context file
+        rerumOptions.element("alpha", true); // alpha sandbox
+        rerumOptions.element("APIversion", Constant.RERUM_API_VERSION);
+        LocalDateTime dt = LocalDateTime.now();
+        DateTimeFormatter dtFormat = DateTimeFormatter.ISO_DATE_TIME;
+        String formattedCreationDateTime = dt.format(dtFormat);
+        rerumOptions.element("createdAt", formattedCreationDateTime);
         rerumOptions.element("isOverwritten", "");
         rerumOptions.element("isReleased", "");
         if(received_options.containsKey("history")){
@@ -930,11 +936,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @param isLD  the object is either plain JSON or is JSON-LD ("ld+json")
      */
     private void addWebAnnotationHeaders(String etag, Boolean isContainerType, Boolean isLD){
+        response.setContentType("UTF-8");
         if(isLD){
-            response.addHeader("Content-Type", "application/ld+json;profile=\"http://www.w3.org/ns/anno.jsonld\""); 
+            response.addHeader("Content-Type", "application/ld+json;charset=utf-8;profile=\"http://www.w3.org/ns/anno.jsonld\""); 
         } 
         else {
-            response.addHeader("Content-Type", "application/json;"); 
+            response.addHeader("Content-Type", "application/json;charset=utf-8;"); 
             // This breaks Web Annotation compliance, but allows us to return requested
             // objects without misrepresenting the content.
         }
@@ -945,7 +952,34 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         else{
             response.addHeader("Link", "<http://www.w3.org/ns/ldp#Resource>; rel=\"type\""); 
         }
-        response.addHeader("Link", "<http://devstore.rerum.io/contexts/rerum.jsonld>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
+        response.addHeader("Allow", "GET,OPTIONS,HEAD,PUT,PATCH,DELETE,POST"); 
+        if(!"".equals(etag)){
+            response.addHeader("Etag", etag);
+        }
+        
+    }
+    
+     /**
+     * Creates and appends headers to the HTTP response required by JSON-LD. 
+     * This is specifically for responses that are not Web Annotation compliant (getByProperties, getAllDescendants(), getAllAncestors()).
+     * They still need the JSON-LD support headers.
+     * Headers are attached and read from {@link #response}. 
+     * 
+     * @param etag A unique fingerprint for the object for the Etag header.
+     * @param isContainerType A boolean noting whether or not the object is a container type.
+     * @param isLD  the object is either plain JSON or is JSON-LD ("ld+json")
+     */
+    private void addSupportHeaders(String etag, Boolean isLD){
+        response.setContentType("UTF-8");
+        if(isLD){
+            response.addHeader("Content-Type", "application/ld+json;charset=utf-8;profile=\"http://www.w3.org/ns/anno.jsonld\""); 
+        } 
+        else {
+            response.addHeader("Content-Type", "application/json;charset=utf-8;"); 
+            // This breaks Web Annotation compliance, but allows us to return requested
+            // objects without misrepresenting the content.
+        }
+        response.addHeader("Link", "<http://store.rerum.io/v1/context.json>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
         response.addHeader("Allow", "GET,OPTIONS,HEAD,PUT,PATCH,DELETE,POST"); 
         if(!"".equals(etag)){
             response.addHeader("Etag", etag);
@@ -1000,11 +1034,15 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             if(null != mongo_obj){
                 JSONObject safe_received = JSONObject.fromObject(mongo_obj); //We can trust this is the object as it exists in mongo
                 List<DBObject> ls_versions = getAllVersions(safe_received);
-                JSONArray ancestors = getAllAncestors(ls_versions, safe_received, new JSONArray());
+                JSONArray ancestors = JSONArray.fromObject(getAllAncestors(ls_versions, safe_received, new JSONArray()));
+                for(int x=0; x<ancestors.size(); x++){
+                    expandPrivateRerumProperty(ancestors.getJSONObject(x));
+                }
                 try {
                     //@cubap @theHabes TODO how can we make this Web Annotation compliant?
-                    //addWebAnnotationHeaders(oid, isContainerType(ancestors), isLD(ancestors));
-                    response.addHeader("Access-Control-Allow-Origin", "*");
+                    addSupportHeaders("", true);
+                    addLocationHeader(ancestors);
+                    response.addHeader("Access-Control-Allow-Origin", "*"); 
                     response.setStatus(HttpServletResponse.SC_OK);
                     out = response.getWriter();
                     out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(ancestors));
@@ -1069,7 +1107,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @throws java.lang.Exception
      * @respond JSONArray to the response out for parsing by the client application.
      */
-    public void getAllDescendents() throws Exception {
+    public void getAllDescendants() throws Exception {
        if(null != oid && methodApproval(request, "get")){
             BasicDBObject query = new BasicDBObject();
             query.append("_id", oid);
@@ -1077,14 +1115,18 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             if(null != mongo_obj){
                 JSONObject safe_received = JSONObject.fromObject(mongo_obj); //We can trust this is the object as it exists in mongo
                 List<DBObject> ls_versions = getAllVersions(safe_received);
-                JSONArray descendents = getAllDescendents(ls_versions, safe_received, new JSONArray());
+                JSONArray descendants = JSONArray.fromObject(getAllDescendants(ls_versions, safe_received, new JSONArray()));
+                for(int x=0; x<descendants.size(); x++){
+                    expandPrivateRerumProperty(descendants.getJSONObject(x));
+                }
                 try {
                     //@cubap @theHabes TODO how can we make this Web Annotation compliant?
-                    //addWebAnnotationHeaders(oid, isContainerType(descendents), isLD(descendents));
+                    addSupportHeaders("", true);
+                    addLocationHeader(descendants);
                     response.addHeader("Access-Control-Allow-Origin", "*");
                     response.setStatus(HttpServletResponse.SC_OK);
                     out = response.getWriter();
-                    out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(descendents));
+                    out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(descendants));
                 } 
                 catch (IOException ex) {
                     Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
@@ -1101,28 +1143,28 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * If this object is the last, the return will be an empty JSONArray.  The keyObj WILL NOT be a part of the array.  
      * @param  ls_versions All the given versions, including root, of a provided object.
      * @param  keyObj The provided object
-     * @param  discoveredDescendants The array storing the descendents objects discovered by the recursion.
-     * @return All the objects that were deemed descendents in a JSONArray
+     * @param  discoveredDescendants The array storing the descendants objects discovered by the recursion.
+     * @return All the objects that were deemed descendants in a JSONArray
      */
 
-    private JSONArray getAllDescendents(List<DBObject> ls_versions, JSONObject keyObj, JSONArray discoveredDescendants){
+    private JSONArray getAllDescendants(List<DBObject> ls_versions, JSONObject keyObj, JSONArray discoveredDescendants){
         JSONArray nextIDarr = new JSONArray();
         //@cubap @theHabes #44.  What if obj does not have __rerum or __rerum.history
         if(keyObj.getJSONObject("__rerum").getJSONObject("history").getJSONArray("next").isEmpty()){
             //essentially, do nothing.  This branch is done.
         }
         else{
-            //The provided object has nexts, get them to add them to known descendents then check their descendents.
+            //The provided object has nexts, get them to add them to known descendants then check their descendants.
             nextIDarr = keyObj.getJSONObject("__rerum").getJSONObject("history").getJSONArray("next");
         }      
         for(int m=0; m<nextIDarr.size(); m++){ //For each id in the array
             String nextID = nextIDarr.getString(m);
             for (DBObject thisVersion : ls_versions) {
                 JSONObject thisObject = JSONObject.fromObject(thisVersion);
-                if(thisObject.getString("@id").equals(nextID)){ //If it is equal, add it to the known descendents
-                    discoveredDescendants.add(thisObject);
+                if(thisObject.getString("@id").equals(nextID)){ //If it is equal, add it to the known descendants
                     //Recurse with what you have discovered so far and this object as the new keyObj
-                    getAllDescendents(ls_versions, thisObject, discoveredDescendants);
+                    discoveredDescendants.add(thisObject);
+                    getAllDescendants(ls_versions, thisObject, discoveredDescendants);
                     break;
                 }
             }
@@ -1172,8 +1214,9 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             }
             queryForRoot.append("@id", primeID);
             rootObj = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, queryForRoot);
-            //Prepend the rootObj whose ID we knew and we queried for
+            //This is called by getAllAncestors and getAllDescendants which is why they do not expandPrivateRerumProperty for their return.
             rootObj.remove("_id");
+            //Prepend the rootObj whose ID we knew and we queried for
             ls_versions.add(0, rootObj);
         }
         return ls_versions;
@@ -1207,11 +1250,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 jo.remove("forkFromID"); // retained for legacy v0 objects
                 jo.remove("serverName");
                 jo.remove("serverIP");
+                expandPrivateRerumProperty(jo);
                 // @context may not be here and shall not be added, but the response
                 // will not be ld+json without it.
                 try {
                     addWebAnnotationHeaders(oid, isContainerType(jo), isLD(jo));
-                    response.addHeader("Content-Type", "application/json; charset=utf-8");
+                    addLocationHeader(jo);
                     response.addHeader("Access-Control-Allow-Origin", "*");
                     response.setStatus(HttpServletResponse.SC_OK);
                     out = response.getWriter();
@@ -1260,11 +1304,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 itemToAdd.remove("forkFromID"); // retained for legacy v0 objects
                 itemToAdd.remove("serverName");// retained for legacy v0 objects
                 itemToAdd.remove("serverIP");// retained for legacy v0 objects
+                expandPrivateRerumProperty(itemToAdd);
                 ja.add((BasicDBObject) itemToAdd);
             }
             try {
-                response.addHeader("Content-Type","application/json; charset=utf-8"); // not ld+json because it is an array
-                response.setCharacterEncoding("UTF-8");
+                addSupportHeaders("", true);
+                addLocationHeader(ja);
                 response.addHeader("Access-Control-Allow-Origin", "*");
                 response.setStatus(HttpServletResponse.SC_OK);
                 out = response.getWriter();
@@ -1310,6 +1355,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             for(int b=0; b<received_array.size(); b++){ //Configure __rerum on each object
                 JSONObject configureMe = received_array.getJSONObject(b);
                 configureMe = configureRerumOptions(configureMe, false); //configure this object
+                
                 received_array.set(b, configureMe); //Replace the current iterated object in the array with the configured object
             }
             BasicDBList dbo = (BasicDBList) JSON.parse(received_array.toString()); //tricky cause can't use JSONArray here
@@ -1323,15 +1369,17 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             else {
                 // empty array
             }
-            //bulk save will automatically call bulk update 
-            
+            for(int x=0; x<newResources.size(); x++){
+                expandPrivateRerumProperty(newResources.getJSONObject(x));
+            }
             JSONObject jo = new JSONObject();
             jo.element("code", HttpServletResponse.SC_CREATED);
             jo.element("new_resources", newResources);
-            addLocationHeader(newResources);
             try {
+                addSupportHeaders("", true);
+                addLocationHeader(newResources);
                 response.setStatus(HttpServletResponse.SC_CREATED);
-                response.addHeader("Content-Type", "application/json; charset=utf-8");
+                response.addHeader("Access-Control-Allow-Origin", "*");
                 out = response.getWriter();
                 out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
             } catch (IOException ex) {
@@ -1372,25 +1420,24 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
                 JSONObject jo = new JSONObject();
                 JSONObject newObjWithID = JSONObject.fromObject(dboWithObjectID);
+                expandPrivateRerumProperty(newObjWithID);
                 jo.element("code", HttpServletResponse.SC_CREATED);
                 newObjWithID.remove("_id");
                 jo.element("new_obj_state", newObjWithID);
                 jo.element("iiif_validation", iiif_validation_response);
                 //try {
                 System.out.println("Object created: "+newid);
-                response.addHeader("Access-Control-Allow-Origin", "*");
-                addWebAnnotationHeaders(newObjectID, isContainerType(received), isLD(received));
-                addLocationHeader(newObjWithID);
-                response.addHeader("Content-Type", "application/json; charset=utf-8");
-                response.setContentType("UTF-8");
-                response.setStatus(HttpServletResponse.SC_CREATED);
-                out = response.getWriter();
-                out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
-               // }
-                //catch (IOException ex) {
-                 //   System.out.println("Save new obj failed on IO Exception.");
-                //    Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
-                //}
+                try {
+                    addWebAnnotationHeaders(newObjectID, isContainerType(received), isLD(received));
+                    addLocationHeader(newObjWithID);
+                    response.addHeader("Access-Control-Allow-Origin", "*");
+                    response.setStatus(HttpServletResponse.SC_CREATED);
+                    out = response.getWriter();
+                    out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
+                } 
+                catch (IOException ex) {
+                    Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
         }
     }
@@ -1445,6 +1492,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                             BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
                             dboWithObjectID.append("@id", newNextAtID);
                             newObject.element("@id", newNextAtID);
+                            expandPrivateRerumProperty(newObject);
                             newObject.remove("_id");
                             mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
                             historyNextUpdatePassed = alterHistoryNext(updateHistoryNextID, newNextAtID); //update history.next or original object to include the newObject @id
@@ -1459,8 +1507,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                                 try {
                                     addWebAnnotationHeaders(newNextID, isContainerType(newObject), isLD(newObject));
                                     addLocationHeader(newObject);
-                                    response.addHeader("Content-Type", "application/json; charset=utf-8");
-                                    response.setContentType("UTF-8");
                                     response.addHeader("Access-Control-Allow-Origin", "*");
                                     response.setStatus(HttpServletResponse.SC_OK);
                                     out = response.getWriter();
@@ -1552,6 +1598,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                             BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
                             dboWithObjectID.append("@id", newNextAtID);
                             newObject.element("@id", newNextAtID);
+                            expandPrivateRerumProperty(newObject);
                             newObject.remove("_id");
                             mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
                             historyNextUpdatePassed = alterHistoryNext(updateHistoryNextID, newNextAtID); //update history.next or original object to include the newObject @id
@@ -1568,8 +1615,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                                     addLocationHeader(newObject);
                                     response.addHeader("Access-Control-Allow-Origin", "*");
                                     response.setStatus(HttpServletResponse.SC_OK);
-                                    response.addHeader("Content-Type", "application/json; charset=utf-8");
-                                    response.setContentType("UTF-8");
                                     out = response.getWriter();
                                     out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
                                 } 
@@ -1664,6 +1709,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                             BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
                             dboWithObjectID.append("@id", newNextAtID);
                             newObject.element("@id", newNextAtID);
+                            expandPrivateRerumProperty(newObject);
                             newObject.remove("_id");
                             mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
                             historyNextUpdatePassed = alterHistoryNext(updateHistoryNextID, newNextAtID); //update history.next or original object to include the newObject @id
@@ -1676,12 +1722,10 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                                 jo.element("new_obj_state", newObject); //FIXME: @webanno standards say this should be the response.
                                 jo.element("iiif_validation", iiif_validation_response);
                                 try {
-                                    addWebAnnotationHeaders(newNextID, isContainerType(newObject), isLD(newObject));
+                                    addWebAnnotationHeaders(newNextID, isContainerType(newObject), isLD(newObject));                                  
                                     addLocationHeader(newObject);
                                     response.addHeader("Access-Control-Allow-Origin", "*");
                                     response.setStatus(HttpServletResponse.SC_OK);
-                                    response.addHeader("Content-Type", "application/json; charset=utf-8");
-                                    response.setContentType("UTF-8");
                                     out = response.getWriter();
                                     out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
                                 } 
@@ -1750,6 +1794,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
                         dboWithObjectID.append("@id", newNextAtID);
                         newObject.element("@id", newNextAtID);
+                        expandPrivateRerumProperty(newObject);
                         newObject.remove("_id");
                         mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
                         historyNextUpdatePassed = alterHistoryNext(updateHistoryNextID, newNextAtID); //update history.next or original object to include the newObject @id
@@ -1766,8 +1811,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                                 addLocationHeader(newObject);
                                 response.addHeader("Access-Control-Allow-Origin", "*");
                                 response.setStatus(HttpServletResponse.SC_OK);
-                                response.addHeader("Content-Type", "application/json; charset=utf-8");
-                                response.setContentType("UTF-8");
                                 out = response.getWriter();
                                 out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
                             }
@@ -1828,12 +1871,18 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         JSONObject newObject = received;//The edited original object meant to be saved as a new object (versioning)
                         newObject.remove("_id");
                         JSONObject originalProperties = originalJSONObj.getJSONObject("__rerum");
+                        
+                        LocalDateTime dt = LocalDateTime.now();
+                        DateTimeFormatter dtFormat = DateTimeFormatter.ISO_DATE_TIME;
+                        String formattedOverwrittenDateTime = dt.format(dtFormat);
+                        originalProperties.getJSONObject("__rerum").element("isOverwritten", formattedOverwrittenDateTime);
                         newObject.element("__rerum", originalProperties);
                         DBObject udbo = (DBObject) JSON.parse(newObject.toString());
                         mongoDBService.update(Constant.COLLECTION_ANNOTATION, originalObject, udbo);
                         JSONObject jo = new JSONObject();
                         JSONObject iiif_validation_response = checkIIIFCompliance(receivedID, "2.1");
                         System.out.println("object overwritten: "+receivedID);
+                        expandPrivateRerumProperty(newObject);
                         newObject.remove("_id");
                         jo.element("code", HttpServletResponse.SC_OK);
                         jo.element("new_obj_state", newObject); //FIXME: @webanno standards say this should be the response.
@@ -1841,8 +1890,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         try {
                             addWebAnnotationHeaders(receivedID, isContainerType(newObject), isLD(newObject));
                             addLocationHeader(newObject);
-                            response.addHeader("Content-Type", "application/json; charset=utf-8");
-                            response.setContentType("UTF-8");
                             response.addHeader("Access-Control-Allow-Origin", "*");
                             response.setStatus(HttpServletResponse.SC_OK);
                             out = response.getWriter();
@@ -1892,14 +1939,17 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         String origObjGenerator = safe_original.getJSONObject("__rerum").getString("generatedBy");
                         isGenerator = (origObjGenerator.equals(generatorID));
                         if(isGenerator){
-                            safe_original.getJSONObject("__rerum").element("isReleased", System.currentTimeMillis()+"");
+                            LocalDateTime dt = LocalDateTime.now();
+                            DateTimeFormatter dtFormat = DateTimeFormatter.ISO_DATE_TIME;
+                            String formattedReleasedDateTime = dt.format(dtFormat);
+                            safe_original.getJSONObject("__rerum").element("isReleased", formattedReleasedDateTime);
                             safe_original.getJSONObject("__rerum").getJSONObject("releases").element("replaces", previousReleasedID);
                             releasedObject = (BasicDBObject) JSON.parse(safe_original.toString());
-                            if(!"".equals(previousReleasedID)){// A releases tree exists and an acestral object is being released.  
+                            if(!"".equals(previousReleasedID)){// A releases tree exists and an ancestral object is being released.  
                                 treeHealed  = healReleasesTree(safe_original); 
                             }
                             else{ //There was no releases previous value. 
-                                if(nextReleases.size() > 0){ //The release tree has been established and a descendent object is now being released.
+                                if(nextReleases.size() > 0){ //The release tree has been established and a descendant object is now being released.
                                     treeHealed  = healReleasesTree(safe_original);
                                 }
                                 else{ //The release tree has not been established
@@ -1909,6 +1959,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                             if(treeHealed){ //If the tree was established/healed
                                 //perform the update to isReleased of the object being released.  Its releases.next[] and releases.previous are already correct.
                                 mongoDBService.update(Constant.COLLECTION_ANNOTATION, originalObject, releasedObject);
+                                expandPrivateRerumProperty(releasedObject);
                                 releasedObject.remove("_id");
                                 JSONObject newObject = JSONObject.fromObject(releasedObject);
                                 System.out.println("Object released: "+updateToReleasedID);
@@ -1921,9 +1972,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                                     addWebAnnotationHeaders(updateToReleasedID, isContainerType(safe_original), isLD(safe_original));
                                     addLocationHeader(newObject);
                                     response.addHeader("Access-Control-Allow-Origin", "*");
-                                    response.setStatus(HttpServletResponse.SC_OK);
-                                    response.addHeader("Content-Type", "application/json; charset=utf-8");
-                                    response.setContentType("UTF-8");
+                                    response.setStatus(HttpServletResponse.SC_OK);                                   
                                     out = response.getWriter();
                                     out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
                                 } 
@@ -1964,17 +2013,17 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     private boolean healReleasesTree (JSONObject releasingNode) throws Exception{
         Boolean success = true;
         List<DBObject> ls_versions = getAllVersions(releasingNode);
-        JSONArray descendents = getAllDescendents(ls_versions, releasingNode, new JSONArray());
+        JSONArray descendants = getAllDescendants(ls_versions, releasingNode, new JSONArray());
         JSONArray anscestors = getAllAncestors(ls_versions, releasingNode, new JSONArray());
-        for(int d=0; d<descendents.size(); d++){ //For each descendent
-            JSONObject desc = descendents.getJSONObject(d);
+        for(int d=0; d<descendants.size(); d++){ //For each descendant
+            JSONObject desc = descendants.getJSONObject(d);
             boolean prevMatchCheck = desc.getJSONObject("__rerum").getJSONObject("releases").getString("previous").equals(releasingNode.getJSONObject("__rerum").getJSONObject("releases").getString("previous"));
             DBObject origDesc = (DBObject) JSON.parse(desc.toString());
             if(prevMatchCheck){ 
-                //If the descendent's previous matches the node I am releasing's releases.previous, swap the descendent releses.previous with node I am releasing's @id. 
+                //If the descendant's previous matches the node I am releasing's releases.previous, swap the descendant releses.previous with node I am releasing's @id. 
                 desc.getJSONObject("__rerum").getJSONObject("releases").element("previous", releasingNode.getString("@id"));
                 if(!desc.getJSONObject("__rerum").getString("isReleased").equals("")){ 
-                    //If this descendent is released, it replaces thr node being released
+                    //If this descendant is released, it replaces the node being released
                     if(desc.getJSONObject("__rerum").getJSONObject("releases").getString("previous").equals(releasingNode.getString("@id"))){
                         desc.getJSONObject("__rerum").getJSONObject("releases").element("replaces", releasingNode.getString("@id")); 
                     }
@@ -2021,7 +2070,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     
     /**
      * Internal helper method to establish the releases tree from a given object that is being released.  
-     * This can probably be collapsed into healReleasesTree.  It contains no checks, it is brute force update ancestors and descendents.
+     * This can probably be collapsed into healReleasesTree.  It contains no checks, it is brute force update ancestors and descendants.
      * It is significantly cleaner and slightly faster than healReleaseTree() which is why I think we should keep them separate. 
      *  
      * This method only receives reliable objects from mongo.
@@ -2032,10 +2081,10 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     private boolean establishReleasesTree (JSONObject obj) throws Exception{
         Boolean success = true;
         List<DBObject> ls_versions = getAllVersions(obj);
-        JSONArray descendents = getAllDescendents(ls_versions, obj, new JSONArray());
+        JSONArray descendants = getAllDescendants(ls_versions, obj, new JSONArray());
         JSONArray anscestors = getAllAncestors(ls_versions, obj, new JSONArray());
-        for(int d=0; d<descendents.size(); d++){
-            JSONObject desc = descendents.getJSONObject(d);
+        for(int d=0; d<descendants.size(); d++){
+            JSONObject desc = descendants.getJSONObject(d);
             DBObject origDesc = (DBObject) JSON.parse(desc.toString());
             desc.getJSONObject("__rerum").getJSONObject("releases").element("previous", obj.getString("@id"));
             DBObject descToUpdate = (DBObject) JSON.parse(desc.toString());
@@ -2092,17 +2141,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         return permission;
     }
     
-    /**
-     * An internal helper function to check if an object is released.
-     * This should only be fed reliable objects from mongo.
-     * check that the API keys match and that this application has permission to delete the object. These are internal and the objects passed in are
-     * first taken from mongo, they are not the obj provided by the application.
-    */
-    private boolean checkApplicationPermission(String obj_id){
-        boolean permission = true;
-        //@cubap @theHabes TODO check that the API keys match and that this application has permission to delete the object
-        return permission;
-    }
     
     /**
      * A helper function that gathers an object by its id and determines whether or not it is flagged as released. These are internal and the objects passed in are
@@ -2157,7 +2195,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 BasicDBObject mongo_obj = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query);
                 safe_received = JSONObject.fromObject(mongo_obj); //We can trust this is the object as it exists in mongo
                 boolean alreadyDeleted = checkIfDeleted(safe_received);
-                boolean permission = false;
                 boolean isReleased = false;
                 boolean passedAllChecks = false;
                 if(alreadyDeleted){
@@ -2309,20 +2346,20 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      }
      
      /**
-     * An internal method to make all descendents of this JSONObject take on a new history.prime = this object's @id
+     * An internal method to make all descendants of this JSONObject take on a new history.prime = this object's @id
      * This should only be fed a reliable object from mongo
-     * @param obj A new prime object whose descendents must take on its id
+     * @param obj A new prime object whose descendants must take on its id
      */
      private boolean newTreePrime(JSONObject obj){
          boolean success = true;
          String primeID = obj.getString("@id");
-         JSONArray descendents = new JSONArray();
-         for(int n=0; n< descendents.size(); n++){
-             JSONObject descendentForUpdate = descendents.getJSONObject(n);
-             JSONObject originalDescendant = descendents.getJSONObject(n);
+         JSONArray descendants = new JSONArray();
+         for(int n=0; n< descendants.size(); n++){
+             JSONObject descendantForUpdate = descendants.getJSONObject(n);
+             JSONObject originalDescendant = descendants.getJSONObject(n);
              BasicDBObject objToUpdate = (BasicDBObject)JSON.parse(originalDescendant.toString());;
-             descendentForUpdate.getJSONObject("__rerum").getJSONObject("history").element("prime", primeID);
-             BasicDBObject objWithUpdate = (BasicDBObject)JSON.parse(descendentForUpdate.toString());
+             descendantForUpdate.getJSONObject("__rerum").getJSONObject("history").element("prime", primeID);
+             BasicDBObject objWithUpdate = (BasicDBObject)JSON.parse(descendantForUpdate.toString());
              mongoDBService.update(Constant.COLLECTION_ANNOTATION, objToUpdate, objWithUpdate);
          }
          return success;
@@ -2448,6 +2485,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
             newObjState = configureRerumOptions(newObjState, false);
             newObjState = alterHistoryPrevious(newObjState, exernalObjID); //update history.previous of the new object to contain the external object's @id.
+            expandPrivateRerumProperty(newObjState);
             newObjState.remove("_id");
             jo.element("code", HttpServletResponse.SC_CREATED);
             jo.element("original_object_id", exernalObjID);
@@ -2457,7 +2495,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             addLocationHeader(newObjState);
             response.addHeader("Access-Control-Allow-Origin", "*");
             response.setStatus(HttpServletResponse.SC_CREATED);
-            response.addHeader("Content-Type", "application/json; charset=utf-8");
             System.out.println("Object now internal to rerum: "+newRootID);
             out = response.getWriter();
             out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
@@ -2768,6 +2805,34 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      */
     public void setOid(String oid) {
         this.oid = oid;
+    }
+    
+    /**
+     * Expand the __rerum property for JSON-LD context purposes.
+     * @param thisObject A JSONObject that needs direct manipulation.
+     * @return The manipulated JSONObject
+     */
+    private JSONObject expandPrivateRerumProperty(JSONObject thisObject) {
+        if(thisObject.has("__rerum")){
+            JSONObject rerumProperty = thisObject.getJSONObject("__rerum");
+            thisObject.element(Constant.RERUM_API_DOC, rerumProperty);
+            thisObject.remove("__rerum");
+        }
+        return thisObject;
+    }
+    
+    /**
+     * Expand the __rerum property for JSON-LD context purposes.
+     * @param thisObject A BasicDBObject that needs direct manipulation.
+     * @return The manipulated BasicDBObject
+     */
+    private BasicDBObject expandPrivateRerumProperty(BasicDBObject thisObject) {
+        if(thisObject.containsField("__rerum")){
+            Object rerumProps = thisObject.get("__rerum");
+            thisObject.put(Constant.RERUM_API_DOC, rerumProps);
+            thisObject.remove("__rerum");
+        }
+        return thisObject;
     }
 
 }
