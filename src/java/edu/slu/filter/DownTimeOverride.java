@@ -21,7 +21,6 @@ public class DownTimeOverride extends MethodFilterInterceptor {
     @Override
     protected String doIntercept(ActionInvocation ai) throws Exception {
         String offSwitch = getRerumProperty("down"); //Get this switch from the properties file.
-        System.out.println("Switch from prop is "+offSwitch);
         if(offSwitch.equals("true")){
             HttpServletResponse response = ServletActionContext.getResponse();
             String body = "The RERUM API is down for maintenance.  Please try again later.  Sorry for the inconvenience.";
@@ -30,13 +29,11 @@ public class DownTimeOverride extends MethodFilterInterceptor {
             response.addHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT, DELETE");
             response.setStatus(503);
             response.getWriter().write(body);
-            System.out.println("503 and be done");
             //Make sure to return here, this will stop the API from moving into the next intercept
             return "503";
         }
         else{
             //.invoke() will continue to the next intercept
-            System.out.println("DownTimeOverride says to continue.");
             return ai.invoke();
         }
     }
