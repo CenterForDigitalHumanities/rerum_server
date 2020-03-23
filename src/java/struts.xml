@@ -10,6 +10,7 @@
     <constant name="struts.devMode" value="false" />
     <constant name="struts.objectFactory" value="spring" />
     <constant name="struts.multipart.saveDir" value="/tmp"></constant>
+    <!-- cAN i PULL IN VERSION.PROPERTIES VARIABLES SOMEHOW?  I want there to be a single variable switch for downTimeOverride functionality. -->
     
     <package name="default" extends="struts-default"></package>
     
@@ -20,7 +21,7 @@
             <interceptor name="downTimeOverride" class="edu.slu.filter.DownTimeOverride"></interceptor>
             <interceptor name="responseEncoding" class="edu.slu.filter.ResponseEncoding"></interceptor>
             <interceptor-stack name="myDefault">
-                <!--<interceptor-ref name="downTimeOverride" />-->
+                <interceptor-ref name="downTimeOverride" />
                 <interceptor-ref name="responseEncoding" />
                 <interceptor-ref name="defaultStack" />
             </interceptor-stack>
@@ -36,7 +37,7 @@
             <interceptor name="downTimeOverride" class="edu.slu.filter.DownTimeOverride"></interceptor>
             <interceptor name="responseEncoding" class="edu.slu.filter.ResponseEncoding"></interceptor>
             <interceptor-stack name="myDefault">
-                <!--<interceptor-ref name="downTimeOverride" />-->
+                <interceptor-ref name="downTimeOverride" />
                 <interceptor-ref name="responseEncoding" />
                 <interceptor-ref name="defaultStack" />
             </interceptor-stack>
@@ -52,7 +53,7 @@
             <interceptor name="downTimeOverride" class="edu.slu.filter.DownTimeOverride"></interceptor>
             <interceptor name="responseEncoding" class="edu.slu.filter.ResponseEncoding"></interceptor>
             <interceptor-stack name="myDefault">
-                <!--<interceptor-ref name="downTimeOverride" />-->
+                <interceptor-ref name="downTimeOverride" />
                 <interceptor-ref name="responseEncoding" />
                 <interceptor-ref name="defaultStack" />
             </interceptor-stack>
@@ -78,7 +79,7 @@
                 <!--<interceptor-ref name="responseEncoding" />-->
                 <!--<interceptor-ref name="inSessionFilter" />-->
                 <!--<interceptor-ref name="requestServerAuthenticationFilter" />-->
-                <!--<interceptor-ref name="downTimeOverride" />-->
+                <interceptor-ref name="downTimeOverride" />
                 <interceptor-ref name="getRequestClientInfoRecorder" />
                 <interceptor-ref name="defaultStack" />
             </interceptor-stack>
@@ -113,10 +114,10 @@
     <package name="acceptedServer" extends="default" namespace="/acceptedServer">
         <!-- INTERCEPTOR -->
         <interceptors>
-            <!--<interceptor name="downTimeOverride" class="edu.slu.filter.DownTimeOverride"></interceptor>-->
+            <interceptor name="downTimeOverride" class="edu.slu.filter.DownTimeOverride"></interceptor>
             <interceptor name="responseEncoding" class="edu.slu.filter.ResponseEncoding"></interceptor>
             <interceptor-stack name="myDefault">
-                <!--<interceptor-ref name="downTimeOverride" />-->
+                <interceptor-ref name="downTimeOverride" />
                 <interceptor-ref name="responseEncoding" />
                 <interceptor-ref name="defaultStack" />
             </interceptor-stack>
