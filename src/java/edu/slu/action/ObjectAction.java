@@ -2813,11 +2813,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @return The manipulated JSONObject
      */
     private JSONObject expandPrivateRerumProperty(JSONObject thisObject) {
-        if(thisObject.has("__rerum")){
-            JSONObject rerumProperty = thisObject.getJSONObject("__rerum");
-            thisObject.element(Constant.RERUM_API_DOC, rerumProperty);
-            thisObject.remove("__rerum");
-        }
+        //This is a breaking change for applications relying on the __rerum field (TPEN_NL).  Need to hold off on this for now.
+//        if(thisObject.has("__rerum")){
+//            JSONObject rerumProperty = thisObject.getJSONObject("__rerum");
+//            thisObject.element(Constant.RERUM_API_DOC, rerumProperty);
+//            thisObject.remove("__rerum");
+//        }
         return thisObject;
     }
     
