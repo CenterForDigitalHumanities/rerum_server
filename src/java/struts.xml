@@ -11,17 +11,26 @@
     <constant name="struts.objectFactory" value="spring" />
     <constant name="struts.multipart.saveDir" value="/tmp"></constant>
     
-    <package name="default" extends="struts-default"></package>
+    <package name="default" extends="struts-default">
+         <!-- this tells the package what to do when the result is an expected string.  @see RequestServerAuthenticationFilter.java && AnnotationAction.java &&DownTimeOverride.java -->
+         <!-- Only put handlers here that need to apply to ALL PACKAGES -->
+         <interceptors>
+            <interceptor name="downTimeOverride" class="edu.slu.filter.DownTimeOverride"></interceptor>
+         </interceptors>
+         
+        <global-results>
+            <result name="403">/403.jsp</result>
+            <result name="503">/down.html</result>
+        </global-results>
+        
+    </package>
     
     <!-- This package is open to public -->
     <package name="getObject" extends="default" namespace="/id">
         <!-- INTERCEPTOR -->
         <interceptors>
-            <interceptor name="downTimeOverride" class="edu.slu.filter.DownTimeOverride"></interceptor>
-            <interceptor name="responseEncoding" class="edu.slu.filter.ResponseEncoding"></interceptor>
             <interceptor-stack name="myDefault">
-                <!--<interceptor-ref name="downTimeOverride" />-->
-                <interceptor-ref name="responseEncoding" />
+                <interceptor-ref name="downTimeOverride" />
                 <interceptor-ref name="defaultStack" />
             </interceptor-stack>
         </interceptors>
@@ -33,11 +42,8 @@
     <package name="getAncestors" extends="default" namespace="/history">
         <!-- INTERCEPTOR -->
         <interceptors>
-            <interceptor name="downTimeOverride" class="edu.slu.filter.DownTimeOverride"></interceptor>
-            <interceptor name="responseEncoding" class="edu.slu.filter.ResponseEncoding"></interceptor>
             <interceptor-stack name="myDefault">
-                <!--<interceptor-ref name="downTimeOverride" />-->
-                <interceptor-ref name="responseEncoding" />
+                <interceptor-ref name="downTimeOverride" />
                 <interceptor-ref name="defaultStack" />
             </interceptor-stack>
         </interceptors>
@@ -49,11 +55,8 @@
     <package name="getDescendants" extends="default" namespace="/since">
         <!-- INTERCEPTOR -->
         <interceptors>
-            <interceptor name="downTimeOverride" class="edu.slu.filter.DownTimeOverride"></interceptor>
-            <interceptor name="responseEncoding" class="edu.slu.filter.ResponseEncoding"></interceptor>
             <interceptor-stack name="myDefault">
-                <!--<interceptor-ref name="downTimeOverride" />-->
-                <interceptor-ref name="responseEncoding" />
+                <interceptor-ref name="downTimeOverride" />
                 <interceptor-ref name="defaultStack" />
             </interceptor-stack>
         </interceptors>
@@ -65,29 +68,16 @@
     <package name="v1" extends="default" namespace="/api">
         <!-- INTERCEPTOR -->
         <interceptors>
-<!--            <interceptor name="requestServerAuthenticationFilter" class="edu.slu.filter.RequestServerAuthenticationFilter">
-                <param name="includeMethods">saveNewObject, batchSaveFromCopy, patchUpdateObject, putUpdateObject, patchSetUpdate, deleteObject, releaseObject </param>
-            </interceptor>-->
-            <interceptor name="downTimeOverride" class="edu.slu.filter.DownTimeOverride"></interceptor>
             <interceptor name="getRequestClientInfoRecorder" class="edu.slu.filter.GetRequestClientInfoRecorder">
-                <param name="includeMethods">askAuth0, getByProperties, getByID, getAllAncestors, getAllDescendants, getAllVersions</param>
+            <param name="includeMethods">askAuth0, getByProperties, getByID, getAllAncestors, getAllDescendants, getAllVersions</param>
             </interceptor>
-            <!--<interceptor name="responseEncoding" class="edu.slu.filter.ResponseEncoding"></interceptor>-->
-            <!--<interceptor name="inSessionFilter" class="edu.slu.filter.InSessionFilter"></interceptor>-->
             <interceptor-stack name="myDefault">
-                <!--<interceptor-ref name="responseEncoding" />-->
-                <!--<interceptor-ref name="inSessionFilter" />-->
-                <!--<interceptor-ref name="requestServerAuthenticationFilter" />-->
-                <!--<interceptor-ref name="downTimeOverride" />-->
+                <interceptor-ref name="downTimeOverride" />
                 <interceptor-ref name="getRequestClientInfoRecorder" />
                 <interceptor-ref name="defaultStack" />
             </interceptor-stack>
         </interceptors>
         <default-interceptor-ref name="myDefault" />
-        <!-- this tells the app what to do when the result is a 403 string.  @see RequestServerAuthenticationFilter.java && AnnotationAction.java -->
-        <global-results>
-            <result name="403">/403.jsp</result>
-        </global-results>
         
         <!-- TPEN_NL support -->
         <action name="getByProperties" class="objectAction" method="getByProperties"></action>
@@ -113,16 +103,12 @@
     <package name="acceptedServer" extends="default" namespace="/acceptedServer">
         <!-- INTERCEPTOR -->
         <interceptors>
-            <!--<interceptor name="downTimeOverride" class="edu.slu.filter.DownTimeOverride"></interceptor>-->
-            <interceptor name="responseEncoding" class="edu.slu.filter.ResponseEncoding"></interceptor>
             <interceptor-stack name="myDefault">
-                <!--<interceptor-ref name="downTimeOverride" />-->
-                <interceptor-ref name="responseEncoding" />
+                <interceptor-ref name="downTimeOverride" />
                 <interceptor-ref name="defaultStack" />
             </interceptor-stack>
         </interceptors>
         <default-interceptor-ref name="myDefault" />
-        
         <action name="saveNewServer" class="serverAction" method="saveNewServer"></action>
         <action name="updateServerByObjectID" class="serverAction" method="updateServerByObjectID"></action>
         <action name="getServerByIp" class="serverAction" method="getServerByIp"></action>

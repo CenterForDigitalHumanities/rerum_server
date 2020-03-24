@@ -328,12 +328,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         System.out.println(jo);
         try {
             response.addHeader("Access-Control-Allow-Origin", "*");
+            response.setContentType("UTF-8");
             response.setContentType("application/json; charset=utf-8");
             response.setStatus(status);
             out = response.getWriter();
             out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
             out.write(System.getProperty("line.separator"));
-            System.out.println("Write errore response completed");
         } 
         catch (IOException ex) {
             System.out.println("Write error response failed on IO exception");
