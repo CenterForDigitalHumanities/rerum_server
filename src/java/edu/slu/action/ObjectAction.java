@@ -2828,11 +2828,11 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @return The manipulated BasicDBObject
      */
     private BasicDBObject expandPrivateRerumProperty(BasicDBObject thisObject) {
-        if(thisObject.containsField("__rerum")){
-            Object rerumProps = thisObject.get("__rerum");
-            thisObject.put(Constant.RERUM_API_DOC, rerumProps);
-            thisObject.remove("__rerum");
-        }
+//        if(thisObject.containsField("__rerum")){
+//            Object rerumProps = thisObject.get("__rerum");
+//            thisObject.put(Constant.RERUM_API_DOC, rerumProps);
+//            thisObject.remove("__rerum");
+//        }
         return thisObject;
     }
 
