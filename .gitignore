@@ -1,8 +1,7 @@
 catalog.xml
 nbproject/
-build/
 dist/
-build.xml
+build/
 *.properties
 src/java/rerum.properties
 .vscode/settings.json
