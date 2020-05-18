@@ -26,12 +26,12 @@ public class Constant {
     public static final String AGENT_DEPENDENCY_TYPE_USER = "user";
     public static final String AGENT_DEPENDENCY_TYPE_STRING = "string";
     
-    public static final String RERUM_BASE="http://devstore.rerum.io";
-    public static final String RERUM_PREFIX="http://devstore.rerum.io/v1/";
-    public static final String RERUM_ID_PREFIX="http://devstore.rerum.io/v1/id/";
-    public static final String RERUM_AGENT_PREFIX="http://devstore.rerum.io/v1/agent/";
-    public static final String RERUM_AGENT_ClAIM="http://devstore.rerum.io/v1/agent";
-    public static final String RERUM_CONTEXT="http://devstore.rerum.io/v1/context.json";
+    public static final String RERUM_BASE="http://18.218.227.205:8080";
+    public static final String RERUM_PREFIX="http://18.218.227.205:8080/rerum_server/";
+    public static final String RERUM_ID_PREFIX="http://18.218.227.205:8080/rerum_server/id/";
+    public static final String RERUM_AGENT_PREFIX="http://18.218.227.205:8080/rerum_server/agent/";
+    public static final String RERUM_AGENT_ClAIM="http://18.218.227.205:8080/rerum_server/agent";
+    public static final String RERUM_CONTEXT="http://18.218.227.205:8080/rerum_server/context.json";
     public static final String RERUM_API_VERSION="1.0.0";
     //The location of the public API documents.  This is necessary for JSON-LD context purposes.
     public static final String RERUM_API_DOC="https://github.com/CenterForDigitalHumanities/rerum_server/blob/master/API.md#__rerum";

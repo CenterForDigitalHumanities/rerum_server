@@ -33,7 +33,7 @@ public class MongoDBUtil {
     
     static {
         try {
-            mg = new MongoClient("127.0.0.1", 27017);
+            mg = new MongoClient("165.134.107.94", 27017);
             DB dbAuth = mg.getDB("admin");
 //            if(!auth){
 //                auth = dbAuth.authenticate("root", "root".toCharArray());
