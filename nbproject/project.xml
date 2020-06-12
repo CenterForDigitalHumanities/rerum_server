@@ -15,10 +15,6 @@
                     <path-in-war>WEB-INF/lib</path-in-war>
                 </library>
                 <library dirs="200">
-                    <file>${file.reference.lib-apache_httpComponents}</file>
-                    <path-in-war>WEB-INF/classes</path-in-war>
-                </library>
-                <library dirs="200">
                     <file>${file.reference.asm-attrs.jar}</file>
                     <path-in-war>WEB-INF/lib</path-in-war>
                 </library>
@@ -153,10 +149,6 @@
                 <library dirs="200">
                     <file>${file.reference.javax.ws.rs.jar}</file>
                     <path-in-war>WEB-INF/lib</path-in-war>
-                </library>
-                <library dirs="200">
-                    <file>${file.reference.lib-jaxrs-ri}</file>
-                    <path-in-war>WEB-INF/classes</path-in-war>
                 </library>
                 <library dirs="200">
                     <file>${file.reference.jdbc2_0-stdext.jar}</file>
@@ -321,10 +313,6 @@
                 <library dirs="200">
                     <file>${file.reference.struts2-spring-plugin-2.3.12.jar}</file>
                     <path-in-war>WEB-INF/lib</path-in-war>
-                </library>
-                <library dirs="200">
-                    <file>${file.reference.lib-url_rewrite}</file>
-                    <path-in-war>WEB-INF/classes</path-in-war>
                 </library>
                 <library dirs="200">
                     <file>${file.reference.xwork-core-2.3.12.jar}</file>
