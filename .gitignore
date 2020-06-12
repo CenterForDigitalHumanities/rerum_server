@@ -3,4 +3,5 @@ dist/
 build/
 *.properties
 src/java/rerum.properties
+nbproject
 .vscode/settings.json
