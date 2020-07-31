@@ -104,7 +104,24 @@ import java.util.Date;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 import javax.servlet.ServletInputStream;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
+import com.amazonaws.services.dynamodbv2.document.DeleteItemOutcome;
+import com.amazonaws.services.dynamodbv2.document.DynamoDB;
+import com.amazonaws.services.dynamodbv2.document.Item;
+import com.amazonaws.services.dynamodbv2.document.Table;
+import com.amazonaws.services.dynamodbv2.document.UpdateItemOutcome;
+import com.amazonaws.services.dynamodbv2.document.spec.DeleteItemSpec;
+import com.amazonaws.services.dynamodbv2.document.spec.UpdateItemSpec;
+import com.amazonaws.services.dynamodbv2.document.utils.NameMap;
+import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
+import com.amazonaws.services.dynamodbv2.model.ReturnValue;
+import com.fasterxml.jackson.core.JsonParser;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 
+import jdk.nashorn.internal.parser.JSONParser;
+import java.util.UUID;
 
 /**
  * @author hanyan &&  bhaberbe
@@ -125,6 +142,11 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     private String generatorID = "unknown";
     private final ObjectMapper mapper = new ObjectMapper();
     private CacheAccess<String, RSAPublicKey> cache = null;
+    private static AmazonDynamoDB client = AmazonDynamoDBClientBuilder.standard().build();
+    private static DynamoDB dynamoDB = new DynamoDB(client);
+    private static String tableName = "ShravyasTest";
+    private String json_obj;
+
    /**
     * Private function to get information from the rerum properties file
     
@@ -1412,24 +1434,42 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     // cubap: if we want, we can just copy the Slug to @id, warning
                     // if there was some mismatch, since versions are fine with that.
                 }
-                String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
+                /*Table table = dynamoDB.getTable(tableName);
+                Item item = new Item().withPrimaryKey("ID", "friday-insert")
+                                      .withNumber("Misc_Field", 21004)
+                                      .withNumber("Random_Char", 2500);
+	        table.putItem(item);*/
+                    UUID uniqueKey = UUID.randomUUID();
+                    String primaryKeyId = uniqueKey.toString();
+                    Table table = dynamoDB.getTable(tableName);
+                    String newPrimaryKeyId = Constant.RERUM_ID_PREFIX+primaryKeyId;
+                Item item = new Item().withPrimaryKey("ID", newPrimaryKeyId)
+                                      .withJSON(Constant.COLLECTION_ANNOTATION, received.toString());
+	        table.putItem(item);
+               // String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
                 //set @id from _id and update the annotation
-                BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
-                String newid = Constant.RERUM_ID_PREFIX+newObjectID;
-                dboWithObjectID.put("@id", newid);
-                mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
+               // BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
+                //String newid = Constant.RERUM_ID_PREFIX+newObjectID;
+                //newid = Constant.RERUM_ID_PREFIX+primaryKeyId;
+                //dboWithObjectID.put("@id", newid);
+                //mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
                 JSONObject jo = new JSONObject();
-                JSONObject newObjWithID = JSONObject.fromObject(dboWithObjectID);
-                expandPrivateRerumProperty(newObjWithID);
+                //JSONObject newObjWithID = JSONObject.fromObject(dboWithObjectID);
+                item = table.getItem(Constant.COLLECTION_ANNOTATION, primaryKeyId);
+                //json_obj = item.toJSON();
+                JSONObject finalJSONObject = JSONObject.fromObject(item);
+
+                //JsonObject convertedObject = new Gson().fromJson(finalJSONObject, JsonObject.class);
+                expandPrivateRerumProperty(finalJSONObject);
                 jo.element("code", HttpServletResponse.SC_CREATED);
-                newObjWithID.remove("_id");
-                jo.element("new_obj_state", newObjWithID);
+                //newObjWithID.remove("_id");
+                jo.element("new_obj_state", finalJSONObject);
                 jo.element("iiif_validation", iiif_validation_response);
                 //try {
-                System.out.println("Object created: "+newid);
+                System.out.println("Object created: "+finalJSONObject);
                 try {
-                    addWebAnnotationHeaders(newObjectID, isContainerType(received), isLD(received));
-                    addLocationHeader(newObjWithID);
+                    addWebAnnotationHeaders(newPrimaryKeyId, isContainerType(received), isLD(received));
+                    addLocationHeader(finalJSONObject);
                     response.addHeader("Access-Control-Allow-Origin", "*");
                     response.setStatus(HttpServletResponse.SC_CREATED);
                     out = response.getWriter();

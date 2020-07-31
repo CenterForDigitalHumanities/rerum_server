@@ -6,3 +6,4 @@ src/java/rerum.properties
 nbproject/
 .vscode/settings.json
 build.xml
+/bin/
