@@ -49,6 +49,7 @@
 
 package edu.slu.action;
 
+import com.amazonaws.regions.Regions;
 import com.auth0.jwk.Jwk;
 import com.auth0.jwk.JwkException;
 import com.auth0.jwk.JwkProvider;
@@ -116,6 +117,9 @@ import com.amazonaws.services.dynamodbv2.document.spec.UpdateItemSpec;
 import com.amazonaws.services.dynamodbv2.document.utils.NameMap;
 import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
 import com.amazonaws.services.dynamodbv2.model.ReturnValue;
+import com.amazonaws.services.ec2.AmazonEC2;
+import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
+import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder;
 import com.fasterxml.jackson.core.JsonParser;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -144,8 +148,15 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     private CacheAccess<String, RSAPublicKey> cache = null;
     private static AmazonDynamoDB client = AmazonDynamoDBClientBuilder.standard().build();
     private static DynamoDB dynamoDB = new DynamoDB(client);
-    private static String tableName = "ShravyasTest";
+    private static String tableName = "rerum-dev";
     private String json_obj;
+    AmazonEC2 ec2 = AmazonEC2ClientBuilder.standard().withRegion(Regions.US_EAST_2).build();
+
+    
+   
+        
+    
+            
 
    /**
     * Private function to get information from the rerum properties file
@@ -153,6 +164,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     * @param prop the name of the property to retrieve from the file.
     * @return the value for the provided property
     */    
+   
    private static String getRerumProperty(String prop) {
       ResourceBundle rb = ResourceBundle.getBundle("rerum");
       String propVal = "";
@@ -1254,14 +1266,19 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      */
     public void getByID() throws IOException, ServletException, Exception{
         request.setCharacterEncoding("UTF-8");
+        Table table = dynamoDB.getTable(tableName);
         if(null != oid && methodApproval(request, "get")){
             //find one version by objectID
             BasicDBObject query = new BasicDBObject();
-            query.append("_id", oid);
+            //query.append("_id", oid);
+            Item item = table.getItem(Constant.COLLECTION_ANNOTATION, oid);
             DBObject myAnno = mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query);
+           
             if(null != myAnno){
                 BasicDBObject bdbo = (BasicDBObject) myAnno;
-                JSONObject jo = JSONObject.fromObject(myAnno.toMap());
+                //JSONObject jo = JSONObject.fromObject(myAnno.toMap());
+                //JSONObject jo = JSONObject.fromObject(myAnno.toMap());
+                JSONObject jo = JSONObject.fromObject(item);
                 //String idForHeader = jo.getString("_id");
                 //The following are rerum properties that should be stripped.  They should be in __rerum.
                 jo.remove("_id");
@@ -1418,6 +1435,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      */
     public void saveNewObject() throws IOException, ServletException, Exception{
         System.out.println("create object");
+        
+
         if(null != processRequestBody(request, false) && methodApproval(request, "create")){
             //System.out.println("process and approval over.  actually save now");
             JSONObject received = JSONObject.fromObject(content);
@@ -1443,7 +1462,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     String primaryKeyId = uniqueKey.toString();
                     Table table = dynamoDB.getTable(tableName);
                     String newPrimaryKeyId = Constant.RERUM_ID_PREFIX+primaryKeyId;
-                Item item = new Item().withPrimaryKey("ID", newPrimaryKeyId)
+                Item item = new Item().withPrimaryKey("id", newPrimaryKeyId)
                                       .withJSON(Constant.COLLECTION_ANNOTATION, received.toString());
 	        table.putItem(item);
                // String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
