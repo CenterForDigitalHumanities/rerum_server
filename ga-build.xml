@@ -38,7 +38,7 @@
 	</target>
 
 	<target name="package" depends="build" >
-		<war destfile="${project.war}" index="true" needxmlfile="fasle">
+		<war destfile="${project.war}" index="true" needxmlfile="false">
 			<classes dir="${project.classes.dir}" />
 			<lib dir="${project.lib.dir}" />
 			<fileset dir="${project.web.dir}">
