@@ -43,6 +43,6 @@ jobs:
         aws s3 cp /home/runner/work/rerum_server/rerum_server/rerum_server.war s3://rerum-server-files
     - name: upload War file to EC2 instance and restart tomcat
       run: |
-       aws ssm send-command --instance-ids "i-0ca8978c3f1f50d95" --document-name "AWS-RunShellScript" --comment "aws s3 cp" --parameters commands="aws s3 cp s3://rerum-server-files/rerum_server.war /opt/apache-tomcat-8.5.35/webapps/" --output text --region us-east-1
+       aws ssm send-command --instance-ids "i-0ca8978c3f1f50d95" --document-name "AWS-RunShellScript" --comment "aws s3 cp" --parameters commands="aws s3 cp s3://rerum-server-files/rerum_server.war /opt/apache-tomcat-8.5.35/webapps/v1.war" --output text --region us-east-1
        aws ssm send-command --instance-ids "i-0ca8978c3f1f50d95" --document-name "AWS-RunShellScript" --comment "restart tomcat" --parameters commands="tomcatdown" --output text --region us-east-1
        aws ssm send-command --instance-ids "i-0ca8978c3f1f50d95" --document-name "AWS-RunShellScript" --comment "restart tomcat" --parameters commands="tomcatup" --output text --region us-east-1
