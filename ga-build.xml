@@ -7,7 +7,7 @@
 	<!-- <property name="project.lib.dir" value="${project.web.dir}/WEB-INF/lib" /> -->
 	<property name="project.lib.dir" value="lib" />
 	<property name="project.name" value="${ant.project.name}" />
-	<property name="project.war" value="v1.war" />
+	<property name="project.war" value="${project.name}.war" />
 	<property name="TOMCAT_HOME" value="${env.CATALINA_HOME}" />
 	<!-- <property name="project.deploy.location" value="${TOMCAT_HOME}/webapps" /> -->
 
@@ -38,7 +38,7 @@
 	</target>
 
 	<target name="package" depends="build" >
-		<war destfile="${project.war}" index="true" needxmlfile="fasle">
+		<war destfile="${project.war}" index="true" needxmlfile="false">
 			<classes dir="${project.classes.dir}" />
 			<lib dir="${project.lib.dir}" />
 			<fileset dir="${project.web.dir}">
