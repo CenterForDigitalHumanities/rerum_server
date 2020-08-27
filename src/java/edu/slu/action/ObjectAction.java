@@ -1266,7 +1266,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @throws javax.servlet.ServletException
      */
     public void getByID() throws IOException, ServletException, Exception{
-        System.out.println("getByID Test");
+        System.out.println("getByID Test again");
         request.setCharacterEncoding("UTF-8");
         Table table = dynamoDB.getTable(tableName);
         if(null != oid && methodApproval(request, "get")){
