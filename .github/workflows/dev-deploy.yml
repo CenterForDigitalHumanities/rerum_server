@@ -1,0 +1,49 @@
+# This workflow will build Rerum Server with Ant
+# For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-ant
+
+name: Java CI
+
+on:
+  # Commenting below trigger. Will update it for Prod deployments
+  # push:
+  #   branches: [ master ]
+  pull_request:
+    branches: [ aws-deploy ]
+  workflow_dispatch:
+    branches: [ aws-deploy ]
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up JDK 1.8
+      uses: actions/setup-java@v1
+      with:
+        java-version: 1.8
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+
+    - name: Copy files from S3
+      run: |
+        aws s3 cp s3://rerum-server-files/rerum.properties /home/runner/work/rerum_server/rerum_server/src/java/
+    - name: Build with Ant
+      run: ant -noinput -buildfile ga-build.xml
+    - name: upoad artifacts
+      uses: actions/upload-artifact@master
+      with:
+        name: Package
+        path: /home/runner/work/rerum_server/rerum_server/rerum_server.war
+    - name: Copy war file from S3 to Tomcat server
+      run: |
+        aws s3 cp /home/runner/work/rerum_server/rerum_server/rerum_server.war s3://rerum-server-files
+    - name: upload War file to EC2 instance and restart tomcat
+      run: |
+       aws ssm send-command --instance-ids "i-0ca8978c3f1f50d95" --document-name "AWS-RunShellScript" --comment "aws s3 cp" --parameters commands="aws s3 cp s3://rerum-server-files/rerum_server.war /opt/apache-tomcat-8.5.35/webapps/v1.war" --output text --region us-east-1
+       aws ssm send-command --instance-ids "i-0ca8978c3f1f50d95" --document-name "AWS-RunShellScript" --comment "restart tomcat" --parameters commands="tomcatdown" --output text --region us-east-1
+       aws ssm send-command --instance-ids "i-0ca8978c3f1f50d95" --document-name "AWS-RunShellScript" --comment "restart tomcat" --parameters commands="tomcatup" --output text --region us-east-1

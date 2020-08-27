@@ -1,7 +1,7 @@
 /*
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * and open the template in the editor. t
  */
 
 /**
@@ -1032,7 +1032,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         // our practice of making a list protects from this.
         if (response.containsHeader("Location")) {
             // add to existing header
-            addLocation = response.getHeader("Location").concat(",").concat(obj.getString("@id"));
+            addLocation = ((HttpServletRequest) response).getHeader("Location").concat(",")
+                    .concat(obj.getString("@id"));
         }
         else {
             // no header attached yet
