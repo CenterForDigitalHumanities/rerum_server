@@ -7,22 +7,17 @@ package edu.slu.abstractUtil;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
+import com.amazonaws.services.dynamodbv2.document.AttributeUpdate;
 import com.amazonaws.services.dynamodbv2.document.DeleteItemOutcome;
 import com.amazonaws.services.dynamodbv2.document.DynamoDB;
 import com.amazonaws.services.dynamodbv2.document.Item;
 import com.amazonaws.services.dynamodbv2.document.Table;
-import com.amazonaws.services.dynamodbv2.document.UpdateItemOutcome;
 import com.amazonaws.services.dynamodbv2.document.spec.DeleteItemSpec;
 import com.amazonaws.services.dynamodbv2.document.spec.UpdateItemSpec;
-import com.amazonaws.services.dynamodbv2.document.utils.NameMap;
-import com.amazonaws.services.dynamodbv2.document.utils.ValueMap;
-import com.amazonaws.services.dynamodbv2.model.ReturnValue;
-import com.amazonaws.services.dynamodbv2.document.AttributeUpdate;
-import com.fasterxml.jackson.core.JsonParser;
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import org.json.simple.JSONObject;
-import jdk.nashorn.internal.parser.JSONParser;
+
+//import org.json.simple.JSONObject;
+//import jdk.nashorn.internal.parser.JSONParser;
+import net.sf.json.JSONObject;
 import com.fasterxml.jackson.core.JsonParser;
 
 /**
@@ -57,7 +52,7 @@ public abstract class DynamoDBAbstractDAO implements DynamoDBDAOInterface {
      */
     public String save(String id, JSONObject jobj) {
         Item item = new Item().withPrimaryKey("id", id)
-                .withJSON("JSONObj", jobj.toJSONString());
+                .withJSON("JSONObj", jobj.toString());
         table.putItem(item);
         item = table.getItem("id", id);
         json_obj = item.toJSON();
@@ -69,7 +64,7 @@ public abstract class DynamoDBAbstractDAO implements DynamoDBDAOInterface {
      */
     public void update(String id, JSONObject jobj) {
         UpdateItemSpec updateItemSpec = new UpdateItemSpec().withPrimaryKey("id", id).
-                withAttributeUpdate(new AttributeUpdate("JSONObj").put(jobj.toJSONString()));;
+                withAttributeUpdate(new AttributeUpdate("JSONObj").put(jobj.toString()));;
     }
     /**
      * 
