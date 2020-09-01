@@ -148,7 +148,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     private CacheAccess<String, RSAPublicKey> cache = null;
     private static AmazonDynamoDB client;
     private static DynamoDB dynamoDB;
-    //private static String tableName = "rerum-dev";
+    private static String tableName;
     //private String json_obj;
     //AmazonEC2 ec2 = AmazonEC2ClientBuilder.standard().withRegion(Regions.US_EAST_2).build();
 
@@ -1269,6 +1269,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         try {
             client = AmazonDynamoDBClientBuilder.standard().build();
             dynamoDB = new DynamoDB(client);
+            tableName = "rerum-dev";
         }
         catch(Exception e){
             System.out.println("AWS initialization error below");
@@ -1276,20 +1277,20 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         }   
         System.out.println("getByID Test again");
         request.setCharacterEncoding("UTF-8");
-       // Table table = dynamoDB.getTable(tableName);
+       Table table = dynamoDB.getTable(tableName);
         if(null != oid && methodApproval(request, "get")){
             //find one version by objectID
             BasicDBObject query = new BasicDBObject();
-            query.append("_id", oid);
-            //Item item = table.getItem(Constant.COLLECTION_ANNOTATION, oid);
-            DBObject myAnno = mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query);
+           // query.append("_id", oid);
+            Item item = table.getItem(Constant.COLLECTION_ANNOTATION, oid);
+            //DBObject myAnno = mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query);
            
-            if(null != myAnno){
-                BasicDBObject bdbo = (BasicDBObject) myAnno;
-                JSONObject jo = JSONObject.fromObject(myAnno.toMap());
+            if(null != item){
+                //BasicDBObject bdbo = (BasicDBObject) myAnno;
+                //JSONObject jo = JSONObject.fromObject(myAnno.toMap());
                
-                //JSONObject jo = JSONObject.fromObject(item);
-                //String idForHeader = jo.getString("_id");
+                JSONObject jo = JSONObject.fromObject(item);
+                String idForHeader = jo.getString("_id");
                 //The following are rerum properties that should be stripped.  They should be in __rerum.
                 jo.remove("_id");
                 jo.remove("addedTime");
