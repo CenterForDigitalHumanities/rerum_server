@@ -105,7 +105,7 @@ import java.util.Date;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 import javax.servlet.ServletInputStream;
-/*import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.amazonaws.services.dynamodbv2.document.DeleteItemOutcome;
 import com.amazonaws.services.dynamodbv2.document.DynamoDB;
@@ -125,7 +125,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
 //import jdk.nashorn.internal.parser.JSONParser;
-import java.util.UUID;*/
+//import java.util.UUID;
 
 /**
  * @author hanyan &&  bhaberbe
@@ -146,8 +146,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     private String generatorID = "unknown";
     private final ObjectMapper mapper = new ObjectMapper();
     private CacheAccess<String, RSAPublicKey> cache = null;
-    //private static AmazonDynamoDB client = AmazonDynamoDBClientBuilder.standard().build();
-    //private static DynamoDB dynamoDB = new DynamoDB(client);
+    private static AmazonDynamoDB client;
+    private static DynamoDB dynamoDB;
     //private static String tableName = "rerum-dev";
     //private String json_obj;
     //AmazonEC2 ec2 = AmazonEC2ClientBuilder.standard().withRegion(Regions.US_EAST_2).build();
@@ -1266,6 +1266,14 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @throws javax.servlet.ServletException
      */
     public void getByID() throws IOException, ServletException, Exception{
+        try {
+            client = AmazonDynamoDBClientBuilder.standard().build();
+            dynamoDB = new DynamoDB(client);
+        }
+        catch(Exception e){
+            System.out.println("AWS initialization error below");
+            System.out.println(e);
+        }   
         System.out.println("getByID Test again");
         request.setCharacterEncoding("UTF-8");
        // Table table = dynamoDB.getTable(tableName);
