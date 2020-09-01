@@ -35,7 +35,7 @@
             </interceptor-stack>
         </interceptors>
         <default-interceptor-ref name="myDefault" />
-        <action name="getByID" class="objectAction" method="getByID"></action>
+        <action name="getByID" class="ObjectAction" method="getByID"></action>
     </package>
     
     <!-- This package is open to public -->
@@ -48,7 +48,7 @@
             </interceptor-stack>
         </interceptors>
         <default-interceptor-ref name="myDefault" />
-        <action name="getAllAncestors" class="objectAction" method="getAllAncestors"></action>
+        <action name="getAllAncestors" class="ObjectAction" method="getAllAncestors"></action>
     </package>
     
     <!-- This package is open to public -->
@@ -61,7 +61,7 @@
             </interceptor-stack>
         </interceptors>
         <default-interceptor-ref name="myDefault" />
-        <action name="getAllDescendants" class="objectAction" method="getAllDescendants"></action>
+        <action name="getAllDescendants" class="ObjectAction" method="getAllDescendants"></action>
     </package>
     
     <!-- OBJECTS -->
@@ -80,23 +80,23 @@
         <default-interceptor-ref name="myDefault" />
         
         <!-- TPEN_NL support -->
-        <action name="getByProperties" class="objectAction" method="getByProperties"></action>
-        <action name="getByID" class="objectAction" method="getByID"></action>
-        <action name="getAllAncestors" class="objectAction" method="getAllAncestors"></action>
-        <action name="getAllDescendants" class="objectAction" method="getAllDescendants"></action>
-        <action name="create" class="objectAction" method="saveNewObject"></action>
+        <action name="getByProperties" class="ObjectAction" method="getByProperties"></action>
+        <action name="getByID" class="ObjectAction" method="getByID"></action>
+        <action name="getAllAncestors" class="ObjectAction" method="getAllAncestors"></action>
+        <action name="getAllDescendants" class="ObjectAction" method="getAllDescendants"></action>
+        <action name="create" class="ObjectAction" method="saveNewObject"></action>
         <!-- TPEN_NL support -->
-        <action name="batch_create" class="objectAction" method="batchSaveFromCopy"></action>
-        <action name="release" class="objectAction" method="releaseObject"></action>
-        <action name="patch" class="objectAction" method="patchUpdateObject"></action>
-        <action name="update" class="objectAction" method="putUpdateObject"></action>
-        <action name="overwrite" class="objectAction" method="overwriteObject"></action>
-        <action name="set" class="objectAction" method="patchSetUpdate"></action>
-        <action name="unset" class="objectAction" method="patchUnsetUpdate"></action>
-        <action name="delete" class="objectAction" method="deleteObject"></action>
-        <action name="ask" class="objectAction" method="askAuth0"></action>
-        <action name="refreshToken" class="objectAction" method="generateNewRefreshToken"></action>
-        <action name="accessToken" class="objectAction" method="generateNewAccessToken"></action>
+        <action name="batch_create" class="ObjectAction" method="batchSaveFromCopy"></action>
+        <action name="release" class="ObjectAction" method="releaseObject"></action>
+        <action name="patch" class="ObjectAction" method="patchUpdateObject"></action>
+        <action name="update" class="ObjectAction" method="putUpdateObject"></action>
+        <action name="overwrite" class="ObjectAction" method="overwriteObject"></action>
+        <action name="set" class="ObjectAction" method="patchSetUpdate"></action>
+        <action name="unset" class="ObjectAction" method="patchUnsetUpdate"></action>
+        <action name="delete" class="ObjectAction" method="deleteObject"></action>
+        <action name="ask" class="ObjectAction" method="askAuth0"></action>
+        <action name="refreshToken" class="ObjectAction" method="generateNewRefreshToken"></action>
+        <action name="accessToken" class="ObjectAction" method="generateNewAccessToken"></action>
     </package>
     
     <!-- ACCEPTED SERVER -->
