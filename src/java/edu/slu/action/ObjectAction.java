@@ -1436,7 +1436,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @respond with new @id in Location header and the new annotation in the body.
      */
     public void saveNewObject() throws IOException, ServletException, Exception{
-        System.out.println("create object");
+        System.out.println("create object Test again");
         
 
         if(null != processRequestBody(request, false) && methodApproval(request, "create")){
