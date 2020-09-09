@@ -1,3 +1,4 @@
+ci test
 # rerum_server
 Java web service for a RERUM compliant digital object repository.
 Visit [rerum.io](http://rerum.io) for more general information.
