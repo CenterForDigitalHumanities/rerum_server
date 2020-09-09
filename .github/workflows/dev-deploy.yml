@@ -5,8 +5,8 @@ name: Java CI
 
 on:
   # Commenting below trigger. Will update it for Prod deployments
-  # push:
-  #   branches: [ master ]
+  push:
+    branches: [ aws-deploy ]
   pull_request:
     branches: [ aws-deploy ]
   workflow_dispatch:
