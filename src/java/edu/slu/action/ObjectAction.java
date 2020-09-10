@@ -125,6 +125,7 @@ import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder
 import com.fasterxml.jackson.core.JsonParser;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import java.util.UUID;
 
 //import jdk.nashorn.internal.parser.JSONParser;
 //import java.util.UUID;
@@ -568,6 +569,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @throws Exception 
     */
     public Boolean methodApproval(HttpServletRequest http_request, String request_type) throws Exception{
+        System.out.println("Inside methodApproval ");
         String requestMethod = http_request.getMethod();
         String access_token = "";
         boolean auth_verified = false;
@@ -960,7 +962,10 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         response.setContentType("application/json; charset=utf-8"); // We create JSON objects for the return body in most cases.  
         response.addHeader("Access-Control-Allow-Headers", "Content-Type");
         response.addHeader("Access-Control-Allow-Methods", "GET,OPTIONS,HEAD,PUT,PATCH,DELETE,POST"); // Must have OPTIONS for @webanno 
+        System.out.println("requestBody in processRequestBody:"+requestBody);
         return requestBody;
+        
+      
     }
     
     /**
@@ -1035,11 +1040,11 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         if (response.containsHeader("Location")) {
             // add to existing header
             addLocation = ((HttpServletRequest) response).getHeader("Location").concat(",")
-                    .concat(obj.getString("@id"));
+                    .concat(obj.getString("id"));
         }
         else {
             // no header attached yet
-            addLocation = obj.getString("@id");
+            addLocation = obj.getString("id");
         }
         response.setHeader("Location", addLocation);
     }
@@ -1285,19 +1290,27 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             //find one version by objectID
             BasicDBObject query = new BasicDBObject();
            // query.append("_id", oid);
+           System.out.println("oid in getByID"+oid);
             Item item = table.getItem("id", oid);
+            //System.out.println("item in getByID"+item);
             //String json_obj = item.toJSON();
+            //Object jso = json_obj;
             //System.out.println("json_obj is:"+json_obj);
             //DBObject myAnno = mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query);
            
             if(null != item){
                 //BasicDBObject bdbo = (BasicDBObject) myAnno;
                 //JSONObject jo = JSONObject.fromObject(myAnno.toMap());
+                System.out.println("item in getByID" + item);
+                String json_obj = item.toJSON();
+                Object jso = json_obj;
                
-                JSONObject jo = JSONObject.fromObject(item);
-                String idForHeader = jo.getString("_id");
+                JSONObject jo = JSONObject.fromObject(jso);
+                System.out.println("jo in getByID"+jo);
+                String idForHeader = jo.getString("id");
+                System.out.println("idForHeader:"+idForHeader);
                 //The following are rerum properties that should be stripped.  They should be in __rerum.
-                jo.remove("_id");
+                //jo.remove("id");
                 jo.remove("addedTime");
                 jo.remove("originalAnnoID");
                 jo.remove("version");
@@ -1310,6 +1323,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 // will not be ld+json without it.
                 try {
                     addWebAnnotationHeaders(oid, isContainerType(jo), isLD(jo));
+                    System.out.println("jo in getByID before addlocationheader"+jo);
                     addLocationHeader(jo);
                     response.addHeader("Access-Control-Allow-Origin", "*");
                     response.setStatus(HttpServletResponse.SC_OK);
@@ -1451,10 +1465,21 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      */
     public void saveNewObject() throws IOException, ServletException, Exception{
         System.out.println("create object Test again");
+        try {
+            BasicAWSCredentials awsCreds = new BasicAWSCredentials("AKIAR6RLDQ4RCG5E7PV7", "yrBoWi2+Sz+ifMUczf8tHUX7SCe1Zv4PF66WQ52I");
+            client = AmazonDynamoDBClientBuilder.standard().withCredentials(new AWSStaticCredentialsProvider(awsCreds)).withRegion(Regions.US_EAST_1).build();
+            dynamoDB = new DynamoDB(client);
+            tableName = "rerum_dev";
+        }
+        catch(Exception e){
+            System.out.println("AWS initialization error below");
+            System.out.println(e);
+        } 
         
+        System.out.println("request:"+request);
 
         if(null != processRequestBody(request, false) && methodApproval(request, "create")){
-            //System.out.println("process and approval over.  actually save now");
+            System.out.println("process and approval over.  actually save now");
             JSONObject received = JSONObject.fromObject(content);
             if(received.containsKey("@id") && !received.getString("@id").isEmpty()){
                 writeErrorResponse("Object already contains an @id "+received.containsKey("@id")+".  Either remove this property for saving or if it is a RERUM object update instead.", HttpServletResponse.SC_BAD_REQUEST);
@@ -1469,30 +1494,31 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     // cubap: if we want, we can just copy the Slug to @id, warning
                     // if there was some mismatch, since versions are fine with that.
                 }
-                /*Table table = dynamoDB.getTable(tableName);
-                Item item = new Item().withPrimaryKey("ID", "friday-insert")
+               /* Table table = dynamoDB.getTable(tableName);
+                Item item = new Item().withPrimaryKey("id", "friday-insert")
                                       .withNumber("Misc_Field", 21004)
                                       .withNumber("Random_Char", 2500);
 	        table.putItem(item);*/
-                   // UUID uniqueKey = UUID.randomUUID();
-                   // String primaryKeyId = uniqueKey.toString();
-                   // Table table = dynamoDB.getTable(tableName);
-                   // String newPrimaryKeyId = Constant.RERUM_ID_PREFIX+primaryKeyId;
-                //Item item = new Item().withPrimaryKey("id", newPrimaryKeyId)
-                                     // .withJSON(Constant.COLLECTION_ANNOTATION, received.toString());
-	        //table.putItem(item);
-               String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
+                    UUID uniqueKey = UUID.randomUUID();
+                    String primaryKeyId = uniqueKey.toString();
+                   Table table = dynamoDB.getTable(tableName);
+                   String newPrimaryKeyId = Constant.RERUM_ID_PREFIX+primaryKeyId;
+               // Item item = new Item().withPrimaryKey("id", newPrimaryKeyId)
+                                     //.withJSON(Constant.COLLECTION_ANNOTATION, received.toString());
+	       // table.putItem(item);
+               //String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
                 //set @id from _id and update the annotation
-               BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
-                String newid = Constant.RERUM_ID_PREFIX+newObjectID;
-                //newid = Constant.RERUM_ID_PREFIX+primaryKeyId;
-                dboWithObjectID.put("@id", newid);
-                mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
-                JSONObject jo = new JSONObject();
-                JSONObject newObjWithID = JSONObject.fromObject(dboWithObjectID);
-                //item = table.getItem(Constant.COLLECTION_ANNOTATION, primaryKeyId);
-                //json_obj = item.toJSON();
-                JSONObject finalJSONObject = JSONObject.fromObject(newObjWithID);
+              // BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
+                //String newid = Constant.RERUM_ID_PREFIX+newObjectID;
+                String newid = Constant.RERUM_ID_PREFIX+primaryKeyId;
+                //dboWithObjectID.put("@id", newid);
+                //mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
+               JSONObject jo = new JSONObject();
+                //JSONObject newObjWithID = JSONObject.fromObject(dboWithObjectID);
+               //item = table.getItem("id", newPrimaryKeyId);
+               //String json_obj = item.toJSON();
+              // Object obj = json_obj;
+              JSONObject finalJSONObject = JSONObject.fromObject(received);
 
                 //JsonObject convertedObject = new Gson().fromJson(finalJSONObject, JsonObject.class);
                 expandPrivateRerumProperty(finalJSONObject);
@@ -2712,7 +2738,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             Algorithm algorithm = Algorithm.RSA256(pubKey, null);
             JWTVerifier verifier = JWT.require(algorithm).build(); //Reusable verifier instance
                //.withIssuer("auth0")
-            generatorID = receivedToken.getClaim(Constant.RERUM_AGENT_ClAIM).asString();
+             System.out.println("receivedToken is : "+receivedToken); 
+             String rerum_agent = Constant.RERUM_AGENT_CLAIM;
+             System.out.println("rerum_agent :"+rerum_agent);
+             System.out.println("receivedToken.getClaim(Constant.RERUM_AGENT_CLAIM) value is"+receivedToken.getClaim(Constant.RERUM_AGENT_CLAIM));
+            generatorID = receivedToken.getClaim(Constant.RERUM_AGENT_CLAIM).asString();
+            System.out.println("generatorID:"+generatorID);
             //System.out.println("Was I able to pull the agent claim from the token directly without userinfo without verifying?  Value below");
             //System.out.println("Value: "+generatorID);
             if(botCheck(generatorID)){
@@ -2775,6 +2806,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @return true if matched
      */
     private boolean botCheck(String agent) {
+        System.out.println("agent:"+agent);
+        System.out.println("getRerumProperty(\"bot_agent\"):"+getRerumProperty("bot_agent"));
         return agent.equals(getRerumProperty("bot_agent"));
     }
        

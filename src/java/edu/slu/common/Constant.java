@@ -30,7 +30,7 @@ public class Constant {
     public static final String RERUM_PREFIX="http://ec2-50-17-144-87.compute-1.amazonaws.com:8080/v1/";
     public static final String RERUM_ID_PREFIX="http://ec2-50-17-144-87.compute-1.amazonaws.com:8080/v1/id/";
     public static final String RERUM_AGENT_PREFIX="http://ec2-50-17-144-87.compute-1.amazonaws.com:8080/v1/agent/";
-    public static final String RERUM_AGENT_ClAIM="http://ec2-50-17-144-87.compute-1.amazonaws.com:8080/v1/agent";
+    public static final String RERUM_AGENT_CLAIM="http://devstore.rerum.io/v1/id/5a981d8de4b0e868d5cf0756";
     public static final String RERUM_CONTEXT="http://ec2-50-17-144-87.compute-1.amazonaws.com:8080/v1/context.json";
     public static final String RERUM_API_VERSION="1.0.0";
     //The location of the public API documents.  This is necessary for JSON-LD context purposes.
