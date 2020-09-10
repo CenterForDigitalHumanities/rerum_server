@@ -49,6 +49,8 @@
 
 package edu.slu.action;
 
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.regions.Regions;
 import com.auth0.jwk.Jwk;
 import com.auth0.jwk.JwkException;
@@ -1267,7 +1269,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      */
     public void getByID() throws IOException, ServletException, Exception{
         try {
-            client = AmazonDynamoDBClientBuilder.standard().withRegion(Regions.US_EAST_1).build();
+            BasicAWSCredentials awsCreds = new BasicAWSCredentials("AKIAR6RLDQ4RCG5E7PV7", "yrBoWi2+Sz+ifMUczf8tHUX7SCe1Zv4PF66WQ52I");
+            client = AmazonDynamoDBClientBuilder.standard().withCredentials(new AWSStaticCredentialsProvider(awsCreds)).withRegion(Regions.US_EAST_1).build();
             dynamoDB = new DynamoDB(client);
             tableName = "rerum_dev";
         }
@@ -1282,7 +1285,9 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             //find one version by objectID
             BasicDBObject query = new BasicDBObject();
            // query.append("_id", oid);
-            Item item = table.getItem(Constant.COLLECTION_ANNOTATION, oid);
+            Item item = table.getItem("id", oid);
+            //String json_obj = item.toJSON();
+            //System.out.println("json_obj is:"+json_obj);
             //DBObject myAnno = mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query);
            
             if(null != item){
