@@ -1269,7 +1269,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         try {
             client = AmazonDynamoDBClientBuilder.standard().build();
             dynamoDB = new DynamoDB(client);
-            tableName = "rerum-dev";
+            tableName = "rerum_dev";
         }
         catch(Exception e){
             System.out.println("AWS initialization error below");
