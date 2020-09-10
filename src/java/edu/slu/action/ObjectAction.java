@@ -1267,7 +1267,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      */
     public void getByID() throws IOException, ServletException, Exception{
         try {
-            client = AmazonDynamoDBClientBuilder.standard().build();
+            client = AmazonDynamoDBClientBuilder.standard().withRegion(Regions.US_EAST_1).build();
             dynamoDB = new DynamoDB(client);
             tableName = "rerum_dev";
         }
