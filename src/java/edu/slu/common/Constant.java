@@ -26,12 +26,12 @@ public class Constant {
     public static final String AGENT_DEPENDENCY_TYPE_USER = "user";
     public static final String AGENT_DEPENDENCY_TYPE_STRING = "string";
     
-    public static final String RERUM_BASE="http://ec2-50-17-144-87.compute-1.amazonaws.com:8080";
-    public static final String RERUM_PREFIX="http://ec2-50-17-144-87.compute-1.amazonaws.com:8080/v1/";
-    public static final String RERUM_ID_PREFIX="http://ec2-50-17-144-87.compute-1.amazonaws.com:8080/v1/id/";
-    public static final String RERUM_AGENT_PREFIX="http://ec2-50-17-144-87.compute-1.amazonaws.com:8080/v1/agent/";
-    public static final String RERUM_AGENT_CLAIM="http://devstore.rerum.io/v1/id/5a981d8de4b0e868d5cf0756";
-    public static final String RERUM_CONTEXT="http://ec2-50-17-144-87.compute-1.amazonaws.com:8080/v1/context.json";
+    public static final String RERUM_BASE="http://dynamo.rerum.io";
+    public static final String RERUM_PREFIX="http://dynamo.rerum.io/dynamo/";
+    public static final String RERUM_ID_PREFIX="http://dynamo.rerum.io/dynamo/id/";
+    public static final String RERUM_AGENT_PREFIX="http://dynamo.rerum.io/dynamo/agent/";
+    public static final String RERUM_AGENT_CLAIM="http://dynamo.rerum.io/dynamo/agent";
+    public static final String RERUM_CONTEXT="http://dynamo.rerum.io/dynamo/context.json";
     public static final String RERUM_API_VERSION="1.0.0";
     //The location of the public API documents.  This is necessary for JSON-LD context purposes.
     public static final String RERUM_API_DOC="https://github.com/CenterForDigitalHumanities/rerum_server/blob/master/API.md#__rerum";

@@ -65,7 +65,7 @@
     </package>
     
     <!-- OBJECTS -->
-    <package name="v1" extends="default" namespace="/api">
+    <package name="dynamo" extends="default" namespace="/api">
         <!-- INTERCEPTOR -->
         <interceptors>
             <interceptor name="getRequestClientInfoRecorder" class="edu.slu.filter.GetRequestClientInfoRecorder">
