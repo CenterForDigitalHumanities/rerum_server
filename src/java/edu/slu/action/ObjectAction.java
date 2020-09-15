@@ -1500,12 +1500,20 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                                       .withNumber("Random_Char", 2500);
 	        table.putItem(item);*/
                     UUID uniqueKey = UUID.randomUUID();
-                    String primaryKeyId = uniqueKey.toString();
+                    String uniquekeyid = uniqueKey.toString();
+                    String primaryKeyId = uniquekeyid.replace("-","");
+                    System.out.println("primaryKeyId in saveNewObject"+primaryKeyId);
                    Table table = dynamoDB.getTable(tableName);
                    String newPrimaryKeyId = Constant.RERUM_ID_PREFIX+primaryKeyId;
-               // Item item = new Item().withPrimaryKey("id", newPrimaryKeyId)
-                                     //.withJSON(Constant.COLLECTION_ANNOTATION, received.toString());
-	       // table.putItem(item);
+               Item item = new Item().withPrimaryKey("id", newPrimaryKeyId)
+                                     .withJSON(Constant.COLLECTION_ANNOTATION, received.toString());
+	        table.putItem(item);
+                item = table.getItem("id", newPrimaryKeyId);
+	        String json_obj;
+	        json_obj = item.toJSON();
+                
+                System.out.println("newPrimaryKeyId in saveNewObject :"+newPrimaryKeyId);
+                System.out.println("json_obj in saveNewObject :"+json_obj);
                //String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
                 //set @id from _id and update the annotation
               // BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
@@ -1518,12 +1526,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                //item = table.getItem("id", newPrimaryKeyId);
                //String json_obj = item.toJSON();
               // Object obj = json_obj;
-              JSONObject finalJSONObject = JSONObject.fromObject(received);
+              JSONObject finalJSONObject = JSONObject.fromObject(json_obj);
 
                 //JsonObject convertedObject = new Gson().fromJson(finalJSONObject, JsonObject.class);
                 expandPrivateRerumProperty(finalJSONObject);
                 jo.element("code", HttpServletResponse.SC_CREATED);
-                //newObjWithID.remove("_id");
+                //newid.remove("_id");
                 jo.element("new_obj_state", finalJSONObject);
                 jo.element("iiif_validation", iiif_validation_response);
                 //try {
