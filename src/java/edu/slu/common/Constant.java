@@ -27,9 +27,9 @@ public class Constant {
     public static final String AGENT_DEPENDENCY_TYPE_STRING = "string";
     
     public static final String RERUM_BASE="http://dynamo.rerum.io";
-    public static final String RERUM_PREFIX="http://devstore.rerum.io/v1/agent/";
+    public static final String RERUM_PREFIX="http://dynamo.rerum.io/dynamo/";
     public static final String RERUM_ID_PREFIX="http://dynamo.rerum.io/dynamo/id/";
-    public static final String RERUM_AGENT_PREFIX="http://dynamo.rerum.io/dynamo/agent/";
+    public static final String RERUM_AGENT_PREFIX="http://devstore.rerum.io/v1/agent/";
     public static final String RERUM_AGENT_CLAIM="http://devstore.rerum.io/v1/agent";
     public static final String RERUM_CONTEXT="http://dynamo.rerum.io/dynamo/context.json";
     public static final String RERUM_API_VERSION="1.0.0";
