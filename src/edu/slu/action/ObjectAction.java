@@ -1283,6 +1283,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             System.out.println("AWS initialization error below");
             System.out.println(e);
         }   
+        System.out.println("Shravya's test in getByID");
         System.out.println("getByID Test again");
         request.setCharacterEncoding("UTF-8");
        Table table = dynamoDB.getTable(tableName);
@@ -1464,6 +1465,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @respond with new @id in Location header and the new annotation in the body.
      */
     public void saveNewObject() throws IOException, ServletException, Exception{
+        
         System.out.println("create object Test again");
         try {
             BasicAWSCredentials awsCreds = new BasicAWSCredentials("AKIAR6RLDQ4RCG5E7PV7", "yrBoWi2+Sz+ifMUczf8tHUX7SCe1Zv4PF66WQ52I");
