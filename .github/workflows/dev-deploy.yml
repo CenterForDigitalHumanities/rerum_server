@@ -5,8 +5,8 @@ name: Java CI
 
 on:
   # Commenting below trigger. Will update it for Prod deployments
-  # push:
-  #   branches: [ master ]
+  push:
+    branches: [ aws-deploy ]
   pull_request:
     branches: [ aws-deploy ]
   workflow_dispatch:
@@ -31,7 +31,8 @@ jobs:
 
     - name: Copy files from S3
       run: |
-        aws s3 cp s3://rerum-server-files/rerum.properties /home/runner/work/rerum_server/rerum_server/src/java/
+        aws s3 cp s3://rerum-server-files/rerum.properties /home/runner/work/rerum_server/rerum_server/src/
+        aws s3 cp s3://rerum-server-files/log4j.properties /home/runner/work/rerum_server/rerum_server/web/WEB-INF/
     - name: Build with Ant
       run: ant -noinput -buildfile ga-build.xml
     - name: upoad artifacts
