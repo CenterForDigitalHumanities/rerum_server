@@ -1273,6 +1273,9 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @throws javax.servlet.ServletException
      */
     public void getByID() throws IOException, ServletException, Exception{
+        out = response.getWriter();
+        out.write("Hello Shravya");
+        oid=null;
         try {
             BasicAWSCredentials awsCreds = new BasicAWSCredentials("AKIAR6RLDQ4RCG5E7PV7", "yrBoWi2+Sz+ifMUczf8tHUX7SCe1Zv4PF66WQ52I");
             client = AmazonDynamoDBClientBuilder.standard().withCredentials(new AWSStaticCredentialsProvider(awsCreds)).withRegion(Regions.US_EAST_1).build();
