@@ -35,7 +35,7 @@
             </interceptor-stack>
         </interceptors>
         <default-interceptor-ref name="myDefault" />
-        <action name="getByID" class="ObjectAction" method="getByID"></action>
+        <action name="getByID" class="objectAction" method="getByID"></action>
     </package>
     
     <!-- This package is open to public -->
