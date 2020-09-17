@@ -1273,10 +1273,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @throws javax.servlet.ServletException
      */
     public void getByID() throws IOException, ServletException, Exception{
-        out = response.getWriter();
-        //out.write("Hello Shravya");
-        
-        try {
+         try {
             BasicAWSCredentials awsCreds = new BasicAWSCredentials("AKIAR6RLDQ4RCG5E7PV7", "yrBoWi2+Sz+ifMUczf8tHUX7SCe1Zv4PF66WQ52I");
             client = AmazonDynamoDBClientBuilder.standard().withCredentials(new AWSStaticCredentialsProvider(awsCreds)).withRegion(Regions.US_EAST_1).build();
             dynamoDB = new DynamoDB(client);
@@ -1286,7 +1283,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             System.out.println("AWS initialization error below");
             System.out.println(e);
         }   
-        System.out.println("Shravya's test in getByID");
         System.out.println("getByID Test again");
         request.setCharacterEncoding("UTF-8");
        Table table = dynamoDB.getTable(tableName);
@@ -1294,6 +1290,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             //find one version by objectID
             BasicDBObject query = new BasicDBObject();
            // query.append("_id", oid);
+           //System.out.println("oid in getByID"+oid);
            oid= Constant.RERUM_ID_PREFIX+oid;
            System.out.println("oid in getByID"+oid);
             Item item = table.getItem("id", oid);
@@ -1342,73 +1339,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             else{
                 writeErrorResponse("No object found with provided id '"+oid+"'.", HttpServletResponse.SC_NOT_FOUND);
             }
-        }
-    }
-    
-    /**
-     * Get annotations by given properties. 
-     * @param Object with key:value pairs with conditions to match against.
-     * @reutrn list of annotations that match the given conditions.  DO NOT RETURN DELETED OBJECTS
-     */
-    // This is not Web Annotation standard as the specifications states you respond with a single object, not a list.  Not sure what to do with these.
-    // @cubap answer: I asked on oac-discuss and was told Web Annotation hasn't handled lists yet, so just be nice.
-    public void getByProperties() throws IOException, ServletException, Exception{
-        //System.out.println("v1 getByProperties");
-        //want to use methodApproval(request, "get"), but these have body so...post
-        if(null != processRequestBody(request, false) && methodApproval(request, "getProps")){
-            JSONObject received = JSONObject.fromObject(content);
-            BasicDBObject query = new BasicDBObject();
-            Set<String> set_received = received.keySet();
-            for(String key : set_received){
-                query.append(key, received.get(key));
-            }
-            //Ignore deleted annotations! https://docs.mongodb.com/v2.6/reference/operator/query/exists/
-            JSONObject existsFlag = new JSONObject();
-            existsFlag.element("$exists", false);
-            query.append("__deleted", existsFlag);
-            List<DBObject> ls_result = mongoDBService.findByExample(Constant.COLLECTION_ANNOTATION, query);
-            JSONArray ja = new JSONArray();
-            for(DBObject dbo : ls_result){
-                BasicDBObject itemToAdd = (BasicDBObject) dbo;
-                itemToAdd.remove("_id");
-                itemToAdd.remove("addedTime"); // retained for legacy v0 objects
-                itemToAdd.remove("originalAnnoID");// retained for legacy v0 objects
-                itemToAdd.remove("version");// retained for legacy v0 objects
-                itemToAdd.remove("permission");// retained for legacy v0 objects
-                itemToAdd.remove("forkFromID"); // retained for legacy v0 objects
-                itemToAdd.remove("serverName");// retained for legacy v0 objects
-                itemToAdd.remove("serverIP");// retained for legacy v0 objects
-                expandPrivateRerumProperty(itemToAdd);
-                ja.add((BasicDBObject) itemToAdd);
-            }
-            try {
-                addSupportHeaders("", true);
-                addLocationHeader(ja);
-                response.addHeader("Access-Control-Allow-Origin", "*");
-                response.setStatus(HttpServletResponse.SC_OK);
-                out = response.getWriter();
-                out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(ja));
-            } 
-            catch (IOException ex) {
-                Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
-            }
-            /*
-            if(ls_result.size() > 0){
-                try {
-                    response.addHeader("Content-Type","application/json"); // not ld+json because it is an array
-                    response.addHeader("Access-Control-Allow-Origin", "*");
-                    response.setStatus(HttpServletResponse.SC_OK);
-                    out = response.getWriter();
-                    out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(ja));
-                } 
-                catch (IOException ex) {
-                    Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            }
-            else{
-                writeErrorResponse("Object(s) not found using provided properties '"+received+"'.", HttpServletResponse.SC_NOT_FOUND);
-            }
-            */
         }
     }
     
@@ -1470,7 +1400,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      */
     public void saveNewObject() throws IOException, ServletException, Exception{
         
-        System.out.println("create object Test again");
+       System.out.println("create object Test again");
         try {
             BasicAWSCredentials awsCreds = new BasicAWSCredentials("AKIAR6RLDQ4RCG5E7PV7", "yrBoWi2+Sz+ifMUczf8tHUX7SCe1Zv4PF66WQ52I");
             client = AmazonDynamoDBClientBuilder.standard().withCredentials(new AWSStaticCredentialsProvider(awsCreds)).withRegion(Regions.US_EAST_1).build();
