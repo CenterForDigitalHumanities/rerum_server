@@ -1274,7 +1274,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      */
     public void getByID() throws IOException, ServletException, Exception{
         out = response.getWriter();
-        out.write("Hello Shravya");
+        //out.write("Hello Shravya");
         
         try {
             BasicAWSCredentials awsCreds = new BasicAWSCredentials("AKIAR6RLDQ4RCG5E7PV7", "yrBoWi2+Sz+ifMUczf8tHUX7SCe1Zv4PF66WQ52I");
@@ -1294,6 +1294,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             //find one version by objectID
             BasicDBObject query = new BasicDBObject();
            // query.append("_id", oid);
+           oid= Constant.RERUM_ID_PREFIX+oid;
            System.out.println("oid in getByID"+oid);
             Item item = table.getItem("id", oid);
             //System.out.println("item in getByID"+item);
@@ -1510,10 +1511,10 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     System.out.println("primaryKeyId in saveNewObject"+primaryKeyId);
                    Table table = dynamoDB.getTable(tableName);
                    String newPrimaryKeyId = Constant.RERUM_ID_PREFIX+primaryKeyId;
-               Item item = new Item().withPrimaryKey("id", primaryKeyId)
+               Item item = new Item().withPrimaryKey("id", newPrimaryKeyId)
                                      .withJSON("alpha"/*Constant.COLLECTION_ANNOTATION*/, received.toString());
 	        table.putItem(item);
-                item = table.getItem("id", primaryKeyId);
+                item = table.getItem("id", newPrimaryKeyId);
 	        String json_obj;
 	        json_obj = item.toJSON();
                 
