@@ -1442,11 +1442,11 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     String primaryKeyId = uniquekeyid.replace("-","");
                     System.out.println("primaryKeyId in saveNewObject"+primaryKeyId);
                    Table table = dynamoDB.getTable(tableName);
-                   String newPrimaryKeyId = Constant.RERUM_ID_PREFIX+primaryKeyId;
-               Item item = new Item().withPrimaryKey("id", primaryKeyId)
+                   String newPrimaryKeyId = "http://ec2-50-17-144-87.compute-1.amazonaws.com:8080/v1/id/"+primaryKeyId;
+               Item item = new Item().withPrimaryKey("id", newPrimaryKeyId)
                                      .withJSON("alpha"/*Constant.COLLECTION_ANNOTATION*/, received.toString());
 	        table.putItem(item);
-                item = table.getItem("id", primaryKeyId);
+                item = table.getItem("id", newPrimaryKeyId);
 	        String json_obj;
 	        json_obj = item.toJSON();
                 
