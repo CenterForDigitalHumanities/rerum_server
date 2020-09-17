@@ -125,7 +125,9 @@ import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder
 import com.fasterxml.jackson.core.JsonParser;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import static java.lang.System.console;
 import java.util.UUID;
+import static jxl.biff.BaseCellFeatures.logger;
 
 //import jdk.nashorn.internal.parser.JSONParser;
 //import java.util.UUID;
@@ -1448,6 +1450,9 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
 	        String json_obj;
 	        json_obj = item.toJSON();
                 
+               logger.info(String.format("newPrimaryKeyId in saveNewObject = %s", newPrimaryKeyId));
+               logger.info(String.format("json_obj in saveNewObject = %s", json_obj));
+                //logger.debug("newPrimaryKeyId in saveNewObject {}.", newPrimaryKeyId);
                 System.out.println("newPrimaryKeyId in saveNewObject :"+newPrimaryKeyId);
                 System.out.println("json_obj in saveNewObject :"+json_obj);
                //String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
