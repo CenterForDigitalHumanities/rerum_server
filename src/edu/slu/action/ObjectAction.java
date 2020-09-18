@@ -1424,7 +1424,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 writeErrorResponse("Object already contains an @id "+received.containsKey("@id")+".  Either remove this property for saving or if it is a RERUM object update instead.", HttpServletResponse.SC_BAD_REQUEST);
             }
             else{
-                JSONObject iiif_validation_response = checkIIIFCompliance(received, true); //This boolean should be provided by the user somehow.  It is a intended-to-be-iiif flag
+                //JSONObject iiif_validation_response ;//checkIIIFCompliance(received, true); //This boolean should be provided by the user somehow.  It is a intended-to-be-iiif flag
                 received = configureRerumOptions(received, false);
                 received.remove("_id");
                 DBObject dbo = (DBObject) JSON.parse(received.toString());
@@ -1475,7 +1475,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 jo.element("code", HttpServletResponse.SC_CREATED);
                 //newid.remove("_id");
                 jo.element("new_obj_state", finalJSONObject);
-                jo.element("iiif_validation", iiif_validation_response);
+                //jo.element("iiif_validation", iiif_validation_response);
                 //try {
                 System.out.println("Object created: "+finalJSONObject);
                 try {
