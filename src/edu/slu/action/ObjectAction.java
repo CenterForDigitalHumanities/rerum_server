@@ -1451,8 +1451,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
 	        String json_obj;
 	        json_obj = item.toJSON();
                 
-               logger.info(String.format("newPrimaryKeyId in saveNewObject = %s", newPrimaryKeyId));
-               logger.info(String.format("json_obj in saveNewObject = %s", json_obj));
+               logger.debug(String.format("newPrimaryKeyId in saveNewObject = %s", newPrimaryKeyId));
+               logger.debug(String.format("json_obj in saveNewObject = %s", json_obj));
                 //logger.debug("newPrimaryKeyId in saveNewObject {}.", newPrimaryKeyId);
                 System.out.println("newPrimaryKeyId in saveNewObject :"+newPrimaryKeyId);
                 System.out.println("json_obj in saveNewObject :"+json_obj);
