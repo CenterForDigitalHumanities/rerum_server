@@ -1294,6 +1294,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
            // query.append("_id", oid);
            //System.out.println("oid in getByID"+oid);
            /*oid= Constant.RERUM_ID_PREFIX+oid;*/
+           oid="http://ec2-50-17-144-87.compute-1.amazonaws.com:8080/v1/id/"+oid;
            System.out.println("oid in getByID"+oid);
             Item item = table.getItem("id", oid);
             //System.out.println("item in getByID"+item);
