@@ -1813,6 +1813,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         //The application might want to throttle internally, but it can.
         Boolean historyNextUpdatePassed = false;
         System.out.println("put update object");
+        logger.debug(String.format("request in putUpdateObject = %s", request));
+
         if(null!= processRequestBody(request, true) && methodApproval(request, "update")){
             BasicDBObject query = new BasicDBObject();
             JSONObject received = JSONObject.fromObject(content); 
