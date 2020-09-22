@@ -1816,7 +1816,9 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         if(null!= processRequestBody(request, true) && methodApproval(request, "update")){
             BasicDBObject query = new BasicDBObject();
             JSONObject received = JSONObject.fromObject(content); 
-            if(received.containsKey("@id")){
+            logger.debug(String.format("received in putUpdateObject = %s", received));
+
+            if(received.containsKey("id")){
                 String updateHistoryNextID = received.getString("@id");
                 query.append("@id", updateHistoryNextID);
                 BasicDBObject originalObject = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The originalObject DB object
