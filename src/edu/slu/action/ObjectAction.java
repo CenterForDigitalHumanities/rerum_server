@@ -1816,6 +1816,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         if(null!= processRequestBody(request, true) && methodApproval(request, "update")){
             BasicDBObject query = new BasicDBObject();
             JSONObject received = JSONObject.fromObject(content); 
+            logger.debug(String.format("content in putUpdateObject = %s", content));
             logger.debug(String.format("received in putUpdateObject = %s", received));
 
             if(received.containsKey("id")){
