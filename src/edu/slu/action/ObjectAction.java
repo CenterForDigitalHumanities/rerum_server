@@ -965,6 +965,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         response.addHeader("Access-Control-Allow-Headers", "Content-Type");
         response.addHeader("Access-Control-Allow-Methods", "GET,OPTIONS,HEAD,PUT,PATCH,DELETE,POST"); // Must have OPTIONS for @webanno 
         System.out.println("requestBody in processRequestBody:"+requestBody);
+        requestBody=requestBody.replace("-","");
         return requestBody;
         
       
