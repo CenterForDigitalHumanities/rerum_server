@@ -1841,7 +1841,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             if(received.containsKey("id")){
                 String updateHistoryNextID = received.getString("id");
                 query.append("id", updateHistoryNextID);
-                BasicDBObject originalObject = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The originalObject DB object
                 Item origObj = table.getItem("id", updateHistoryNextID);
                 String json_obj = origObj.toJSON();
                 Object jso = json_obj;
@@ -1849,6 +1848,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 System.out.println("orig_obj in putUpdateObject"+orig_obj);
                 JSONObject updatedObj = (JSONObject) JSON.parse(received.toString());
                 System.out.println("updatedObj in putUpdateObject"+updatedObj);
+                BasicDBObject originalObject = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The originalObject DB object
+                
                 BasicDBObject updatedObject = (BasicDBObject) JSON.parse(received.toString()); //A copy of the original, this will be saved as a new object.  Make all edits to this variable.
                 JSONObject originalJSONObj = JSONObject.fromObject(originalObject);
                 boolean alreadyDeleted = checkIfDeleted(JSONObject.fromObject(originalObject));
