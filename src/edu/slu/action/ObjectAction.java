@@ -1817,6 +1817,16 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         Boolean historyNextUpdatePassed = false;
         System.out.println("put update object");
         logger.debug(String.format("request in putUpdateObject = %s", request));
+        try {
+            BasicAWSCredentials awsCreds = new BasicAWSCredentials("AKIAR6RLDQ4RCG5E7PV7", "yrBoWi2+Sz+ifMUczf8tHUX7SCe1Zv4PF66WQ52I");
+            client = AmazonDynamoDBClientBuilder.standard().withCredentials(new AWSStaticCredentialsProvider(awsCreds)).withRegion(Regions.US_EAST_1).build();
+            dynamoDB = new DynamoDB(client);
+            tableName = "rerum_dev";
+        }
+        catch(Exception e){
+            System.out.println("AWS initialization error below");
+            System.out.println(e);
+        } 
 
         if(null!= processRequestBody(request, true) && methodApproval(request, "update")){
             BasicDBObject query = new BasicDBObject();
@@ -1825,11 +1835,20 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             JSONObject received = JSONObject.fromObject(content); 
             logger.debug(String.format("content in putUpdateObject = %s", content));
             logger.debug(String.format("received in putUpdateObject = %s", received));
+            Table table = dynamoDB.getTable(tableName);
+
             //logger.debug(String.format("received.toString in putUpdateObject = %s", received.toString()));
             if(received.containsKey("id")){
-                String updateHistoryNextID = received.getString("@id");
-                query.append("@id", updateHistoryNextID);
+                String updateHistoryNextID = received.getString("id");
+                query.append("id", updateHistoryNextID);
                 BasicDBObject originalObject = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The originalObject DB object
+                Item origObj = table.getItem("id", updateHistoryNextID);
+                String json_obj = origObj.toJSON();
+                Object jso = json_obj;
+                JSONObject orig_obj = JSONObject.fromObject(jso);
+                System.out.println("orig_obj in putUpdateObject"+orig_obj);
+                JSONObject updatedObj = (JSONObject) JSON.parse(received.toString());
+                System.out.println("updatedObj in putUpdateObject"+updatedObj);
                 BasicDBObject updatedObject = (BasicDBObject) JSON.parse(received.toString()); //A copy of the original, this will be saved as a new object.  Make all edits to this variable.
                 JSONObject originalJSONObj = JSONObject.fromObject(originalObject);
                 boolean alreadyDeleted = checkIfDeleted(JSONObject.fromObject(originalObject));
