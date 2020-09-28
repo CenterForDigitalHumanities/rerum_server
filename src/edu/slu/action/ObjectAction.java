@@ -1823,7 +1823,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             JSONObject received = JSONObject.fromObject(content); 
             logger.debug(String.format("content in putUpdateObject = %s", content));
             logger.debug(String.format("received in putUpdateObject = %s", received));
-
+            logger.debug(String.format("received.toString in putUpdateObject = %s", received.toString()));
             if(received.containsKey("id")){
                 String updateHistoryNextID = received.getString("@id");
                 query.append("@id", updateHistoryNextID);
