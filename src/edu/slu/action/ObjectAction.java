@@ -127,6 +127,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import static java.lang.System.console;
 import java.util.UUID;
+import jdk.nashorn.internal.parser.JSONParser;
 import static jxl.biff.BaseCellFeatures.logger;
 
 //import jdk.nashorn.internal.parser.JSONParser;
@@ -1845,9 +1846,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 Item origObj = table.getItem("id", updateHistoryNextID);
                 String json_obj = origObj.toJSON();
                 Object jso = json_obj;
+                String received_str = received.toString();
+                //SONObject newjsonobj = new JSONObject(received_str);
+                //JSONParser parser = new JSONParser();
                 JSONObject orig_obj = JSONObject.fromObject(jso);
                 System.out.println("orig_obj in putUpdateObject"+orig_obj);
-                JSONObject updatedObj = (JSONObject) JSON.parse(received.toString());
+                JSONObject updatedObj = JSONObject.fromObject(received.toString());
                 System.out.println("updatedObj in putUpdateObject"+updatedObj);
                 BasicDBObject originalObject = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The originalObject DB object
                 
