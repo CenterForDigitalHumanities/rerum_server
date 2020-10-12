@@ -1884,11 +1884,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
            //System.out.println("id in the putUpdate request:"+json.get("id"));
             Table table = dynamoDB.getTable(tableName);
             
-UpdateItemSpec updateItemSpec = new UpdateItemSpec().withPrimaryKey("id", primarykey)
-                        .withUpdateExpression("set #na = :id").withNameMap(new NameMap().with("#na", "NewAttribute"))
-                        .withValueMap(new ValueMap().withString("alpha", newjson.toString())).withReturnValues(ReturnValue.ALL_NEW);;
-	            //.withJSON("alpha", newjson.toString());
-UpdateItemOutcome outcome = table.updateItem(updateItemSpec);
+            UpdateItemSpec updateItemSpec = new UpdateItemSpec().withPrimaryKey("id", primarykey)
+                    .withUpdateExpression("set #na = :alpha").withNameMap(new NameMap().with("#na", "NewAttribute"))
+                    .withValueMap(new ValueMap().withString("alpha", newjson.toString())).withReturnValues(ReturnValue.ALL_NEW);;
+            //.withJSON("alpha", newjson.toString());
+            UpdateItemOutcome outcome = table.updateItem(updateItemSpec);
+            System.out.println(outcome.getItem().toJSONPretty());
 
             //logger.debug(String.format("received.toString in putUpdateObject = %s", received.toString()));
             if(received.containsKey("id")){
