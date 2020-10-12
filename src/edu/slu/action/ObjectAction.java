@@ -1837,8 +1837,10 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             JSONObject received = JSONObject.fromObject(content); 
             logger.debug(String.format("content in putUpdateObject = %s", content));
             logger.debug(String.format("received in putUpdateObject = %s", received));
-            JSONArray updatedArray = (JSONArray) JSONSerializer.toJSON(received);
-            System.out.println(updatedArray.size());
+            //JSONArray updatedArray = (JSONArray) JSONSerializer.toJSON(content);
+            //System.out.println(updatedArray.size());
+            JSONArray array = JSONArray.fromObject(content);
+            System.out.println("JSONArray size"+array.size());
             //System.out.println();
             Table table = dynamoDB.getTable(tableName);
 
