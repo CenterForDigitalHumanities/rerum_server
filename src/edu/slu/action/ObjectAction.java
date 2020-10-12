@@ -1885,7 +1885,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             Table table = dynamoDB.getTable(tableName);
             
 UpdateItemSpec updateItemSpec = new UpdateItemSpec().withPrimaryKey("id", primarykey)
-                        .withUpdateExpression("set #na = :alpha").withNameMap(new NameMap().with("#na", "NewAttribute"))
+                        .withUpdateExpression("set #na = :id").withNameMap(new NameMap().with("#na", "NewAttribute"))
                         .withValueMap(new ValueMap().withJSON("alpha", newjson.toString())).withReturnValues(ReturnValue.ALL_NEW);;
 	            //.withJSON("alpha", newjson.toString());
 UpdateItemOutcome outcome = table.updateItem(updateItemSpec);
