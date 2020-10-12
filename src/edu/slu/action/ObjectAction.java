@@ -127,6 +127,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import static java.lang.System.console;
+import java.util.Iterator;
 import java.util.UUID;
 import jdk.nashorn.internal.parser.JSONParser;
 import static jxl.biff.BaseCellFeatures.logger;
@@ -1844,9 +1845,22 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             JSONArray updatedArray = JSONArray.fromObject(received);
             //JSONArray array = JSONArray.fromObject(content);
             System.out.println("JSONArray size"+updatedArray.size());
+            
             for(Object js : updatedArray){
                 JSONObject json = (JSONObject) js;
+                Iterator<String> keys = json.keys();
                 System.out.println(json.get("id"));
+                while(keys.hasNext()) {
+                 String key = keys.next();
+                 System.out.println("key:"+key);
+                    if (json.containsKey("id")) {
+                     // do something with jsonObject here      
+                     break;
+                    }
+                    else {
+                        System.out.println("other objects in the putUpdate request:"+json.get("id"));
+                    }
+                }
                 System.out.println("id in the putUpdate request:"+json.get("id"));
             }
             //System.out.println();
