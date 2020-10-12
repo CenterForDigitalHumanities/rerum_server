@@ -129,6 +129,7 @@ import static java.lang.System.console;
 import java.util.UUID;
 import jdk.nashorn.internal.parser.JSONParser;
 import static jxl.biff.BaseCellFeatures.logger;
+import net.sf.json.JSONSerializer;
 
 //import jdk.nashorn.internal.parser.JSONParser;
 //import java.util.UUID;
@@ -1836,6 +1837,9 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             JSONObject received = JSONObject.fromObject(content); 
             logger.debug(String.format("content in putUpdateObject = %s", content));
             logger.debug(String.format("received in putUpdateObject = %s", received));
+            JSONArray updatedArray = (JSONArray) JSONSerializer.toJSON(content);
+            System.out.println(updatedArray.size());
+            //System.out.println();
             Table table = dynamoDB.getTable(tableName);
 
             //logger.debug(String.format("received.toString in putUpdateObject = %s", received.toString()));
