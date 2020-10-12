@@ -1436,6 +1436,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             else{
                 //JSONObject iiif_validation_response ;//checkIIIFCompliance(received, true); //This boolean should be provided by the user somehow.  It is a intended-to-be-iiif flag
                 received = configureRerumOptions(received, false);
+                System.out.println("received after configureRerumOptions:"+received.toString());
                 received.remove("_id");
                 DBObject dbo = (DBObject) JSON.parse(received.toString());
                 if(null!=request.getHeader("Slug")){
