@@ -1821,6 +1821,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         //cubap: I'm not sold we have to do this. Our versioning would allow multiple changes. 
         //The application might want to throttle internally, but it can.
         Boolean historyNextUpdatePassed = false;
+        String primarykey ="";
+        JSONObject newjson = new JSONObject();
         System.out.println("put update object");
         logger.debug(String.format("request in putUpdateObject = %s", request));
         try {
@@ -1852,6 +1854,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 JSONObject json = (JSONObject) js;
                 Iterator<String> keys = json.keys();
                 System.out.println(json.get("id"));
+                primarykey = json.get("id").toString();
+                System.out.println("primarykey"+primarykey);
                 Map<String, Object> data = new HashMap<String, Object>();
                 while(keys.hasNext()) {
                  String key = keys.next();
@@ -1871,7 +1875,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         System.out.println("other objects in the putUpdate request:"+json.get("id"));
                     }*/
                 }
-                JSONObject newjson = new JSONObject();
+                //JSONObject newjson = new JSONObject();
                 newjson.putAll( data );
                 System.out.println("newjson in the putUpdate request:"+newjson);
                // System.out.println("id in the putUpdate request:"+json.get("id"));
@@ -1879,6 +1883,11 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             //System.out.println();
            //System.out.println("id in the putUpdate request:"+json.get("id"));
             Table table = dynamoDB.getTable(tableName);
+            
+UpdateItemSpec updateItemSpec = new UpdateItemSpec().withPrimaryKey("id", primarykey)
+                        .withValueMap(new ValueMap().withJSON("alpha", newjson.toString()));
+	            //.withJSON("alpha", newjson.toString());
+UpdateItemOutcome outcome = table.updateItem(updateItemSpec);
 
             //logger.debug(String.format("received.toString in putUpdateObject = %s", received.toString()));
             if(received.containsKey("id")){
