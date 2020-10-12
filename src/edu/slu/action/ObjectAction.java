@@ -1853,13 +1853,17 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 while(keys.hasNext()) {
                  String key = keys.next();
                  System.out.println("key:"+key);
-                    if (json.containsKey("id")) {
+                 //System.out.println("jsonObject.get(key) :"+json.get(key));
+                 if(!key.equals("id")){
+                     System.out.println("jsonObject.get(key) :"+json.get(key));
+                 }
+                   /* if (json.containsKey("id")) {
                      // do something with jsonObject here      
                      break;
                     }
                     else {
                         System.out.println("other objects in the putUpdate request:"+json.get("id"));
-                    }
+                    }*/
                 }
                 System.out.println("id in the putUpdate request:"+json.get("id"));
             }
