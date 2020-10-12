@@ -127,7 +127,9 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import static java.lang.System.console;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.UUID;
 import jdk.nashorn.internal.parser.JSONParser;
 import static jxl.biff.BaseCellFeatures.logger;
@@ -1850,14 +1852,16 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 JSONObject json = (JSONObject) js;
                 Iterator<String> keys = json.keys();
                 System.out.println(json.get("id"));
+                Map<String, Object> data = new HashMap<String, Object>();
                 while(keys.hasNext()) {
                  String key = keys.next();
+                 //String key = keys.get(0x0);
                  System.out.println("key:"+key);
                  //System.out.println("jsonObject.get(key) :"+json.get(key));
                  if(!key.equals("id")){
                      System.out.println("jsonObject.get(key) :"+json.get(key));
-                     JSONObject newjson = (JSONObject) json.get(key);
-                     System.out.println("newjson :"+newjson);
+                     data.put( key, json.get(key) );
+                     
                  }
                    /* if (json.containsKey("id")) {
                      // do something with jsonObject here      
@@ -1867,9 +1871,13 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         System.out.println("other objects in the putUpdate request:"+json.get("id"));
                     }*/
                 }
-                System.out.println("id in the putUpdate request:"+json.get("id"));
+                JSONObject newjson = new JSONObject();
+                newjson.putAll( data );
+                System.out.println("newjson in the putUpdate request:"+newjson);
+               // System.out.println("id in the putUpdate request:"+json.get("id"));
             }
             //System.out.println();
+           //System.out.println("id in the putUpdate request:"+json.get("id"));
             Table table = dynamoDB.getTable(tableName);
 
             //logger.debug(String.format("received.toString in putUpdateObject = %s", received.toString()));
