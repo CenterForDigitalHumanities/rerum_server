@@ -1452,6 +1452,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     String primaryKeyId = uniquekeyid.replace("-","");
                     System.out.println("primaryKeyId in saveNewObject"+primaryKeyId);
                    Table table = dynamoDB.getTable(tableName);
+                   System.out.println("received.toString()"+received.toString());
                    String newPrimaryKeyId = "http://ec2-50-17-144-87.compute-1.amazonaws.com:8080/v1/id/"+primaryKeyId;
                Item item = new Item().withPrimaryKey("id", newPrimaryKeyId)
                                      .withJSON("alpha"/*Constant.COLLECTION_ANNOTATION*/, received.toString());
@@ -1887,12 +1888,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             String prev_json_obj;
 	    prev_json_obj = item.toJSON();
             
-            UpdateItemSpec updateItemSpec = new UpdateItemSpec().withPrimaryKey("id", primarykey)
+           /* UpdateItemSpec updateItemSpec = new UpdateItemSpec().withPrimaryKey("id", primarykey)
                     .withUpdateExpression("set alpha = :alpha")
                     .withValueMap(new ValueMap().withJSON(":alpha", newjson.toString())).withReturnValues(ReturnValue.ALL_NEW);;
             //.withJSON("alpha", newjson.toString());
             UpdateItemOutcome outcome = table.updateItem(updateItemSpec);
-            System.out.println(outcome.getItem().toJSONPretty());
+            System.out.println(outcome.getItem().toJSONPretty());*/
 
             //logger.debug(String.format("received.toString in putUpdateObject = %s", received.toString()));
             if(received.containsKey("id")){
