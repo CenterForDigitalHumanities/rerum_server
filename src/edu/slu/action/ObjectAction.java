@@ -1847,7 +1847,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             for(Object js : updatedArray){
                 JSONObject json = (JSONObject) js;
                 System.out.println(json.get("id"));
-                System.out.println(json.get(1));
+                System.out.println("id in the putUpdate request:"+json.get(1));
             }
             //System.out.println();
             Table table = dynamoDB.getTable(tableName);
