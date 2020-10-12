@@ -457,7 +457,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
              //Hitting this means we are updating an object that did not have __rerum history.  This is an external object update.
                 //FIXME @cubap @theHabes
                 history_prime = "root";
-                history_previous = received.getString("@id");
+                //history_previous = received.getString("@id");
+                history_previous = received.getString("id");
             }
             else{
              //Hitting this means we are are saving an object that did not have __rerum history.  This is normal   
@@ -1880,7 +1881,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 }
                 //JSONObject newjson = new JSONObject();
                 newjson.putAll( data );
-                newjson = configureRerumOptions(newjson, false);
+                newjson = configureRerumOptions(newjson, true);
                 System.out.println("newjson in the putUpdate request:"+newjson);
                // System.out.println("id in the putUpdate request:"+json.get("id"));
             }
