@@ -1840,10 +1840,14 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             logger.debug(String.format("received in putUpdateObject = %s", received));
             //JSONArray updatedArray = (JSONArray) JSONSerializer.toJSON(content);
             //System.out.println(updatedArray.size());
-          //JSONArray updatedArray = JSONArray.fromJSONString(content);
+          //JSONArray updatedArray = JSONArray.fromString(content);
             JSONArray updatedArray = JSONArray.fromObject(received);
             //JSONArray array = JSONArray.fromObject(content);
             System.out.println("JSONArray size"+updatedArray.size());
+            for(Object js : updatedArray){
+                JSONObject json = (JSONObject) js;
+                System.out.println(json.get("id"));
+            }
             //System.out.println();
             Table table = dynamoDB.getTable(tableName);
 
