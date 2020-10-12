@@ -1889,7 +1889,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             
             UpdateItemSpec updateItemSpec = new UpdateItemSpec().withPrimaryKey("id", primarykey)
                     .withUpdateExpression("set alpha = :alpha")
-                    .withValueMap(new ValueMap().withString(":alpha", newjson.toString())).withReturnValues(ReturnValue.ALL_NEW);;
+                    .withValueMap(new ValueMap().withJSON(":alpha", newjson.toString())).withReturnValues(ReturnValue.ALL_NEW);;
             //.withJSON("alpha", newjson.toString());
             UpdateItemOutcome outcome = table.updateItem(updateItemSpec);
             System.out.println(outcome.getItem().toJSONPretty());
