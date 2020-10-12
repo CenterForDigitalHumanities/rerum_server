@@ -1853,7 +1853,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             JSONArray updatedArray = JSONArray.fromObject(received);
             //JSONArray array = JSONArray.fromObject(content);
             System.out.println("JSONArray size"+updatedArray.size());
-            
+            received = configureRerumOptions(received, true);
             for(Object js : updatedArray){
                 JSONObject json = (JSONObject) js;
                 Iterator<String> keys = json.keys();
@@ -1881,7 +1881,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 }
                 //JSONObject newjson = new JSONObject();
                 newjson.putAll( data );
-                newjson = configureRerumOptions(received, true);
+                //newjson = configureRerumOptions(received, true);
                 System.out.println("newjson in the putUpdate request:"+newjson);
                // System.out.println("id in the putUpdate request:"+json.get("id"));
             }
