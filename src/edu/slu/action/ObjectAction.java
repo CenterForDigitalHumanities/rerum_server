@@ -1881,7 +1881,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 }
                 //JSONObject newjson = new JSONObject();
                 newjson.putAll( data );
-                newjson = configureRerumOptions(received, true);
+                //newjson = configureRerumOptions(received, true);
+                newjson = configureRerumOptions(received, false);
                 System.out.println("newjson in the putUpdate request:"+newjson);
                // System.out.println("id in the putUpdate request:"+json.get("id"));
             }
