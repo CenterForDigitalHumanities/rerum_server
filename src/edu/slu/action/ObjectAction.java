@@ -1429,6 +1429,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         if(null != processRequestBody(request, false) && methodApproval(request, "create")){
             System.out.println("process and approval over.  actually save now");
             JSONObject received = JSONObject.fromObject(content);
+            System.out.println("received.toString() at the top level before configureRerumOptions"+received.toString());
             if(received.containsKey("@id") && !received.getString("@id").isEmpty()){
                 writeErrorResponse("Object already contains an @id "+received.containsKey("@id")+".  Either remove this property for saving or if it is a RERUM object update instead.", HttpServletResponse.SC_BAD_REQUEST);
             }
