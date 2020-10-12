@@ -124,6 +124,7 @@ import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
 import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder;
 import com.fasterxml.jackson.core.JsonParser;
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import static java.lang.System.console;
 import java.util.UUID;
@@ -1839,8 +1840,10 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             logger.debug(String.format("received in putUpdateObject = %s", received));
             //JSONArray updatedArray = (JSONArray) JSONSerializer.toJSON(content);
             //System.out.println(updatedArray.size());
-            JSONArray array = JSONArray.fromObject(content);
-            System.out.println("JSONArray size"+array.size());
+          //JSONArray updatedArray = JSONArray.fromJSONString(content);
+            JSONArray updatedArray = JSONArray.fromObject(received);
+            //JSONArray array = JSONArray.fromObject(content);
+            System.out.println("JSONArray size"+updatedArray.size());
             //System.out.println();
             Table table = dynamoDB.getTable(tableName);
 
