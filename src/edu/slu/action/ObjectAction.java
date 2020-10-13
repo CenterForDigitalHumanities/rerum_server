@@ -444,7 +444,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     history_prime = history.getString("prime");
                 }
                 //Either way, we know the previous value shold be the @id of the object received here. 
-                history_previous = received.getString("@id");
+                //history_previous = received.getString("@id");
+                history_previous = received.getString("id");
             }
             else{
                 //Hitting this means we are saving a new object and found that __rerum.history existed.  We don't trust it.
@@ -1882,7 +1883,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 //JSONObject newjson = new JSONObject();
                 newjson.putAll( data );
                 //newjson = configureRerumOptions(received, true);
-               newjson = configureRerumOptions(newjson, false);
+               newjson = configureRerumOptions(newjson, true);
                 System.out.println("newjson in the putUpdate request:"+newjson);
                // System.out.println("id in the putUpdate request:"+json.get("id"));
             }
