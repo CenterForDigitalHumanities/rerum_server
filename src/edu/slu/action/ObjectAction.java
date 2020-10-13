@@ -2042,7 +2042,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 updatedJson.putAll( data );
                 //newjson = configureRerumOptions(received, true);
                updatedJson = configureRerumOptions(updatedJson, false);
-                System.out.println("updateJson in the putUpdate request:"+updatedJson);
+                System.out.println("updateJson in the overwrite request:"+updatedJson);
                 //query.append("@id", receivedID);
                 //BasicDBObject originalObject = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The originalObject DB object
               //  JSONObject originalJSONObj = JSONObject.fromObject(originalObject);
@@ -2052,8 +2052,10 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                // boolean isGenerator = (origObjGenerator.equals(generatorID));
                Item item = table.getItem("id", primarykey);
                String prev_json_obj = item.toJSON();
+               System.out.println("item"+item);
+               System.out.println("prev_json_obj"+prev_json_obj);
                Object jso = prev_json_obj;
-               
+               System.out.println("jso"+jso);
                
                JSONObject originalJSONObj = JSONObject.fromObject(jso);  
                System.out.println("originalJSONObj in overwrite :"+originalJSONObj);
@@ -2072,7 +2074,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     writeErrorResponse("The object you are trying to overwrite was not created by you.  Fork to make changes.", HttpServletResponse.SC_UNAUTHORIZED);
                 }
                 else{
-                    if(null != item){
+                    if(null != jso){
                         JSONObject newObject = updatedJson;//The edited original object meant to be saved as a new object (versioning)
                         newObject.remove("_id");
                         JSONObject originalProperties = originalJSONObj.getJSONObject("__rerum");
