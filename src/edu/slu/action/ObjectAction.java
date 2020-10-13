@@ -1994,18 +1994,74 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      */
     public void overwriteObject()throws IOException, ServletException, Exception{
         System.out.println("overwrite object");
+        try {
+            BasicAWSCredentials awsCreds = new BasicAWSCredentials("AKIAR6RLDQ4RCG5E7PV7", "yrBoWi2+Sz+ifMUczf8tHUX7SCe1Zv4PF66WQ52I");
+            client = AmazonDynamoDBClientBuilder.standard().withCredentials(new AWSStaticCredentialsProvider(awsCreds)).withRegion(Regions.US_EAST_1).build();
+            dynamoDB = new DynamoDB(client);
+            tableName = "rerum_dev";
+        }
+        catch(Exception e){
+            System.out.println("AWS initialization error below");
+            System.out.println(e);
+        } 
         if(null!= processRequestBody(request, true) && methodApproval(request, "overwrite")){
-            BasicDBObject query = new BasicDBObject();
+            //BasicDBObject query = new BasicDBObject();
             JSONObject received = JSONObject.fromObject(content); 
+            System.out.println("content in overwrite Object"+content);
+            System.out.println("received in overwrite Object"+received);
+            JSONObject updatedJson = new JSONObject();
+            String primarykey = "";
+            Table table = dynamoDB.getTable(tableName);
             if(received.containsKey("@id")){
                 String receivedID = received.getString("@id");
-                query.append("@id", receivedID);
-                BasicDBObject originalObject = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The originalObject DB object
-                JSONObject originalJSONObj = JSONObject.fromObject(originalObject);
-                boolean alreadyDeleted = checkIfDeleted(JSONObject.fromObject(originalObject));
-                boolean isReleased = checkIfReleased(JSONObject.fromObject(originalObject));
-                String origObjGenerator = originalJSONObj.getJSONObject("__rerum").getString("generatedBy");
-                boolean isGenerator = (origObjGenerator.equals(generatorID));
+                 //JSONObject json = (JSONObject) js;
+                Iterator<String> keys = received.keys();
+                System.out.println(received.get("@id"));
+                primarykey = received.get("@id").toString();
+                System.out.println("primarykey"+primarykey);
+                Map<String, Object> data = new HashMap<String, Object>();
+                while(keys.hasNext()) {
+                 String key = keys.next();
+                 //String key = keys.get(0x0);
+                 System.out.println("key:"+key);
+                 //System.out.println("jsonObject.get(key) :"+json.get(key));
+                 if(!key.equals("@id")){
+                     System.out.println("jsonObject.get(key) :"+received.get(key));
+                     data.put( key, received.get(key) );
+                     
+                 }
+                   /* if (json.containsKey("id")) {
+                     // do something with jsonObject here      
+                     break;
+                    }
+                    else {
+                        System.out.println("other objects in the putUpdate request:"+json.get("id"));
+                    }*/
+                }
+                //JSONObject newjson = new JSONObject();
+                updatedJson.putAll( data );
+                //newjson = configureRerumOptions(received, true);
+               updatedJson = configureRerumOptions(updatedJson, false);
+                System.out.println("updateJson in the putUpdate request:"+updatedJson);
+                //query.append("@id", receivedID);
+                //BasicDBObject originalObject = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The originalObject DB object
+              //  JSONObject originalJSONObj = JSONObject.fromObject(originalObject);
+               // boolean alreadyDeleted = checkIfDeleted(JSONObject.fromObject(originalObject));
+               // boolean isReleased = checkIfReleased(JSONObject.fromObject(originalObject));
+               // String origObjGenerator = originalJSONObj.getJSONObject("__rerum").getString("generatedBy");
+               // boolean isGenerator = (origObjGenerator.equals(generatorID));
+               Item item = table.getItem("id", primarykey);
+               String prev_json_obj = item.toJSON();
+               Object jso = prev_json_obj;
+               
+               
+               JSONObject originalJSONObj = JSONObject.fromObject(jso);  
+               System.out.println("originalJSONObj in overwrite :"+originalJSONObj);
+               boolean alreadyDeleted = checkIfDeleted(JSONObject.fromObject(jso));
+               boolean isReleased = checkIfReleased(JSONObject.fromObject(jso));
+               String origObjGenerator = originalJSONObj.getJSONObject("__rerum").getString("generatedBy");
+               boolean isGenerator = (origObjGenerator.equals(generatorID));
+	       
                 if(alreadyDeleted){
                     writeErrorResponse("The object you are trying to overwrite is deleted.", HttpServletResponse.SC_FORBIDDEN);
                 }
@@ -2016,8 +2072,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     writeErrorResponse("The object you are trying to overwrite was not created by you.  Fork to make changes.", HttpServletResponse.SC_UNAUTHORIZED);
                 }
                 else{
-                    if(null != originalObject){
-                        JSONObject newObject = received;//The edited original object meant to be saved as a new object (versioning)
+                    if(null != item){
+                        JSONObject newObject = updatedJson;//The edited original object meant to be saved as a new object (versioning)
                         newObject.remove("_id");
                         JSONObject originalProperties = originalJSONObj.getJSONObject("__rerum");
                         
@@ -2026,8 +2082,13 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         String formattedOverwrittenDateTime = dt.format(dtFormat);
                         originalProperties.getJSONObject("__rerum").element("isOverwritten", formattedOverwrittenDateTime);
                         newObject.element("__rerum", originalProperties);
-                        DBObject udbo = (DBObject) JSON.parse(newObject.toString());
-                        mongoDBService.update(Constant.COLLECTION_ANNOTATION, originalObject, udbo);
+                        //DBObject udbo = (DBObject) JSON.parse(newObject.toString());
+                        //mongoDBService.update(Constant.COLLECTION_ANNOTATION, originalObject, udbo);
+                        UpdateItemSpec updateItemSpec = new UpdateItemSpec().withPrimaryKey("id", primarykey)
+                                .withUpdateExpression("set alpha = :alpha")
+                                .withValueMap(new ValueMap().withJSON(":alpha", newObject.toString())).withReturnValues(ReturnValue.ALL_NEW);
+                        UpdateItemOutcome outcome = table.updateItem(updateItemSpec);
+                        System.out.println(outcome.getItem().toJSONPretty());
                         JSONObject jo = new JSONObject();
                         JSONObject iiif_validation_response = checkIIIFCompliance(receivedID, "2.1");
                         System.out.println("object overwritten: "+receivedID);
