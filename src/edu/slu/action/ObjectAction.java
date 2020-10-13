@@ -1011,7 +1011,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         if(!"".equals(etag)){
             response.addHeader("Etag", etag);
         }
-        
+        System.out.println("End of addWebAnnotationHeaders ");
     }
     
      /**
@@ -1051,14 +1051,18 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         String addLocation;
         // Warning: if there are multiple "Location" headers only one will be returned
         // our practice of making a list protects from this.
+        System.out.println("Inside addLocationHeader");
         if (response.containsHeader("Location")) {
             // add to existing header
             addLocation = ((HttpServletRequest) response).getHeader("Location").concat(",")
                     .concat(obj.getString("id"));
+            System.out.println("addLocation"+addLocation);
         }
         else {
             // no header attached yet
             addLocation = obj.getString("id");
+                        System.out.println("addLocation"+addLocation);
+
         }
         response.setHeader("Location", addLocation);
     }
