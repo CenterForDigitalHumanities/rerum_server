@@ -991,6 +991,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      */
     private void addWebAnnotationHeaders(String etag, Boolean isContainerType, Boolean isLD){
         response.setContentType("UTF-8");
+        System.out.println("inside addWebAnnotationHeaders ");
         if(isLD){
             response.addHeader("Content-Type", "application/ld+json;charset=utf-8;profile=\"http://www.w3.org/ns/anno.jsonld\""); 
         } 
@@ -2109,6 +2110,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         jo.element("new_obj_state", newObject); //FIXME: @webanno standards say this should be the response.
                         //jo.element("iiif_validation", iiif_validation_response);
                         try {
+                            System.out.println("Inside the try block");
                             addWebAnnotationHeaders(receivedID, isContainerType(newObject), isLD(newObject));
                             addLocationHeader(newObject);
                             response.addHeader("Access-Control-Allow-Origin", "*");
