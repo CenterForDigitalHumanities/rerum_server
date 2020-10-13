@@ -2101,13 +2101,13 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         UpdateItemOutcome outcome = table.updateItem(updateItemSpec);
                         System.out.println(outcome.getItem().toJSONPretty());
                         JSONObject jo = new JSONObject();
-                        JSONObject iiif_validation_response = checkIIIFCompliance(receivedID, "2.1");
+                        //JSONObject iiif_validation_response = checkIIIFCompliance(receivedID, "2.1");
                         System.out.println("object overwritten: "+receivedID);
-                        expandPrivateRerumProperty(newObject);
+                        //expandPrivateRerumProperty(newObject);
                         //newObject.remove("_id");
                         jo.element("code", HttpServletResponse.SC_OK);
                         jo.element("new_obj_state", newObject); //FIXME: @webanno standards say this should be the response.
-                        jo.element("iiif_validation", iiif_validation_response);
+                        //jo.element("iiif_validation", iiif_validation_response);
                         try {
                             addWebAnnotationHeaders(receivedID, isContainerType(newObject), isLD(newObject));
                             addLocationHeader(newObject);
