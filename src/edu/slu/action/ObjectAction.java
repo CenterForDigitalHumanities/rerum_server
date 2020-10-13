@@ -1062,6 +1062,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         else {
             // no header attached yet
             System.out.println("Inside no header");
+            System.out.println("obj inside no header"+obj)
             addLocation = obj.getString("id");
             System.out.println("addLocation" + addLocation);
 
