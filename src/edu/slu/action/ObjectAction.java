@@ -2108,6 +2108,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                                 .withValueMap(new ValueMap().withJSON(":alpha", newObject.toString())).withReturnValues(ReturnValue.ALL_NEW);
                         UpdateItemOutcome outcome = table.updateItem(updateItemSpec);
                         System.out.println(outcome.getItem().toJSONPretty());
+                        Item updatedItem = table.getItem("id", primarykey);
+                        System.out.println("item in getByID" + item);
+                        String json_obj = updatedItem.toJSON();
+                        Object tempjso = json_obj;
+               
+                        newObject = JSONObject.fromObject(tempjso);
                         JSONObject jo = new JSONObject();
                         //JSONObject iiif_validation_response = checkIIIFCompliance(receivedID, "2.1");
                         System.out.println("object overwritten: "+receivedID);
