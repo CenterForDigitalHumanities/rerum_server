@@ -2064,6 +2064,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                boolean isReleased = checkIfReleased(JSONObject.fromObject(jso));
                System.out.println("isReleased in overwrite :"+isReleased);
                String origObjGenerator = originalJSONObj.getJSONObject("__rerum").getString("generatedBy");
+               System.out.println("origObjGenerator in overwrite :" + origObjGenerator);
+               System.out.println("isGenerator in overwrite :" + generatorID);
                boolean isGenerator = (origObjGenerator.equals(generatorID));
                System.out.println("isGenerator in overwrite :" + isGenerator);
 
