@@ -437,7 +437,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 //This means we are configuring from the update action and we have passed in a clone of the originating object (with its @id) that contained a __rerum.history
                 if(history.getString("prime").equals("root")){
                     //Hitting this case means we are updating from the prime object, so we can't pass "root" on as the prime value
-                    history_prime = received.getString("@id");
+                    history_prime = received.getString("id");
                 }
                 else{
                     //Hitting this means we are updating an object that already knows its prime, so we can pass on the prime value
