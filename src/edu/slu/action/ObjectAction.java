@@ -2063,11 +2063,11 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                System.out.println("alreadyDeleted in overwrite :"+alreadyDeleted);
                boolean isReleased = checkIfReleased(JSONObject.fromObject(jso));
                System.out.println("isReleased in overwrite :"+isReleased);
-               String origObjGenerator = originalJSONObj.getJSONObject("__rerum").getString("generatedBy");
-               System.out.println("origObjGenerator in overwrite :" + origObjGenerator);
-               System.out.println("isGenerator in overwrite :" + generatorID);
-               boolean isGenerator = (origObjGenerator.equals(generatorID));
-               System.out.println("isGenerator in overwrite :" + isGenerator);
+               //String origObjGenerator = originalJSONObj.getJSONObject("__rerum").getString("generatedBy");
+               //System.out.println("origObjGenerator in overwrite :" + origObjGenerator);
+               //System.out.println("generatorID in overwrite :" + generatorID);
+               //boolean isGenerator = (origObjGenerator.equals(generatorID));
+               //System.out.println("isGenerator in overwrite :" + isGenerator);
 
                 if(alreadyDeleted){
                     writeErrorResponse("The object you are trying to overwrite is deleted.", HttpServletResponse.SC_FORBIDDEN);
@@ -2075,9 +2075,9 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 else if(isReleased){
                     writeErrorResponse("The object you are trying to overwrite is released.  Fork to make changes.", HttpServletResponse.SC_FORBIDDEN);
                 }
-                else if(!isGenerator){
+                /*else if(!isGenerator){
                     writeErrorResponse("The object you are trying to overwrite was not created by you.  Fork to make changes.", HttpServletResponse.SC_UNAUTHORIZED);
-                }
+                }*/
                 else{
                     if(null != jso){
                         JSONObject newObject = updatedJson;//The edited original object meant to be saved as a new object (versioning)
