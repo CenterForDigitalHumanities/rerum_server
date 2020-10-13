@@ -2104,7 +2104,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         JSONObject iiif_validation_response = checkIIIFCompliance(receivedID, "2.1");
                         System.out.println("object overwritten: "+receivedID);
                         expandPrivateRerumProperty(newObject);
-                        newObject.remove("_id");
+                        //newObject.remove("_id");
                         jo.element("code", HttpServletResponse.SC_OK);
                         jo.element("new_obj_state", newObject); //FIXME: @webanno standards say this should be the response.
                         jo.element("iiif_validation", iiif_validation_response);
