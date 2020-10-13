@@ -2057,13 +2057,16 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                Object jso = prev_json_obj;
                System.out.println("jso"+jso);
                
-               JSONObject originalJSONObj = JSONObject.fromObject(prev_json_obj);  
+               JSONObject originalJSONObj = JSONObject.fromObject(jso);  
                System.out.println("originalJSONObj in overwrite :"+originalJSONObj);
                boolean alreadyDeleted = checkIfDeleted(JSONObject.fromObject(jso));
+               System.out.println("alreadyDeleted in overwrite :"+alreadyDeleted);
                boolean isReleased = checkIfReleased(JSONObject.fromObject(jso));
+               System.out.println("isReleased in overwrite :"+isReleased);
                String origObjGenerator = originalJSONObj.getJSONObject("__rerum").getString("generatedBy");
                boolean isGenerator = (origObjGenerator.equals(generatorID));
-	       
+               System.out.println("isGenerator in overwrite :" + isGenerator);
+
                 if(alreadyDeleted){
                     writeErrorResponse("The object you are trying to overwrite is deleted.", HttpServletResponse.SC_FORBIDDEN);
                 }
