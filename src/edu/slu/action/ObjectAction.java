@@ -2057,7 +2057,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                Object jso = prev_json_obj;
                System.out.println("jso"+jso);
                
-               JSONObject originalJSONObj = JSONObject.fromObject(jso);  
+               JSONObject originalJSONObj = JSONObject.fromObject(prev_json_obj);  
                System.out.println("originalJSONObj in overwrite :"+originalJSONObj);
                boolean alreadyDeleted = checkIfDeleted(JSONObject.fromObject(jso));
                boolean isReleased = checkIfReleased(JSONObject.fromObject(jso));
