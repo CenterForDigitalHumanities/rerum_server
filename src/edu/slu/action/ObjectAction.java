@@ -2085,14 +2085,14 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         JSONObject newObject = updatedJson;//The edited original object meant to be saved as a new object (versioning)
                         System.out.println("newObject in if block of overwriteObject"+newObject);
                         //newObject.remove("_id");
-                        JSONObject originalProperties = originalJSONObj.getJSONObject("__rerum");
-                        System.out.println("originalProperties in if block of overwriteObject"+originalProperties);
+                        //JSONObject originalProperties = originalJSONObj.getJSONObject("__rerum");
+                        //System.out.println("originalProperties in if block of overwriteObject"+originalProperties);
                         
                         LocalDateTime dt = LocalDateTime.now();
                         DateTimeFormatter dtFormat = DateTimeFormatter.ISO_DATE_TIME;
                         String formattedOverwrittenDateTime = dt.format(dtFormat);
-                        originalProperties.getJSONObject("__rerum").element("isOverwritten", formattedOverwrittenDateTime);
-                        newObject.element("__rerum", originalProperties);
+                        //originalProperties.getJSONObject("__rerum").element("isOverwritten", formattedOverwrittenDateTime);
+                        //newObject.element("__rerum", originalProperties);
                         //DBObject udbo = (DBObject) JSON.parse(newObject.toString());
                         //mongoDBService.update(Constant.COLLECTION_ANNOTATION, originalObject, udbo);
                         UpdateItemSpec updateItemSpec = new UpdateItemSpec().withPrimaryKey("id", primarykey)
