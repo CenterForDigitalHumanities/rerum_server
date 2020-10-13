@@ -2079,7 +2079,9 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     writeErrorResponse("The object you are trying to overwrite was not created by you.  Fork to make changes.", HttpServletResponse.SC_UNAUTHORIZED);
                 }*/
                 else{
+                    System.out.println("inside the else block");
                     if(null != item){
+                        System.out.println("inside the if block");
                         JSONObject newObject = updatedJson;//The edited original object meant to be saved as a new object (versioning)
                         newObject.remove("_id");
                         JSONObject originalProperties = originalJSONObj.getJSONObject("__rerum");
