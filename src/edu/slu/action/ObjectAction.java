@@ -445,7 +445,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 }
                 //Either way, we know the previous value shold be the @id of the object received here. 
                 //history_previous = received.getString("@id");
-                history_previous = received.getString("@id");
+                history_previous = received.getString("id");
             }
             else{
                 //Hitting this means we are saving a new object and found that __rerum.history existed.  We don't trust it.
