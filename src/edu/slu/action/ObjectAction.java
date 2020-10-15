@@ -1891,7 +1891,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 //JSONObject newjson = new JSONObject();
                 newjson.putAll( data );
                 //newjson = configureRerumOptions(received, true);
-               newjson = configureRerumOptions(newjson, false);
+               newjson = configureRerumOptions(newjson, true);
                 System.out.println("newjson in the putUpdate request:"+newjson);
                // System.out.println("id in the putUpdate request:"+json.get("id"));
             
@@ -1911,7 +1911,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
 
             //logger.debug(String.format("received.toString in putUpdateObject = %s", received.toString()));
             if(received.containsKey("@id")){
-                String updateHistoryNextID = received.getString("id");
+                String updateHistoryNextID = received.getString("@id");
                 System.out.println("updateHistoryNextID in putUpdateObject"+updateHistoryNextID);
                 query.append("id", updateHistoryNextID);
                 Item origObj = table.getItem("id", updateHistoryNextID);
@@ -2051,6 +2051,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 //newjson = configureRerumOptions(received, true);
                updatedJson = configureRerumOptions(updatedJson, false);
                 System.out.println("updateJson in the overwrite request:"+updatedJson);
+                String origObjGenerator = updatedJson.getJSONObject("__rerum").getString("history");
+                System.out.println("origObjGenerator in the overwrite request:"+origObjGenerator);
                 //query.append("@id", receivedID);
                 //BasicDBObject originalObject = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The originalObject DB object
               //  JSONObject originalJSONObj = JSONObject.fromObject(originalObject);
