@@ -1902,15 +1902,15 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             String prev_json_obj;
 	    prev_json_obj = item.toJSON();
             
-            UpdateItemSpec updateItemSpec = new UpdateItemSpec().withPrimaryKey("id", primarykey)
+            /*UpdateItemSpec updateItemSpec = new UpdateItemSpec().withPrimaryKey("id", primarykey)
                     .withUpdateExpression("set alpha = :alpha")
                     .withValueMap(new ValueMap().withJSON(":alpha", newjson.toString())).withReturnValues(ReturnValue.ALL_NEW);;
             
             UpdateItemOutcome outcome = table.updateItem(updateItemSpec);
-            System.out.println(outcome.getItem().toJSONPretty());
+            System.out.println(outcome.getItem().toJSONPretty());*/
 
             //logger.debug(String.format("received.toString in putUpdateObject = %s", received.toString()));
-            if(received.containsKey("id")){
+            if(received.containsKey("@id")){
                 String updateHistoryNextID = received.getString("id");
                 System.out.println("updateHistoryNextID in putUpdateObject"+updateHistoryNextID);
                 query.append("id", updateHistoryNextID);
