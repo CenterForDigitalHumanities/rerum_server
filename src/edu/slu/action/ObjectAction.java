@@ -1851,8 +1851,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
 
         if(null!= processRequestBody(request, true) && methodApproval(request, "update")){
             BasicDBObject query = new BasicDBObject();
-            String medistring = content;
-            content=medistring.replace("@","");
+            //String medistring = content;
+            //content=medistring.replace("@","");
             JSONObject received = JSONObject.fromObject(content); 
             logger.debug(String.format("content in putUpdateObject = %s", content));
             logger.debug(String.format("received in putUpdateObject = %s", received));
@@ -1863,11 +1863,11 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             //JSONArray array = JSONArray.fromObject(content);
             System.out.println("JSONArray size"+updatedArray.size());
             //received = configureRerumOptions(received, false);
-            for(Object js : updatedArray){
-                JSONObject json = (JSONObject) js;
-                Iterator<String> keys = json.keys();
-                System.out.println(json.get("id"));
-                primarykey = json.get("id").toString();
+           
+                
+                Iterator<String> keys = received.keys();
+                System.out.println(received.get("@id"));
+                primarykey = received.get("@id").toString();
                 System.out.println("primarykey"+primarykey);
                 Map<String, Object> data = new HashMap<String, Object>();
                 while(keys.hasNext()) {
@@ -1875,9 +1875,9 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                  //String key = keys.get(0x0);
                  System.out.println("key:"+key);
                  //System.out.println("jsonObject.get(key) :"+json.get(key));
-                 if(!key.equals("id")){
-                     System.out.println("jsonObject.get(key) :"+json.get(key));
-                     data.put( key, json.get(key) );
+                 if(!key.equals("@id")){
+                     System.out.println("jsonObject.get(key) :"+received.get(key));
+                     data.put( key, received.get(key) );
                      
                  }
                    /* if (json.containsKey("id")) {
@@ -1894,7 +1894,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                newjson = configureRerumOptions(newjson, false);
                 System.out.println("newjson in the putUpdate request:"+newjson);
                // System.out.println("id in the putUpdate request:"+json.get("id"));
-            }
+            
             //System.out.println();
            //System.out.println("id in the putUpdate request:"+json.get("id"));
             Table table = dynamoDB.getTable(tableName);
