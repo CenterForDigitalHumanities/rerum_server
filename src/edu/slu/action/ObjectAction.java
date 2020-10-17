@@ -406,13 +406,18 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     public JSONObject configureRerumOptions(JSONObject received, boolean update){
         JSONObject configuredObject = received;
         JSONObject received_options;
+        System.out.println("Inside configureRerumOptions");
         try{
             //If this is an update, the object will have __rerum
-            received_options = received.getJSONObject("__rerum"); 
+            System.out.println("Inside try block");
+            received_options = received.getJSONObject("__rerum");
+            System.out.println("received_options"+received_options);
         }
         catch(Exception e){ 
             //otherwise, it is a new save or an update on an object without the __rerum property
+            System.out.println("Inside catch block");
             received_options = new JSONObject();
+            System.out.println("received_options"+received_options);
         }
         JSONObject history = new JSONObject();
         JSONObject releases = new JSONObject();
@@ -421,58 +426,75 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         String history_previous = "";
         String releases_previous = "";
         String releases_replaces = releases_previous;
+        System.out.println("releases_replaces"+releases_replaces);
         String[] emptyArray = new String[0];
         rerumOptions.element("@context", Constant.RERUM_CONTEXT); // RERUM context file
         rerumOptions.element("alpha", true); // alpha sandbox
         rerumOptions.element("APIversion", Constant.RERUM_API_VERSION);
+       // System.out.println("rerumOptions"+rerumOptions);
         LocalDateTime dt = LocalDateTime.now();
         DateTimeFormatter dtFormat = DateTimeFormatter.ISO_DATE_TIME;
         String formattedCreationDateTime = dt.format(dtFormat);
         rerumOptions.element("createdAt", formattedCreationDateTime);
         rerumOptions.element("isOverwritten", "");
         rerumOptions.element("isReleased", "");
+        System.out.println("rerumOptions"+rerumOptions);
         if(received_options.containsKey("history")){
+            System.out.println("received_options"+received_options);
             history = received_options.getJSONObject("history");
+            System.out.println("history"+history);
             if(update){
+                System.out.println("update in if of configureRerumOptions"+history);
                 //This means we are configuring from the update action and we have passed in a clone of the originating object (with its @id) that contained a __rerum.history
                 if(history.getString("prime").equals("root")){
+                    System.out.println("update in if of configureRerumOptions"+history);
                     //Hitting this case means we are updating from the prime object, so we can't pass "root" on as the prime value
                     history_prime = received.getString("id");
+                    System.out.println("history_prime"+history_prime);
                 }
                 else{
                     //Hitting this means we are updating an object that already knows its prime, so we can pass on the prime value
                     history_prime = history.getString("prime");
+                    System.out.println("history_prime in else"+history_prime);
                 }
                 //Either way, we know the previous value shold be the @id of the object received here. 
                 //history_previous = received.getString("@id");
                 history_previous = received.getString("id");
+                System.out.println("history_previous in else"+history_previous);
             }
             else{
                 //Hitting this means we are saving a new object and found that __rerum.history existed.  We don't trust it.
                 history_prime = "root";
                 history_previous = "";
+                System.out.println("history_previous and history_prime in else of update"+history_previous+history_prime);
             }
         }
         else{
+            System.out.println("Else Block of received_options.containsKey(\"history\") ");
             if(update){
              //Hitting this means we are updating an object that did not have __rerum history.  This is an external object update.
                 //FIXME @cubap @theHabes
                 history_prime = "root";
                 //history_previous = received.getString("@id");
                 history_previous = received.getString("id");
+                System.out.println("Else Block of received_options.containsKey(\"history\") update true "+history_previous);
             }
             else{
              //Hitting this means we are are saving an object that did not have __rerum history.  This is normal   
                 history_prime = "root";
                 history_previous = "";
+                System.out.println("history_previous and history_prime in else of update"+history_previous+history_prime);
+                
             }
         }
         if(received_options.containsKey("releases")){
             releases = received_options.getJSONObject("releases");
             releases_previous = releases.getString("previous");
+            System.out.println("releases and releases_previous in releases containsKey "+releases+releases_previous);
         }
         else{
-            releases_previous = "";         
+            releases_previous = "";       
+            System.out.println("releases_previous in releases containsKey "+releases_previous);
         }
         releases.element("next", emptyArray);
         history.element("next", emptyArray);
@@ -485,6 +507,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         //The access token is in the header  "Authorization: Bearer {YOUR_ACCESS_TOKEN}"
         rerumOptions.element("generatedBy",generatorID); 
         configuredObject.element("__rerum", rerumOptions); //.element will replace the __rerum that is there OR create a new one
+        System.out.println("configuredObject"+configuredObject);
         return configuredObject; //The mongo save/update has not been called yet.  The object returned here will go into mongo.save or mongo.update
     }
     
@@ -1911,6 +1934,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
 
             //logger.debug(String.format("received.toString in putUpdateObject = %s", received.toString()));
             if(received.containsKey("@id")){
+                System.out.println("received in if of putUpdate"+received);
                 String updateHistoryNextID = received.getString("@id");
                 System.out.println("updateHistoryNextID in putUpdateObject"+updateHistoryNextID);
                 query.append("id", updateHistoryNextID);
