@@ -471,6 +471,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         }
         else{
             System.out.println("Else Block of received_options.containsKey(\"history\") ");
+            System.out.println("update in Else Block of received_options.containsKey(\"history\") "+update);
             if(update){
              //Hitting this means we are updating an object that did not have __rerum history.  This is an external object update.
                 //FIXME @cubap @theHabes
