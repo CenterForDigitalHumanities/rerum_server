@@ -477,9 +477,15 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 history_prime = "root";
                 //history_previous = received.getString("@id");
                
-                System.out.println("received"+received);    
+                System.out.println("received"+received); 
+                if(received.containsKey("@id")){
+                    history_previous = received.getString("@id");
+                }
+                else{
+                    history_previous = received.getString("id");
+                }
                 history_previous = received.getString("id");
-                System.out.println("Else Block of received_options.containsKey(\"history\") update true "+history_previous);
+                System.out.println("history_previous in Else Block of received_options.containsKey(\"history\") update true "+history_previous);
             }
             else{
              //Hitting this means we are are saving an object that did not have __rerum history.  This is normal   
