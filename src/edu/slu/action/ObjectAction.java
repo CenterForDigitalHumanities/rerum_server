@@ -476,6 +476,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 //FIXME @cubap @theHabes
                 history_prime = "root";
                 //history_previous = received.getString("@id");
+               
+                System.out.println("received"+received);    
                 history_previous = received.getString("id");
                 System.out.println("Else Block of received_options.containsKey(\"history\") update true "+history_previous);
             }
