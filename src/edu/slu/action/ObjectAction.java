@@ -1930,9 +1930,9 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             //System.out.println();
            //System.out.println("id in the putUpdate request:"+json.get("id"));
             Table table = dynamoDB.getTable(tableName);
-            Item item ;//= table.getItem("id", primarykey);
-           // String prev_json_obj;
-	    //prev_json_obj = item.toJSON();
+            Item old_item = table.getItem("id", primarykey);
+            String prev_json_obj;
+	    prev_json_obj = old_item.toJSON();
             
             /*UpdateItemSpec updateItemSpec = new UpdateItemSpec().withPrimaryKey("id", primarykey)
                     .withUpdateExpression("set alpha = :alpha")
@@ -1959,10 +1959,10 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
 	        json_obj = new_item.toJSON();
                 Object new_json_jo = json_obj;
                 System.out.println("new_json_jo"+new_json_jo);
-                JSONObject new_json_obj = JSONObject.fromObject(new_json_jo); 
+                JSONObject old_json_obj = JSONObject.fromObject(prev_json_obj); 
                 String updateHistoryNextID = newPrimaryKeyId;//received.getString("@id");
                 System.out.println("updateHistoryNextID in putUpdateObject"+updateHistoryNextID);
-                JSONObject originalProperties = new_json_obj.getJSONObject("alpha");
+                JSONObject originalProperties = old_json_obj.getJSONObject("alpha");
                 System.out.println("originalProperties in putUpdateObject before next"+originalProperties);
                 //originalProperties.getJSONObject("__rerum").element("isOverwritten", formattedOverwrittenDateTime)
                 originalProperties.getJSONObject("__rerum").getJSONObject("history").element("next", newPrimaryKeyId);
