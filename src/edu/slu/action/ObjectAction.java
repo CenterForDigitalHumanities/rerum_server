@@ -1930,9 +1930,9 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             //System.out.println();
            //System.out.println("id in the putUpdate request:"+json.get("id"));
             Table table = dynamoDB.getTable(tableName);
-            Item item = table.getItem("id", primarykey);
-            String prev_json_obj;
-	    prev_json_obj = item.toJSON();
+            Item item ;//= table.getItem("id", primarykey);
+           // String prev_json_obj;
+	    //prev_json_obj = item.toJSON();
             
             /*UpdateItemSpec updateItemSpec = new UpdateItemSpec().withPrimaryKey("id", primarykey)
                     .withUpdateExpression("set alpha = :alpha")
@@ -1954,9 +1954,9 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                    Item new_item = new Item().withPrimaryKey("id", newPrimaryKeyId)
                                      .withJSON("alpha", newjson.toString());
 	        table.putItem(new_item);
-                item = table.getItem("id", newPrimaryKeyId);
+                new_item = table.getItem("id", newPrimaryKeyId);
 	        String json_obj;
-	        json_obj = item.toJSON();
+	        json_obj = new_item.toJSON();
                 Object new_json_jo = json_obj;
                 System.out.println("new_json_jo"+new_json_jo);
                 String updateHistoryNextID = newPrimaryKeyId;//received.getString("@id");
