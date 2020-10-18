@@ -1959,9 +1959,10 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
 	        json_obj = new_item.toJSON();
                 Object new_json_jo = json_obj;
                 System.out.println("new_json_jo"+new_json_jo);
+                JSONObject new_json_obj = JSONObject.fromObject(new_json_jo); 
                 String updateHistoryNextID = newPrimaryKeyId;//received.getString("@id");
                 System.out.println("updateHistoryNextID in putUpdateObject"+updateHistoryNextID);
-                JSONObject originalProperties = received.getJSONObject("alpha");
+                JSONObject originalProperties = new_json_obj.getJSONObject("alpha");
                 System.out.println("originalProperties in putUpdateObject before next"+originalProperties);
                 //originalProperties.getJSONObject("__rerum").element("isOverwritten", formattedOverwrittenDateTime)
                 originalProperties.getJSONObject("releases").element("next", newPrimaryKeyId);
