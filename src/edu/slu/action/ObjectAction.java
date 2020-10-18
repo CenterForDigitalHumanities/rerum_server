@@ -2175,6 +2175,13 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         Object tempjso = json_obj;
                
                         newObject = JSONObject.fromObject(tempjso);
+                        JSONObject originalProperties = newObject.getJSONObject("alpha");
+//originalProperties.getJSONObject("__rerum").element("isOverwritten", formattedOverwrittenDateTime)
+                        originalProperties.getJSONObject("__rerum").element("isOverwritten", formattedOverwrittenDateTime);
+                        UpdateItemSpec newUpdateItemSpec = new UpdateItemSpec().withPrimaryKey("id", primarykey)
+                                .withUpdateExpression("set alpha = :alpha")
+                                .withValueMap(new ValueMap().withJSON(":alpha", originalProperties.toString())).withReturnValues(ReturnValue.ALL_NEW);
+                        UpdateItemOutcome newOutcome = table.updateItem(newUpdateItemSpec);
                         JSONObject jo = new JSONObject();
                         //JSONObject iiif_validation_response = checkIIIFCompliance(receivedID, "2.1");
                         System.out.println("object overwritten: "+receivedID);
