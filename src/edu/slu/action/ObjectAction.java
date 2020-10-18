@@ -1947,9 +1947,9 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 UUID uniqueKey = UUID.randomUUID();
                     String uniquekeyid = uniqueKey.toString();
                     String primaryKeyId = uniquekeyid.replace("-","");
-                    System.out.println("primaryKeyId in saveNewObject"+primaryKeyId);
+                    System.out.println("primaryKeyId in putUpdateObject"+primaryKeyId);
                    
-                   System.out.println("received.toString()"+received.toString());
+                   //System.out.println("received.toString()"+received.toString());
                    String newPrimaryKeyId = "http://ec2-50-17-144-87.compute-1.amazonaws.com:8080/v1/id/"+primaryKeyId;
                    Item new_item = new Item().withPrimaryKey("id", newPrimaryKeyId)
                                      .withJSON("alpha"/*Constant.COLLECTION_ANNOTATION*/, newjson.toString());
@@ -1957,6 +1957,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 item = table.getItem("id", newPrimaryKeyId);
 	        String json_obj;
 	        json_obj = item.toJSON();
+                Object new_json_jo = json_obj;
+                System.out.println("new_json_jo"+new_json_jo);
                 String updateHistoryNextID = newPrimaryKeyId;//received.getString("@id");
                 System.out.println("updateHistoryNextID in putUpdateObject"+updateHistoryNextID);
                 JSONObject originalProperties = received.getJSONObject("alpha");
