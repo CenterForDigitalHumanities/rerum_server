@@ -1952,8 +1952,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                    //System.out.println("received.toString()"+received.toString());
                    String newPrimaryKeyId = "http://ec2-50-17-144-87.compute-1.amazonaws.com:8080/v1/id/"+primaryKeyId;
                    Item new_item = new Item().withPrimaryKey("id", newPrimaryKeyId)
-                                     .withJSON("alpha"/*Constant.COLLECTION_ANNOTATION*/, newjson.toString());
-	        table.putItem(item);
+                                     .withJSON("alpha", newjson.toString());
+	        table.putItem(new_item);
                 item = table.getItem("id", newPrimaryKeyId);
 	        String json_obj;
 	        json_obj = item.toJSON();
