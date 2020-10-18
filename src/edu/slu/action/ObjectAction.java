@@ -2154,7 +2154,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         JSONObject newObject = updatedJson;//The edited original object meant to be saved as a new object (versioning)
                         System.out.println("newObject in if block of overwriteObject"+newObject);
                         //newObject.remove("_id");
-                        JSONObject originalProperties = originalJSONObj.getJSONObject("alpha");
+                        JSONObject originalProperties = newObject.getJSONObject("alpha");
                         //System.out.println("originalProperties in if block of overwriteObject"+originalProperties);
                         
                         LocalDateTime dt = LocalDateTime.now();
