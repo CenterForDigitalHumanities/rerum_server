@@ -1944,11 +1944,33 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             //logger.debug(String.format("received.toString in putUpdateObject = %s", received.toString()));
             if(received.containsKey("@id")){
                 System.out.println("received in if of putUpdate"+received);
-                String updateHistoryNextID = received.getString("@id");
+                UUID uniqueKey = UUID.randomUUID();
+                    String uniquekeyid = uniqueKey.toString();
+                    String primaryKeyId = uniquekeyid.replace("-","");
+                    System.out.println("primaryKeyId in saveNewObject"+primaryKeyId);
+                   
+                   System.out.println("received.toString()"+received.toString());
+                   String newPrimaryKeyId = "http://ec2-50-17-144-87.compute-1.amazonaws.com:8080/v1/id/"+primaryKeyId;
+                   Item new_item = new Item().withPrimaryKey("id", newPrimaryKeyId)
+                                     .withJSON("alpha"/*Constant.COLLECTION_ANNOTATION*/, newjson.toString());
+	        table.putItem(item);
+                item = table.getItem("id", newPrimaryKeyId);
+	        String json_obj;
+	        json_obj = item.toJSON();
+                String updateHistoryNextID = newPrimaryKeyId;//received.getString("@id");
                 System.out.println("updateHistoryNextID in putUpdateObject"+updateHistoryNextID);
+                JSONObject originalProperties = received.getJSONObject("alpha");
+                System.out.println("originalProperties in putUpdateObject before next"+originalProperties);
+                //originalProperties.getJSONObject("__rerum").element("isOverwritten", formattedOverwrittenDateTime)
+                originalProperties.getJSONObject("releases").element("next", newPrimaryKeyId);
+                System.out.println("originalProperties in putUpdateObject after next"+originalProperties);
+                UpdateItemSpec updateItemSpec = new UpdateItemSpec().withPrimaryKey("id", primarykey)
+                                .withUpdateExpression("set alpha = :alpha")
+                                .withValueMap(new ValueMap().withJSON(":alpha", originalProperties.toString())).withReturnValues(ReturnValue.ALL_NEW);
+                        UpdateItemOutcome outcome = table.updateItem(updateItemSpec);
                 query.append("id", updateHistoryNextID);
                 Item origObj = table.getItem("id", updateHistoryNextID);
-                String json_obj = origObj.toJSON();
+                String orig_json_obj = origObj.toJSON();
                 Object jso = json_obj;
                 String received_str = received.toString();
                 //SONObject newjsonobj = new JSONObject(received_str);
@@ -1960,7 +1982,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 BasicDBObject originalObject = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The originalObject DB object
                 
                 BasicDBObject updatedObject = (BasicDBObject) JSON.parse(received.toString()); //A copy of the original, this will be saved as a new object.  Make all edits to this variable.
-                JSONObject originalJSONObj = JSONObject.fromObject(originalObject);
+                //JSONObject originalJSONObj = JSONObject.fromObject(originalObject);
+                JSONObject originalJSONObj = JSONObject.fromObject(received);
                 boolean alreadyDeleted = checkIfDeleted(JSONObject.fromObject(originalObject));
                 boolean isReleased = checkIfReleased(JSONObject.fromObject(originalObject));
                 if(alreadyDeleted){
@@ -1972,21 +1995,21 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 else{
                     if(null != originalObject){
                         JSONObject newObject = JSONObject.fromObject(updatedObject);//The edited original object meant to be saved as a new object (versioning)
-                        JSONObject originalProperties = originalJSONObj.getJSONObject("__rerum");
+                        originalProperties = originalJSONObj.getJSONObject("__rerum");
                         newObject.element("__rerum", originalProperties);
                         //Since this is a put update, it is possible __rerum is not in the object provided by the user.  We get a reliable copy oof the original out of mongo
                         newObject = configureRerumOptions(newObject, true); //__rerum for the new object being created because of the update action
                         newObject.remove("@id"); //This is being saved as a new object, so remove this @id for the new one to be set.
                         newObject.remove("_id");
                         DBObject dbo = (DBObject) JSON.parse(newObject.toString());
-                        String newNextID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
+                        String newNextID = updateHistoryNextID;//mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
                         String newNextAtID = Constant.RERUM_ID_PREFIX+newNextID;
                         BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
                         dboWithObjectID.append("@id", newNextAtID);
                         newObject.element("@id", newNextAtID);
                         expandPrivateRerumProperty(newObject);
                         newObject.remove("_id");
-                        mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
+                        //mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
                         historyNextUpdatePassed = alterHistoryNext(updateHistoryNextID, newNextAtID); //update history.next or original object to include the newObject @id
                         if(historyNextUpdatePassed){
                             System.out.println("Object put updated: "+newNextAtID);
