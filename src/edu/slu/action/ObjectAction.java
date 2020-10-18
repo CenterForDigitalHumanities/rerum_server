@@ -2154,20 +2154,19 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         JSONObject newObject = updatedJson;//The edited original object meant to be saved as a new object (versioning)
                         System.out.println("newObject in if block of overwriteObject"+newObject);
                         //newObject.remove("_id");
-                        JSONObject originalProperties = newObject.getJSONObject("alpha");
+                        //JSONObject originalProperties = originalJSONObj.getJSONObject("__rerum");
                         //System.out.println("originalProperties in if block of overwriteObject"+originalProperties);
                         
                         LocalDateTime dt = LocalDateTime.now();
                         DateTimeFormatter dtFormat = DateTimeFormatter.ISO_DATE_TIME;
                         String formattedOverwrittenDateTime = dt.format(dtFormat);
-                        originalProperties.getJSONObject("__rerum").element("isOverwritten", formattedOverwrittenDateTime);
                         //originalProperties.getJSONObject("__rerum").element("isOverwritten", formattedOverwrittenDateTime);
                         //newObject.element("__rerum", originalProperties);
                         //DBObject udbo = (DBObject) JSON.parse(newObject.toString());
                         //mongoDBService.update(Constant.COLLECTION_ANNOTATION, originalObject, udbo);
                         UpdateItemSpec updateItemSpec = new UpdateItemSpec().withPrimaryKey("id", primarykey)
                                 .withUpdateExpression("set alpha = :alpha")
-                                .withValueMap(new ValueMap().withJSON(":alpha", originalProperties.toString())).withReturnValues(ReturnValue.ALL_NEW);
+                                .withValueMap(new ValueMap().withJSON(":alpha", newObject.toString())).withReturnValues(ReturnValue.ALL_NEW);
                         UpdateItemOutcome outcome = table.updateItem(updateItemSpec);
                         System.out.println(outcome.getItem().toJSONPretty());
                         Item updatedItem = table.getItem("id", primarykey);
