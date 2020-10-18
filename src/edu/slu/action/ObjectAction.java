@@ -1965,7 +1965,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 JSONObject originalProperties = new_json_obj.getJSONObject("alpha");
                 System.out.println("originalProperties in putUpdateObject before next"+originalProperties);
                 //originalProperties.getJSONObject("__rerum").element("isOverwritten", formattedOverwrittenDateTime)
-                originalProperties.getJSONObject("releases").element("next", newPrimaryKeyId);
+                originalProperties.getJSONObject("__rerum").getJSONObject("history").element("next", newPrimaryKeyId);
                 System.out.println("originalProperties in putUpdateObject after next"+originalProperties);
                 UpdateItemSpec updateItemSpec = new UpdateItemSpec().withPrimaryKey("id", primarykey)
                                 .withUpdateExpression("set alpha = :alpha")
