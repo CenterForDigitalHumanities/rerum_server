@@ -26,6 +26,9 @@ all objects by the server and is not editable by the client applications. While 
 _anything_ within their objects, this property will always tell the Truth. The details are in the
 documentation, but broadly, you will find:
 
+* `@context`   the RERUM API JSON-LD context file for these terms
+* `alpha`  internal flag for RERUM API version control 
+* `APIversion` specific RERUM API release version for this data node
 * `created`  specific creation date for this \[version of this] object
 * `isOverwritten`  specific date (if any) this version was updated without versioning
 * `generatedBy`  the agent for the application that authenticated to create this object
