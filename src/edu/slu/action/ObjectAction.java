@@ -1860,13 +1860,13 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @throws java.io.IOException
      * @throws javax.servlet.ServletException
      */
-    public void putUpdateObject()throws IOException, ServletException, Exception{
+    public void putUpdateObject() throws IOException, ServletException, Exception {
         //@webanno The client should use the If-Match header with a value of the ETag it received from the server before the editing process began, 
         //to avoid collisions of multiple users modifying the same Annotation at the same time
         //cubap: I'm not sold we have to do this. Our versioning would allow multiple changes. 
         //The application might want to throttle internally, but it can.
         Boolean historyNextUpdatePassed = false;
-        String primarykey ="";
+        String primarykey = "";
         JSONObject newjson = new JSONObject();
         System.out.println("put update object");
         logger.debug(String.format("request in putUpdateObject = %s", request));
@@ -1875,102 +1875,103 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             client = AmazonDynamoDBClientBuilder.standard().withCredentials(new AWSStaticCredentialsProvider(awsCreds)).withRegion(Regions.US_EAST_1).build();
             dynamoDB = new DynamoDB(client);
             tableName = "rerum_dev";
-        }
-        catch(Exception e){
+        } catch (Exception e) {
             System.out.println("AWS initialization error below");
             System.out.println(e);
-        } 
+        }
 
-        if(null!= processRequestBody(request, true) && methodApproval(request, "update")){
+        if (null != processRequestBody(request, true) && methodApproval(request, "update")) {
             BasicDBObject query = new BasicDBObject();
             //String medistring = content;
             //content=medistring.replace("@","");
-            JSONObject received = JSONObject.fromObject(content); 
+            JSONObject received = JSONObject.fromObject(content);
             logger.debug(String.format("content in putUpdateObject = %s", content));
             logger.debug(String.format("received in putUpdateObject = %s", received));
             //JSONArray updatedArray = (JSONArray) JSONSerializer.toJSON(content);
             //System.out.println(updatedArray.size());
-          //JSONArray updatedArray = JSONArray.fromString(content);
+            //JSONArray updatedArray = JSONArray.fromString(content);
             JSONArray updatedArray = JSONArray.fromObject(received);
             //JSONArray array = JSONArray.fromObject(content);
-            System.out.println("JSONArray size"+updatedArray.size());
+            System.out.println("JSONArray size" + updatedArray.size());
             //received = configureRerumOptions(received, false);
-           
-                
-                Iterator<String> keys = received.keys();
-                System.out.println(received.get("@id"));
-                primarykey = received.get("@id").toString();
-                System.out.println("primarykey"+primarykey);
-                Map<String, Object> data = new HashMap<String, Object>();
-                while(keys.hasNext()) {
-                 String key = keys.next();
-                 //String key = keys.get(0x0);
-                 System.out.println("key:"+key);
-                 //System.out.println("jsonObject.get(key) :"+json.get(key));
-                 if(!key.equals("@id")){
-                     System.out.println("jsonObject.get(key) :"+received.get(key));
-                     data.put( key, received.get(key) );
-                     
-                 }
-                   /* if (json.containsKey("id")) {
+
+            Iterator<String> keys = received.keys();
+            System.out.println(received.get("@id"));
+            primarykey = received.get("@id").toString();
+            System.out.println("primarykey" + primarykey);
+            Map<String, Object> data = new HashMap<String, Object>();
+            while (keys.hasNext()) {
+                String key = keys.next();
+                //String key = keys.get(0x0);
+                System.out.println("key:" + key);
+                //System.out.println("jsonObject.get(key) :"+json.get(key));
+                if (!key.equals("@id")) {
+                    System.out.println("jsonObject.get(key) :" + received.get(key));
+                    data.put(key, received.get(key));
+
+                }
+                /* if (json.containsKey("id")) {
                      // do something with jsonObject here      
                      break;
                     }
                     else {
                         System.out.println("other objects in the putUpdate request:"+json.get("id"));
                     }*/
-                }
-                //JSONObject newjson = new JSONObject();
-                newjson.putAll( data );
-                //newjson = configureRerumOptions(received, true);
-               newjson = configureRerumOptions(newjson, false);
-                System.out.println("newjson in the putUpdate request:"+newjson);
-               // System.out.println("id in the putUpdate request:"+json.get("id"));
-            
+            }
+            //JSONObject newjson = new JSONObject();
+            newjson.putAll(data);
+            //newjson = configureRerumOptions(received, true);
+            newjson = configureRerumOptions(newjson, false);
+            System.out.println("newjson in the putUpdate request:" + newjson);
+            // System.out.println("id in the putUpdate request:"+json.get("id"));
+
             //System.out.println();
-           //System.out.println("id in the putUpdate request:"+json.get("id"));
+            //System.out.println("id in the putUpdate request:"+json.get("id"));
             Table table = dynamoDB.getTable(tableName);
             Item old_item = table.getItem("id", primarykey);
             String prev_json_obj;
-	    prev_json_obj = old_item.toJSON();
-            
+            prev_json_obj = old_item.toJSON();
+
             /*UpdateItemSpec updateItemSpec = new UpdateItemSpec().withPrimaryKey("id", primarykey)
                     .withUpdateExpression("set alpha = :alpha")
                     .withValueMap(new ValueMap().withJSON(":alpha", newjson.toString())).withReturnValues(ReturnValue.ALL_NEW);;
             
             UpdateItemOutcome outcome = table.updateItem(updateItemSpec);
             System.out.println(outcome.getItem().toJSONPretty());*/
-
             //logger.debug(String.format("received.toString in putUpdateObject = %s", received.toString()));
-            if(received.containsKey("@id")){
-                System.out.println("received in if of putUpdate"+received);
+            if (received.containsKey("@id")) {
+                System.out.println("received in if of putUpdate" + received);
                 UUID uniqueKey = UUID.randomUUID();
-                    String uniquekeyid = uniqueKey.toString();
-                    String primaryKeyId = uniquekeyid.replace("-","");
-                    System.out.println("primaryKeyId in putUpdateObject"+primaryKeyId);
-                   
-                   //System.out.println("received.toString()"+received.toString());
-                   String newPrimaryKeyId = "http://ec2-50-17-144-87.compute-1.amazonaws.com:8080/v1/id/"+primaryKeyId;
-                   Item new_item = new Item().withPrimaryKey("id", newPrimaryKeyId)
-                                     .withJSON("alpha", newjson.toString());
-	        table.putItem(new_item);
+                String uniquekeyid = uniqueKey.toString();
+                String primaryKeyId = uniquekeyid.replace("-", "");
+                System.out.println("primaryKeyId in putUpdateObject" + primaryKeyId);
+
+                //System.out.println("received.toString()"+received.toString());
+                String newPrimaryKeyId = "http://ec2-50-17-144-87.compute-1.amazonaws.com:8080/v1/id/" + primaryKeyId;
+                Item new_item = new Item().withPrimaryKey("id", newPrimaryKeyId)
+                        .withJSON("alpha", newjson.toString());
+                table.putItem(new_item);
                 new_item = table.getItem("id", newPrimaryKeyId);
-	        String json_obj;
-	        json_obj = new_item.toJSON();
+                String json_obj;
+                json_obj = new_item.toJSON();
                 Object new_json_jo = json_obj;
-                System.out.println("new_json_jo"+new_json_jo);
-                JSONObject old_json_obj = JSONObject.fromObject(prev_json_obj); 
+                System.out.println("new_json_jo" + new_json_jo);
+                JSONObject new_json_obj = JSONObject.fromObject(new_json_jo);
+                JSONObject newObjectProperties = new_json_obj.getJSONObject("alpha");
+                newObjectProperties.getJSONObject("__rerum").getJSONObject("history").element("previous",primarykey);
+                System.out.println("newObjectProperties in putUpdate method"+newObjectProperties);
+                JSONObject old_json_obj = JSONObject.fromObject(prev_json_obj);
                 String updateHistoryNextID = newPrimaryKeyId;//received.getString("@id");
-                System.out.println("updateHistoryNextID in putUpdateObject"+updateHistoryNextID);
+                System.out.println("updateHistoryNextID in putUpdateObject" + updateHistoryNextID);
                 JSONObject originalProperties = old_json_obj.getJSONObject("alpha");
-                System.out.println("originalProperties in putUpdateObject before next"+originalProperties);
+                System.out.println("originalProperties in putUpdateObject before next" + originalProperties);
                 //originalProperties.getJSONObject("__rerum").element("isOverwritten", formattedOverwrittenDateTime)
                 originalProperties.getJSONObject("__rerum").getJSONObject("history").element("next", newPrimaryKeyId);
-                System.out.println("originalProperties in putUpdateObject after next"+originalProperties);
+                System.out.println("originalProperties in putUpdateObject after next" + originalProperties);
                 UpdateItemSpec updateItemSpec = new UpdateItemSpec().withPrimaryKey("id", primarykey)
-                                .withUpdateExpression("set alpha = :alpha")
-                                .withValueMap(new ValueMap().withJSON(":alpha", originalProperties.toString())).withReturnValues(ReturnValue.ALL_NEW);
-                        UpdateItemOutcome outcome = table.updateItem(updateItemSpec);
+                        .withUpdateExpression("set alpha = :alpha")
+                        .withValueMap(new ValueMap().withJSON(":alpha", originalProperties.toString())).withReturnValues(ReturnValue.ALL_NEW);
+                UpdateItemOutcome outcome = table.updateItem(updateItemSpec);
                 query.append("id", updateHistoryNextID);
                 Item origObj = table.getItem("id", updateHistoryNextID);
                 String orig_json_obj = origObj.toJSON();
@@ -1979,25 +1980,23 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 //SONObject newjsonobj = new JSONObject(received_str);
                 //JSONParser parser = new JSONParser();
                 JSONObject orig_obj = JSONObject.fromObject(jso);
-                System.out.println("orig_obj in putUpdateObject"+orig_obj);
+                System.out.println("orig_obj in putUpdateObject" + orig_obj);
                 JSONObject updatedObj = JSONObject.fromObject(received.toString());
-                System.out.println("updatedObj in putUpdateObject"+updatedObj);
-                BasicDBObject originalObject = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The originalObject DB object
-                
-                BasicDBObject updatedObject = (BasicDBObject) JSON.parse(received.toString()); //A copy of the original, this will be saved as a new object.  Make all edits to this variable.
+                System.out.println("updatedObj in putUpdateObject" + updatedObj);
+                BasicDBObject originalObject; //= (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The originalObject DB object
+
+                BasicDBObject updatedObject; //= (BasicDBObject) JSON.parse(received.toString()); //A copy of the original, this will be saved as a new object.  Make all edits to this variable.
                 //JSONObject originalJSONObj = JSONObject.fromObject(originalObject);
                 JSONObject originalJSONObj = JSONObject.fromObject(received);
-                boolean alreadyDeleted = checkIfDeleted(JSONObject.fromObject(originalObject));
-                boolean isReleased = checkIfReleased(JSONObject.fromObject(originalObject));
-                if(alreadyDeleted){
+                boolean alreadyDeleted = checkIfDeleted(JSONObject.fromObject(orig_obj));
+                boolean isReleased = checkIfReleased(JSONObject.fromObject(orig_obj));
+                if (alreadyDeleted) {
                     writeErrorResponse("The object you are trying to update is deleted.", HttpServletResponse.SC_FORBIDDEN);
-                }
-                else if(isReleased){
+                } else if (isReleased) {
                     writeErrorResponse("The object you are trying to update is released.  Fork to make changes.", HttpServletResponse.SC_FORBIDDEN);
-                }
-                else{
-                    if(null != originalObject){
-                        JSONObject newObject = JSONObject.fromObject(updatedObject);//The edited original object meant to be saved as a new object (versioning)
+                } else {
+                    if (null != orig_obj) {
+                        JSONObject newObject = JSONObject.fromObject(newObjectProperties);//The edited original object meant to be saved as a new object (versioning)
                         originalProperties = originalJSONObj.getJSONObject("__rerum");
                         newObject.element("__rerum", originalProperties);
                         //Since this is a put update, it is possible __rerum is not in the object provided by the user.  We get a reliable copy oof the original out of mongo
@@ -2006,44 +2005,40 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         newObject.remove("_id");
                         DBObject dbo = (DBObject) JSON.parse(newObject.toString());
                         String newNextID = updateHistoryNextID;//mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
-                        String newNextAtID = Constant.RERUM_ID_PREFIX+newNextID;
-                        BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
-                        dboWithObjectID.append("@id", newNextAtID);
-                        newObject.element("@id", newNextAtID);
+                        String newNextAtID = Constant.RERUM_ID_PREFIX + newNextID;
+                        //BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject) dbo);
+                       // dboWithObjectID.append("@id", newNextAtID);
+                        //newObject.element("@id", newNextAtID);
                         expandPrivateRerumProperty(newObject);
-                        newObject.remove("_id");
+                        //newObject.remove("_id");
                         //mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
-                        historyNextUpdatePassed = alterHistoryNext(updateHistoryNextID, newNextAtID); //update history.next or original object to include the newObject @id
-                        if(historyNextUpdatePassed){
-                            System.out.println("Object put updated: "+newNextAtID);
+                        //historyNextUpdatePassed = alterHistoryNext(updateHistoryNextID, newNextAtID); //update history.next or original object to include the newObject @id
+                        if (true) {
+                            System.out.println("Object put updated: " + newNextAtID);
                             JSONObject jo = new JSONObject();
-                            JSONObject iiif_validation_response = checkIIIFCompliance(newNextAtID, "2.1");
+                            //JSONObject iiif_validation_response = checkIIIFCompliance(newNextAtID, "2.1");
                             jo.element("code", HttpServletResponse.SC_OK);
                             jo.element("original_object_id", updateHistoryNextID);
-                            jo.element("new_obj_state", newObject); //FIXME: @webanno standards say this should be the response.
-                            jo.element("iiif_validation", iiif_validation_response);
+                            jo.element("new_obj_state", newObjectProperties); //FIXME: @webanno standards say this should be the response.
+                            //jo.element("iiif_validation", iiif_validation_response);
                             try {
-                                addWebAnnotationHeaders(newNextID, isContainerType(newObject), isLD(newObject));
-                                addLocationHeader(newObject);
+                                addWebAnnotationHeaders(newNextID, isContainerType(newObjectProperties), isLD(newObjectProperties));
+                                addLocationHeader(newObjectProperties);
                                 response.addHeader("Access-Control-Allow-Origin", "*");
                                 response.setStatus(HttpServletResponse.SC_OK);
                                 out = response.getWriter();
                                 out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
-                            }
-                            catch (IOException ex) {
+                            } catch (IOException ex) {
                                 Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
                             }
-                        }
-                        else{
+                        } else {
                             //The error is already written to response.out, do nothing.
                         }
-                    }
-                    else{
+                    } else {
                         updateExternalObject(received);
                     }
                 }
-            }
-            else{
+            } else {
                 writeErrorResponse("Object did not contain an @id, could not update.", HttpServletResponse.SC_BAD_REQUEST);
             }
         }
