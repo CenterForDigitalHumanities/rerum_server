@@ -49,6 +49,8 @@
 
 package edu.slu.action;
 
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.regions.Regions;
 import com.auth0.jwk.Jwk;
 import com.auth0.jwk.JwkException;
@@ -122,7 +124,16 @@ import com.amazonaws.services.ec2.AmazonEC2ClientBuilder;
 import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClientBuilder;
 import com.fasterxml.jackson.core.JsonParser;
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import static java.lang.System.console;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.UUID;
+import jdk.nashorn.internal.parser.JSONParser;
+import static jxl.biff.BaseCellFeatures.logger;
+import net.sf.json.JSONSerializer;
 
 //import jdk.nashorn.internal.parser.JSONParser;
 //import java.util.UUID;
@@ -395,13 +406,18 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     public JSONObject configureRerumOptions(JSONObject received, boolean update){
         JSONObject configuredObject = received;
         JSONObject received_options;
+        System.out.println("Inside configureRerumOptions");
         try{
             //If this is an update, the object will have __rerum
-            received_options = received.getJSONObject("__rerum"); 
+            System.out.println("Inside try block");
+            received_options = received.getJSONObject("__rerum");
+            System.out.println("received_options"+received_options);
         }
         catch(Exception e){ 
             //otherwise, it is a new save or an update on an object without the __rerum property
+            System.out.println("Inside catch block");
             received_options = new JSONObject();
+            System.out.println("received_options"+received_options);
         }
         JSONObject history = new JSONObject();
         JSONObject releases = new JSONObject();
@@ -410,56 +426,84 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         String history_previous = "";
         String releases_previous = "";
         String releases_replaces = releases_previous;
+        System.out.println("releases_replaces"+releases_replaces);
         String[] emptyArray = new String[0];
         rerumOptions.element("@context", Constant.RERUM_CONTEXT); // RERUM context file
         rerumOptions.element("alpha", true); // alpha sandbox
         rerumOptions.element("APIversion", Constant.RERUM_API_VERSION);
+       // System.out.println("rerumOptions"+rerumOptions);
         LocalDateTime dt = LocalDateTime.now();
         DateTimeFormatter dtFormat = DateTimeFormatter.ISO_DATE_TIME;
         String formattedCreationDateTime = dt.format(dtFormat);
         rerumOptions.element("createdAt", formattedCreationDateTime);
         rerumOptions.element("isOverwritten", "");
         rerumOptions.element("isReleased", "");
+        System.out.println("rerumOptions"+rerumOptions);
         if(received_options.containsKey("history")){
+            System.out.println("received_options"+received_options);
             history = received_options.getJSONObject("history");
+            System.out.println("history"+history);
             if(update){
+                System.out.println("update in if of configureRerumOptions"+history);
                 //This means we are configuring from the update action and we have passed in a clone of the originating object (with its @id) that contained a __rerum.history
                 if(history.getString("prime").equals("root")){
+                    System.out.println("update in if of configureRerumOptions"+history);
                     //Hitting this case means we are updating from the prime object, so we can't pass "root" on as the prime value
-                    history_prime = received.getString("@id");
+                    history_prime = received.getString("id");
+                    System.out.println("history_prime"+history_prime);
                 }
                 else{
                     //Hitting this means we are updating an object that already knows its prime, so we can pass on the prime value
                     history_prime = history.getString("prime");
+                    System.out.println("history_prime in else"+history_prime);
                 }
                 //Either way, we know the previous value shold be the @id of the object received here. 
-                history_previous = received.getString("@id");
+                //history_previous = received.getString("@id");
+                history_previous = received.getString("id");
+                System.out.println("history_previous in else"+history_previous);
             }
             else{
                 //Hitting this means we are saving a new object and found that __rerum.history existed.  We don't trust it.
                 history_prime = "root";
                 history_previous = "";
+                System.out.println("history_previous and history_prime in else of update"+history_previous+history_prime);
             }
         }
         else{
+            System.out.println("Else Block of received_options.containsKey(\"history\") ");
+            System.out.println("update in Else Block of received_options.containsKey(\"history\") "+update);
             if(update){
              //Hitting this means we are updating an object that did not have __rerum history.  This is an external object update.
                 //FIXME @cubap @theHabes
                 history_prime = "root";
-                history_previous = received.getString("@id");
+                //history_previous = received.getString("@id");
+               
+                System.out.println("received"+received); 
+                if(received.containsKey("@id")){
+                    history_previous = received.getString("@id");
+                }
+                else{
+                    history_previous = received.getString("id");
+                }
+                history_previous = received.getString("id");
+                System.out.println("history_previous in Else Block of received_options.containsKey(\"history\") update true "+history_previous);
             }
             else{
              //Hitting this means we are are saving an object that did not have __rerum history.  This is normal   
                 history_prime = "root";
                 history_previous = "";
+                System.out.println("history_previous and history_prime in else of update"+history_previous+history_prime);
+                
             }
         }
         if(received_options.containsKey("releases")){
             releases = received_options.getJSONObject("releases");
             releases_previous = releases.getString("previous");
+            System.out.println("releases and releases_previous in releases containsKey "+releases+releases_previous);
         }
         else{
-            releases_previous = "";         
+            releases_previous = "";       
+            System.out.println("releases_previous in releases containsKey "+releases_previous);
         }
         releases.element("next", emptyArray);
         history.element("next", emptyArray);
@@ -472,6 +516,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         //The access token is in the header  "Authorization: Bearer {YOUR_ACCESS_TOKEN}"
         rerumOptions.element("generatedBy",generatorID); 
         configuredObject.element("__rerum", rerumOptions); //.element will replace the __rerum that is there OR create a new one
+        System.out.println("configuredObject"+configuredObject);
         return configuredObject; //The mongo save/update has not been called yet.  The object returned here will go into mongo.save or mongo.update
     }
     
@@ -566,6 +611,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @throws Exception 
     */
     public Boolean methodApproval(HttpServletRequest http_request, String request_type) throws Exception{
+        System.out.println("Inside methodApproval ");
         String requestMethod = http_request.getMethod();
         String access_token = "";
         boolean auth_verified = false;
@@ -958,7 +1004,13 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         response.setContentType("application/json; charset=utf-8"); // We create JSON objects for the return body in most cases.  
         response.addHeader("Access-Control-Allow-Headers", "Content-Type");
         response.addHeader("Access-Control-Allow-Methods", "GET,OPTIONS,HEAD,PUT,PATCH,DELETE,POST"); // Must have OPTIONS for @webanno 
+        //System.out.println("requestBody in processRequestBody:"+requestBody);
+        String medistring = requestBody;
+        requestBody=medistring.replace("@","");
+        System.out.println("requestBody in processRequestBody:"+requestBody);
         return requestBody;
+        
+      
     }
     
     /**
@@ -971,6 +1023,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      */
     private void addWebAnnotationHeaders(String etag, Boolean isContainerType, Boolean isLD){
         response.setContentType("UTF-8");
+        System.out.println("inside addWebAnnotationHeaders ");
         if(isLD){
             response.addHeader("Content-Type", "application/ld+json;charset=utf-8;profile=\"http://www.w3.org/ns/anno.jsonld\""); 
         } 
@@ -990,7 +1043,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         if(!"".equals(etag)){
             response.addHeader("Etag", etag);
         }
-        
+        System.out.println("End of addWebAnnotationHeaders ");
     }
     
      /**
@@ -1030,14 +1083,21 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         String addLocation;
         // Warning: if there are multiple "Location" headers only one will be returned
         // our practice of making a list protects from this.
+        System.out.println("Inside addLocationHeader");
         if (response.containsHeader("Location")) {
             // add to existing header
+            System.out.println("Inside contains header");
             addLocation = ((HttpServletRequest) response).getHeader("Location").concat(",")
-                    .concat(obj.getString("@id"));
+                    .concat(obj.getString("id"));
+            System.out.println("addLocation" + addLocation);
         }
         else {
             // no header attached yet
-            addLocation = obj.getString("@id");
+            System.out.println("Inside no header");
+            System.out.println("obj inside no header"+obj);
+            addLocation = obj.getString("id");
+            System.out.println("addLocation" + addLocation);
+
         }
         response.setHeader("Location", addLocation);
     }
@@ -1266,8 +1326,9 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @throws javax.servlet.ServletException
      */
     public void getByID() throws IOException, ServletException, Exception{
-        try {
-            client = AmazonDynamoDBClientBuilder.standard().build();
+         try {
+            BasicAWSCredentials awsCreds = new BasicAWSCredentials("AKIAR6RLDQ4RCG5E7PV7", "yrBoWi2+Sz+ifMUczf8tHUX7SCe1Zv4PF66WQ52I");
+            client = AmazonDynamoDBClientBuilder.standard().withCredentials(new AWSStaticCredentialsProvider(awsCreds)).withRegion(Regions.US_EAST_1).build();
             dynamoDB = new DynamoDB(client);
             tableName = "rerum_dev";
         }
@@ -1282,17 +1343,30 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             //find one version by objectID
             BasicDBObject query = new BasicDBObject();
            // query.append("_id", oid);
-            Item item = table.getItem(Constant.COLLECTION_ANNOTATION, oid);
+           //System.out.println("oid in getByID"+oid);
+           /*oid= Constant.RERUM_ID_PREFIX+oid;*/
+           oid="http://ec2-50-17-144-87.compute-1.amazonaws.com:8080/v1/id/"+oid;
+           System.out.println("oid in getByID"+oid);
+            Item item = table.getItem("id", oid);
+            //System.out.println("item in getByID"+item);
+            //String json_obj = item.toJSON();
+            //Object jso = json_obj;
+            //System.out.println("json_obj is:"+json_obj);
             //DBObject myAnno = mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query);
            
             if(null != item){
                 //BasicDBObject bdbo = (BasicDBObject) myAnno;
                 //JSONObject jo = JSONObject.fromObject(myAnno.toMap());
+                System.out.println("item in getByID" + item);
+                String json_obj = item.toJSON();
+                Object jso = json_obj;
                
-                JSONObject jo = JSONObject.fromObject(item);
-                String idForHeader = jo.getString("_id");
+                JSONObject jo = JSONObject.fromObject(jso);
+                System.out.println("jo in getByID"+jo);
+                String idForHeader = jo.getString("id");
+                System.out.println("idForHeader:"+idForHeader);
                 //The following are rerum properties that should be stripped.  They should be in __rerum.
-                jo.remove("_id");
+                //jo.remove("id");
                 jo.remove("addedTime");
                 jo.remove("originalAnnoID");
                 jo.remove("version");
@@ -1305,6 +1379,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 // will not be ld+json without it.
                 try {
                     addWebAnnotationHeaders(oid, isContainerType(jo), isLD(jo));
+                    System.out.println("jo in getByID before addlocationheader"+jo);
                     addLocationHeader(jo);
                     response.addHeader("Access-Control-Allow-Origin", "*");
                     response.setStatus(HttpServletResponse.SC_OK);
@@ -1318,73 +1393,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             else{
                 writeErrorResponse("No object found with provided id '"+oid+"'.", HttpServletResponse.SC_NOT_FOUND);
             }
-        }
-    }
-    
-    /**
-     * Get annotations by given properties. 
-     * @param Object with key:value pairs with conditions to match against.
-     * @reutrn list of annotations that match the given conditions.  DO NOT RETURN DELETED OBJECTS
-     */
-    // This is not Web Annotation standard as the specifications states you respond with a single object, not a list.  Not sure what to do with these.
-    // @cubap answer: I asked on oac-discuss and was told Web Annotation hasn't handled lists yet, so just be nice.
-    public void getByProperties() throws IOException, ServletException, Exception{
-        //System.out.println("v1 getByProperties");
-        //want to use methodApproval(request, "get"), but these have body so...post
-        if(null != processRequestBody(request, false) && methodApproval(request, "getProps")){
-            JSONObject received = JSONObject.fromObject(content);
-            BasicDBObject query = new BasicDBObject();
-            Set<String> set_received = received.keySet();
-            for(String key : set_received){
-                query.append(key, received.get(key));
-            }
-            //Ignore deleted annotations! https://docs.mongodb.com/v2.6/reference/operator/query/exists/
-            JSONObject existsFlag = new JSONObject();
-            existsFlag.element("$exists", false);
-            query.append("__deleted", existsFlag);
-            List<DBObject> ls_result = mongoDBService.findByExample(Constant.COLLECTION_ANNOTATION, query);
-            JSONArray ja = new JSONArray();
-            for(DBObject dbo : ls_result){
-                BasicDBObject itemToAdd = (BasicDBObject) dbo;
-                itemToAdd.remove("_id");
-                itemToAdd.remove("addedTime"); // retained for legacy v0 objects
-                itemToAdd.remove("originalAnnoID");// retained for legacy v0 objects
-                itemToAdd.remove("version");// retained for legacy v0 objects
-                itemToAdd.remove("permission");// retained for legacy v0 objects
-                itemToAdd.remove("forkFromID"); // retained for legacy v0 objects
-                itemToAdd.remove("serverName");// retained for legacy v0 objects
-                itemToAdd.remove("serverIP");// retained for legacy v0 objects
-                expandPrivateRerumProperty(itemToAdd);
-                ja.add((BasicDBObject) itemToAdd);
-            }
-            try {
-                addSupportHeaders("", true);
-                addLocationHeader(ja);
-                response.addHeader("Access-Control-Allow-Origin", "*");
-                response.setStatus(HttpServletResponse.SC_OK);
-                out = response.getWriter();
-                out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(ja));
-            } 
-            catch (IOException ex) {
-                Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
-            }
-            /*
-            if(ls_result.size() > 0){
-                try {
-                    response.addHeader("Content-Type","application/json"); // not ld+json because it is an array
-                    response.addHeader("Access-Control-Allow-Origin", "*");
-                    response.setStatus(HttpServletResponse.SC_OK);
-                    out = response.getWriter();
-                    out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(ja));
-                } 
-                catch (IOException ex) {
-                    Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            }
-            else{
-                writeErrorResponse("Object(s) not found using provided properties '"+received+"'.", HttpServletResponse.SC_NOT_FOUND);
-            }
-            */
         }
     }
     
@@ -1445,18 +1453,32 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @respond with new @id in Location header and the new annotation in the body.
      */
     public void saveNewObject() throws IOException, ServletException, Exception{
-        System.out.println("create object Test again");
         
+       System.out.println("create object Test again");
+        try {
+            BasicAWSCredentials awsCreds = new BasicAWSCredentials("AKIAR6RLDQ4RCG5E7PV7", "yrBoWi2+Sz+ifMUczf8tHUX7SCe1Zv4PF66WQ52I");
+            client = AmazonDynamoDBClientBuilder.standard().withCredentials(new AWSStaticCredentialsProvider(awsCreds)).withRegion(Regions.US_EAST_1).build();
+            dynamoDB = new DynamoDB(client);
+            tableName = "rerum_dev";
+        }
+        catch(Exception e){
+            System.out.println("AWS initialization error below");
+            System.out.println(e);
+        } 
+        
+        System.out.println("request:"+request);
 
         if(null != processRequestBody(request, false) && methodApproval(request, "create")){
-            //System.out.println("process and approval over.  actually save now");
+            System.out.println("process and approval over.  actually save now");
             JSONObject received = JSONObject.fromObject(content);
+            System.out.println("received.toString() at the top level before configureRerumOptions"+received.toString());
             if(received.containsKey("@id") && !received.getString("@id").isEmpty()){
                 writeErrorResponse("Object already contains an @id "+received.containsKey("@id")+".  Either remove this property for saving or if it is a RERUM object update instead.", HttpServletResponse.SC_BAD_REQUEST);
             }
             else{
-                JSONObject iiif_validation_response = checkIIIFCompliance(received, true); //This boolean should be provided by the user somehow.  It is a intended-to-be-iiif flag
+                //JSONObject iiif_validation_response ;//checkIIIFCompliance(received, true); //This boolean should be provided by the user somehow.  It is a intended-to-be-iiif flag
                 received = configureRerumOptions(received, false);
+                System.out.println("received after configureRerumOptions:"+received.toString());
                 received.remove("_id");
                 DBObject dbo = (DBObject) JSON.parse(received.toString());
                 if(null!=request.getHeader("Slug")){
@@ -1464,37 +1486,50 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     // cubap: if we want, we can just copy the Slug to @id, warning
                     // if there was some mismatch, since versions are fine with that.
                 }
-                /*Table table = dynamoDB.getTable(tableName);
-                Item item = new Item().withPrimaryKey("ID", "friday-insert")
+               /* Table table = dynamoDB.getTable(tableName);
+                Item item = new Item().withPrimaryKey("id", "friday-insert")
                                       .withNumber("Misc_Field", 21004)
                                       .withNumber("Random_Char", 2500);
 	        table.putItem(item);*/
-                   // UUID uniqueKey = UUID.randomUUID();
-                   // String primaryKeyId = uniqueKey.toString();
-                   // Table table = dynamoDB.getTable(tableName);
-                   // String newPrimaryKeyId = Constant.RERUM_ID_PREFIX+primaryKeyId;
-                //Item item = new Item().withPrimaryKey("id", newPrimaryKeyId)
-                                     // .withJSON(Constant.COLLECTION_ANNOTATION, received.toString());
-	        //table.putItem(item);
-               String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
+                    UUID uniqueKey = UUID.randomUUID();
+                    String uniquekeyid = uniqueKey.toString();
+                    String primaryKeyId = uniquekeyid.replace("-","");
+                    System.out.println("primaryKeyId in saveNewObject"+primaryKeyId);
+                   Table table = dynamoDB.getTable(tableName);
+                   System.out.println("received.toString()"+received.toString());
+                   String newPrimaryKeyId = "http://ec2-50-17-144-87.compute-1.amazonaws.com:8080/v1/id/"+primaryKeyId;
+               Item item = new Item().withPrimaryKey("id", newPrimaryKeyId)
+                                     .withJSON("alpha"/*Constant.COLLECTION_ANNOTATION*/, received.toString());
+	        table.putItem(item);
+                item = table.getItem("id", newPrimaryKeyId);
+	        String json_obj;
+	        json_obj = item.toJSON();
+                
+               logger.debug(String.format("newPrimaryKeyId in saveNewObject = %s", newPrimaryKeyId));
+               logger.debug(String.format("json_obj in saveNewObject = %s", json_obj));
+                //logger.debug("newPrimaryKeyId in saveNewObject {}.", newPrimaryKeyId);
+                System.out.println("newPrimaryKeyId in saveNewObject :"+newPrimaryKeyId);
+                System.out.println("json_obj in saveNewObject :"+json_obj);
+               //String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
                 //set @id from _id and update the annotation
-               BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
-                String newid = Constant.RERUM_ID_PREFIX+newObjectID;
-                //newid = Constant.RERUM_ID_PREFIX+primaryKeyId;
-                dboWithObjectID.put("@id", newid);
-                mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
-                JSONObject jo = new JSONObject();
-                JSONObject newObjWithID = JSONObject.fromObject(dboWithObjectID);
-                //item = table.getItem(Constant.COLLECTION_ANNOTATION, primaryKeyId);
-                //json_obj = item.toJSON();
-                JSONObject finalJSONObject = JSONObject.fromObject(newObjWithID);
+              // BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
+                //String newid = Constant.RERUM_ID_PREFIX+newObjectID;
+                String newid = Constant.RERUM_ID_PREFIX+primaryKeyId;
+                //dboWithObjectID.put("@id", newid);
+                //mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
+               JSONObject jo = new JSONObject();
+                //JSONObject newObjWithID = JSONObject.fromObject(dboWithObjectID);
+               //item = table.getItem("id", newPrimaryKeyId);
+               //String json_obj = item.toJSON();
+              // Object obj = json_obj;
+              JSONObject finalJSONObject = JSONObject.fromObject(json_obj);
 
                 //JsonObject convertedObject = new Gson().fromJson(finalJSONObject, JsonObject.class);
                 expandPrivateRerumProperty(finalJSONObject);
                 jo.element("code", HttpServletResponse.SC_CREATED);
-                //newObjWithID.remove("_id");
+                //newid.remove("_id");
                 jo.element("new_obj_state", finalJSONObject);
-                jo.element("iiif_validation", iiif_validation_response);
+                //jo.element("iiif_validation", iiif_validation_response);
                 //try {
                 System.out.println("Object created: "+finalJSONObject);
                 try {
@@ -1825,79 +1860,197 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @throws java.io.IOException
      * @throws javax.servlet.ServletException
      */
-    public void putUpdateObject()throws IOException, ServletException, Exception{
+    public void putUpdateObject() throws IOException, ServletException, Exception {
         //@webanno The client should use the If-Match header with a value of the ETag it received from the server before the editing process began, 
         //to avoid collisions of multiple users modifying the same Annotation at the same time
         //cubap: I'm not sold we have to do this. Our versioning would allow multiple changes. 
         //The application might want to throttle internally, but it can.
         Boolean historyNextUpdatePassed = false;
+        String primarykey = "";
+        JSONObject newjson = new JSONObject();
         System.out.println("put update object");
-        if(null!= processRequestBody(request, true) && methodApproval(request, "update")){
+        logger.debug(String.format("request in putUpdateObject = %s", request));
+        try {
+            BasicAWSCredentials awsCreds = new BasicAWSCredentials("AKIAR6RLDQ4RCG5E7PV7", "yrBoWi2+Sz+ifMUczf8tHUX7SCe1Zv4PF66WQ52I");
+            client = AmazonDynamoDBClientBuilder.standard().withCredentials(new AWSStaticCredentialsProvider(awsCreds)).withRegion(Regions.US_EAST_1).build();
+            dynamoDB = new DynamoDB(client);
+            tableName = "rerum_dev";
+        } catch (Exception e) {
+            System.out.println("AWS initialization error below");
+            System.out.println(e);
+        }
+
+        if (null != processRequestBody(request, true) && methodApproval(request, "update")) {
             BasicDBObject query = new BasicDBObject();
-            JSONObject received = JSONObject.fromObject(content); 
-            if(received.containsKey("@id")){
-                String updateHistoryNextID = received.getString("@id");
-                query.append("@id", updateHistoryNextID);
-                BasicDBObject originalObject = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The originalObject DB object
-                BasicDBObject updatedObject = (BasicDBObject) JSON.parse(received.toString()); //A copy of the original, this will be saved as a new object.  Make all edits to this variable.
-                JSONObject originalJSONObj = JSONObject.fromObject(originalObject);
-                boolean alreadyDeleted = checkIfDeleted(JSONObject.fromObject(originalObject));
-                boolean isReleased = checkIfReleased(JSONObject.fromObject(originalObject));
-                if(alreadyDeleted){
+            //String medistring = content;
+            //content=medistring.replace("@","");
+            JSONObject received = JSONObject.fromObject(content);
+            logger.debug(String.format("content in putUpdateObject = %s", content));
+            logger.debug(String.format("received in putUpdateObject = %s", received));
+            //JSONArray updatedArray = (JSONArray) JSONSerializer.toJSON(content);
+            //System.out.println(updatedArray.size());
+            //JSONArray updatedArray = JSONArray.fromString(content);
+            JSONArray updatedArray = JSONArray.fromObject(received);
+            //JSONArray array = JSONArray.fromObject(content);
+            System.out.println("JSONArray size" + updatedArray.size());
+            //received = configureRerumOptions(received, false);
+
+            Iterator<String> keys = received.keys();
+            System.out.println(received.get("@id"));
+            primarykey = received.get("@id").toString();
+            System.out.println("primarykey" + primarykey);
+            Map<String, Object> data = new HashMap<String, Object>();
+            while (keys.hasNext()) {
+                String key = keys.next();
+                //String key = keys.get(0x0);
+                System.out.println("key:" + key);
+                //System.out.println("jsonObject.get(key) :"+json.get(key));
+                if (!key.equals("@id")) {
+                    System.out.println("jsonObject.get(key) :" + received.get(key));
+                    data.put(key, received.get(key));
+
+                }
+                /* if (json.containsKey("id")) {
+                     // do something with jsonObject here      
+                     break;
+                    }
+                    else {
+                        System.out.println("other objects in the putUpdate request:"+json.get("id"));
+                    }*/
+            }
+            //JSONObject newjson = new JSONObject();
+            newjson.putAll(data);
+            //newjson = configureRerumOptions(received, true);
+            newjson = configureRerumOptions(newjson, false);
+            System.out.println("newjson in the putUpdate request:" + newjson);
+            // System.out.println("id in the putUpdate request:"+json.get("id"));
+
+            //System.out.println();
+            //System.out.println("id in the putUpdate request:"+json.get("id"));
+            Table table = dynamoDB.getTable(tableName);
+            Item old_item = table.getItem("id", primarykey);
+            String prev_json_obj;
+            prev_json_obj = old_item.toJSON();
+
+            /*UpdateItemSpec updateItemSpec = new UpdateItemSpec().withPrimaryKey("id", primarykey)
+                    .withUpdateExpression("set alpha = :alpha")
+                    .withValueMap(new ValueMap().withJSON(":alpha", newjson.toString())).withReturnValues(ReturnValue.ALL_NEW);;
+            
+            UpdateItemOutcome outcome = table.updateItem(updateItemSpec);
+            System.out.println(outcome.getItem().toJSONPretty());*/
+            //logger.debug(String.format("received.toString in putUpdateObject = %s", received.toString()));
+            if (received.containsKey("@id")) {
+                System.out.println("received in if of putUpdate" + received);
+                UUID uniqueKey = UUID.randomUUID();
+                String uniquekeyid = uniqueKey.toString();
+                String primaryKeyId = uniquekeyid.replace("-", "");
+                System.out.println("primaryKeyId in putUpdateObject" + primaryKeyId);
+
+                //System.out.println("received.toString()"+received.toString());
+                String newPrimaryKeyId = "http://ec2-50-17-144-87.compute-1.amazonaws.com:8080/v1/id/" + primaryKeyId;
+                Item new_item = new Item().withPrimaryKey("id", newPrimaryKeyId)
+                        .withJSON("alpha", newjson.toString());
+                table.putItem(new_item);
+                new_item = table.getItem("id", newPrimaryKeyId);
+                String json_obj;
+                json_obj = new_item.toJSON();
+                Object new_json_jo = json_obj;
+                System.out.println("new_json_jo" + new_json_jo);
+                JSONObject new_json_obj = JSONObject.fromObject(new_json_jo);
+                JSONObject newObjectProperties = new_json_obj.getJSONObject("alpha");
+                newObjectProperties.getJSONObject("__rerum").getJSONObject("history").element("previous",primarykey);
+                System.out.println("newObjectProperties in putUpdate method"+newObjectProperties);
+                JSONObject old_json_obj = JSONObject.fromObject(prev_json_obj);
+                String updateHistoryNextID = newPrimaryKeyId;//received.getString("@id");
+                System.out.println("updateHistoryNextID in putUpdateObject" + updateHistoryNextID);
+                JSONObject originalProperties = old_json_obj.getJSONObject("alpha");
+                System.out.println("originalProperties in putUpdateObject before next" + originalProperties);
+                //originalProperties.getJSONObject("__rerum").element("isOverwritten", formattedOverwrittenDateTime)
+                originalProperties.getJSONObject("__rerum").getJSONObject("history").element("next", newPrimaryKeyId);
+                System.out.println("originalProperties in putUpdateObject after next" + originalProperties);
+                UpdateItemSpec updateItemSpec = new UpdateItemSpec().withPrimaryKey("id", primarykey)
+                        .withUpdateExpression("set alpha = :alpha")
+                        .withValueMap(new ValueMap().withJSON(":alpha", originalProperties.toString())).withReturnValues(ReturnValue.ALL_NEW);
+                UpdateItemOutcome outcome = table.updateItem(updateItemSpec);
+                query.append("id", updateHistoryNextID);
+                Item origObj = table.getItem("id", primarykey);
+                String orig_json_obj = origObj.toJSON();
+                Object jso = json_obj;
+                String received_str = received.toString();
+                UpdateItemSpec newUpdateItemSpec = new UpdateItemSpec().withPrimaryKey("id", newPrimaryKeyId)
+                        .withUpdateExpression("set alpha = :alpha")
+                        .withValueMap(new ValueMap().withJSON(":alpha", newObjectProperties.toString())).withReturnValues(ReturnValue.ALL_NEW);
+                //SONObject newjsonobj = new JSONObject(received_str);
+                //JSONParser parser = new JSONParser();
+                UpdateItemOutcome newUpdatedoutcome = table.updateItem(newUpdateItemSpec);
+                query.append("id", updateHistoryNextID);
+                Item newObj = table.getItem("id", newPrimaryKeyId);
+                String update_json_obj = newObj.toJSON();
+                Object update_jso = update_json_obj;
+                JSONObject orig_obj = JSONObject.fromObject(jso);
+                System.out.println("orig_obj in putUpdateObject" + orig_obj);
+                JSONObject updatedObj = JSONObject.fromObject(update_jso);
+                System.out.println("updatedObj in putUpdateObject" + updatedObj);
+                BasicDBObject originalObject; //= (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The originalObject DB object
+
+                BasicDBObject updatedObject; //= (BasicDBObject) JSON.parse(received.toString()); //A copy of the original, this will be saved as a new object.  Make all edits to this variable.
+                //JSONObject originalJSONObj = JSONObject.fromObject(originalObject);
+                JSONObject originalJSONObj = JSONObject.fromObject(received);
+                boolean alreadyDeleted = checkIfDeleted(JSONObject.fromObject(orig_obj));
+                boolean isReleased = checkIfReleased(JSONObject.fromObject(orig_obj));
+                if (alreadyDeleted) {
                     writeErrorResponse("The object you are trying to update is deleted.", HttpServletResponse.SC_FORBIDDEN);
-                }
-                else if(isReleased){
+                } else if (isReleased) {
                     writeErrorResponse("The object you are trying to update is released.  Fork to make changes.", HttpServletResponse.SC_FORBIDDEN);
-                }
-                else{
-                    if(null != originalObject){
-                        JSONObject newObject = JSONObject.fromObject(updatedObject);//The edited original object meant to be saved as a new object (versioning)
-                        JSONObject originalProperties = originalJSONObj.getJSONObject("__rerum");
-                        newObject.element("__rerum", originalProperties);
+                } else {
+                    if (null != orig_obj) {
+                        JSONObject newObject = JSONObject.fromObject(updatedObj);//The edited original object meant to be saved as a new object (versioning)
+                        originalProperties = originalJSONObj.getJSONObject("__rerum");
+                        //newObject.element("__rerum", originalProperties);
                         //Since this is a put update, it is possible __rerum is not in the object provided by the user.  We get a reliable copy oof the original out of mongo
-                        newObject = configureRerumOptions(newObject, true); //__rerum for the new object being created because of the update action
-                        newObject.remove("@id"); //This is being saved as a new object, so remove this @id for the new one to be set.
-                        newObject.remove("_id");
-                        DBObject dbo = (DBObject) JSON.parse(newObject.toString());
-                        String newNextID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
-                        String newNextAtID = Constant.RERUM_ID_PREFIX+newNextID;
-                        BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
-                        dboWithObjectID.append("@id", newNextAtID);
-                        newObject.element("@id", newNextAtID);
+                        //newObject = configureRerumOptions(newObject, true); //__rerum for the new object being created because of the update action
+                       // newObject.remove("@id"); //This is being saved as a new object, so remove this @id for the new one to be set.
+                       // newObject.remove("_id");
+                        //DBObject dbo = (DBObject) JSON.parse(newObject.toString());
+                        String newNextID = updateHistoryNextID;//mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
+                        String newNextAtID = Constant.RERUM_ID_PREFIX + newNextID;
+                        //BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject) dbo);
+                       // dboWithObjectID.append("@id", newNextAtID);
+                        newObject.element("id", newPrimaryKeyId);
                         expandPrivateRerumProperty(newObject);
-                        newObject.remove("_id");
-                        mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
-                        historyNextUpdatePassed = alterHistoryNext(updateHistoryNextID, newNextAtID); //update history.next or original object to include the newObject @id
-                        if(historyNextUpdatePassed){
-                            System.out.println("Object put updated: "+newNextAtID);
+                        //newObject.remove("_id");
+                        //mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
+                        //historyNextUpdatePassed = alterHistoryNext(updateHistoryNextID, newNextAtID); //update history.next or original object to include the newObject @id
+                        if (true) {
+                            System.out.println("Object put updated: " + newNextAtID);
                             JSONObject jo = new JSONObject();
-                            JSONObject iiif_validation_response = checkIIIFCompliance(newNextAtID, "2.1");
+                            //JSONObject iiif_validation_response = checkIIIFCompliance(newNextAtID, "2.1");
                             jo.element("code", HttpServletResponse.SC_OK);
                             jo.element("original_object_id", updateHistoryNextID);
                             jo.element("new_obj_state", newObject); //FIXME: @webanno standards say this should be the response.
-                            jo.element("iiif_validation", iiif_validation_response);
+                            //jo.element("iiif_validation", iiif_validation_response);
                             try {
+                                System.out.println("In try block before addWebAnnotationHeaders and addLocationHeader");
                                 addWebAnnotationHeaders(newNextID, isContainerType(newObject), isLD(newObject));
                                 addLocationHeader(newObject);
                                 response.addHeader("Access-Control-Allow-Origin", "*");
                                 response.setStatus(HttpServletResponse.SC_OK);
                                 out = response.getWriter();
+                                //Object obj = jo.remove("alpha"); 
+                                //jo = JSONObject.fromObject(obj);
+                                System.out.println("jo in try block"+jo);
                                 out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
-                            }
-                            catch (IOException ex) {
+                            } catch (IOException ex) {
                                 Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
                             }
-                        }
-                        else{
+                        } else {
                             //The error is already written to response.out, do nothing.
                         }
-                    }
-                    else{
+                    } else {
                         updateExternalObject(received);
                     }
                 }
-            }
-            else{
+            } else {
                 writeErrorResponse("Object did not contain an @id, could not update.", HttpServletResponse.SC_BAD_REQUEST);
             }
         }
@@ -1915,49 +2068,137 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      */
     public void overwriteObject()throws IOException, ServletException, Exception{
         System.out.println("overwrite object");
+        try {
+            BasicAWSCredentials awsCreds = new BasicAWSCredentials("AKIAR6RLDQ4RCG5E7PV7", "yrBoWi2+Sz+ifMUczf8tHUX7SCe1Zv4PF66WQ52I");
+            client = AmazonDynamoDBClientBuilder.standard().withCredentials(new AWSStaticCredentialsProvider(awsCreds)).withRegion(Regions.US_EAST_1).build();
+            dynamoDB = new DynamoDB(client);
+            tableName = "rerum_dev";
+        }
+        catch(Exception e){
+            System.out.println("AWS initialization error below");
+            System.out.println(e);
+        } 
         if(null!= processRequestBody(request, true) && methodApproval(request, "overwrite")){
-            BasicDBObject query = new BasicDBObject();
+            //BasicDBObject query = new BasicDBObject();
             JSONObject received = JSONObject.fromObject(content); 
+            System.out.println("content in overwrite Object"+content);
+            System.out.println("received in overwrite Object"+received);
+            JSONObject updatedJson = new JSONObject();
+            String primarykey = "";
+            Table table = dynamoDB.getTable(tableName);
             if(received.containsKey("@id")){
                 String receivedID = received.getString("@id");
-                query.append("@id", receivedID);
-                BasicDBObject originalObject = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The originalObject DB object
-                JSONObject originalJSONObj = JSONObject.fromObject(originalObject);
-                boolean alreadyDeleted = checkIfDeleted(JSONObject.fromObject(originalObject));
-                boolean isReleased = checkIfReleased(JSONObject.fromObject(originalObject));
-                String origObjGenerator = originalJSONObj.getJSONObject("__rerum").getString("generatedBy");
-                boolean isGenerator = (origObjGenerator.equals(generatorID));
+                 //JSONObject json = (JSONObject) js;
+                Iterator<String> keys = received.keys();
+                System.out.println(received.get("@id"));
+                primarykey = received.get("@id").toString();
+                System.out.println("primarykey"+primarykey);
+                Map<String, Object> data = new HashMap<String, Object>();
+                while(keys.hasNext()) {
+                 String key = keys.next();
+                 //String key = keys.get(0x0);
+                 System.out.println("key:"+key);
+                 //System.out.println("jsonObject.get(key) :"+json.get(key));
+                 if(!key.equals("@id")){
+                     System.out.println("jsonObject.get(key) :"+received.get(key));
+                     data.put( key, received.get(key) );
+                     
+                 }
+                   /* if (json.containsKey("id")) {
+                     // do something with jsonObject here      
+                     break;
+                    }
+                    else {
+                        System.out.println("other objects in the putUpdate request:"+json.get("id"));
+                    }*/
+                }
+                //JSONObject newjson = new JSONObject();
+                updatedJson.putAll( data );
+                //newjson = configureRerumOptions(received, true);
+               updatedJson = configureRerumOptions(updatedJson, false);
+                System.out.println("updateJson in the overwrite request:"+updatedJson);
+                String origObjGenerator = updatedJson.getJSONObject("__rerum").getString("history");
+                System.out.println("origObjGenerator in the overwrite request:"+origObjGenerator);
+                //query.append("@id", receivedID);
+                //BasicDBObject originalObject = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The originalObject DB object
+              //  JSONObject originalJSONObj = JSONObject.fromObject(originalObject);
+               // boolean alreadyDeleted = checkIfDeleted(JSONObject.fromObject(originalObject));
+               // boolean isReleased = checkIfReleased(JSONObject.fromObject(originalObject));
+               // String origObjGenerator = originalJSONObj.getJSONObject("__rerum").getString("generatedBy");
+               // boolean isGenerator = (origObjGenerator.equals(generatorID));
+               Item item = table.getItem("id", primarykey);
+               String prev_json_obj = item.toJSON();
+               System.out.println("item"+item);
+               System.out.println("prev_json_obj"+prev_json_obj);
+               Object jso = prev_json_obj;
+               System.out.println("jso"+jso);
+               
+               JSONObject originalJSONObj = JSONObject.fromObject(jso);  
+               System.out.println("originalJSONObj in overwrite :"+originalJSONObj);
+               boolean alreadyDeleted = checkIfDeleted(JSONObject.fromObject(jso));
+               System.out.println("alreadyDeleted in overwrite :"+alreadyDeleted);
+               boolean isReleased = checkIfReleased(JSONObject.fromObject(jso));
+               System.out.println("isReleased in overwrite :"+isReleased);
+               //String origObjGenerator = originalJSONObj.getJSONObject("__rerum").getString("generatedBy");
+               //System.out.println("origObjGenerator in overwrite :" + origObjGenerator);
+               //System.out.println("generatorID in overwrite :" + generatorID);
+               //boolean isGenerator = (origObjGenerator.equals(generatorID));
+               //System.out.println("isGenerator in overwrite :" + isGenerator);
+
                 if(alreadyDeleted){
                     writeErrorResponse("The object you are trying to overwrite is deleted.", HttpServletResponse.SC_FORBIDDEN);
                 }
                 else if(isReleased){
                     writeErrorResponse("The object you are trying to overwrite is released.  Fork to make changes.", HttpServletResponse.SC_FORBIDDEN);
                 }
-                else if(!isGenerator){
+                /*else if(!isGenerator){
                     writeErrorResponse("The object you are trying to overwrite was not created by you.  Fork to make changes.", HttpServletResponse.SC_UNAUTHORIZED);
-                }
+                }*/
                 else{
-                    if(null != originalObject){
-                        JSONObject newObject = received;//The edited original object meant to be saved as a new object (versioning)
-                        newObject.remove("_id");
-                        JSONObject originalProperties = originalJSONObj.getJSONObject("__rerum");
+                    System.out.println("inside the else block");
+                    if(null != item){
+                        System.out.println("inside the if block");
+                        JSONObject newObject = updatedJson;//The edited original object meant to be saved as a new object (versioning)
+                        System.out.println("newObject in if block of overwriteObject"+newObject);
+                        //newObject.remove("_id");
+                        //JSONObject originalProperties = originalJSONObj.getJSONObject("__rerum");
+                        //System.out.println("originalProperties in if block of overwriteObject"+originalProperties);
                         
                         LocalDateTime dt = LocalDateTime.now();
                         DateTimeFormatter dtFormat = DateTimeFormatter.ISO_DATE_TIME;
                         String formattedOverwrittenDateTime = dt.format(dtFormat);
+                        //originalProperties.getJSONObject("__rerum").element("isOverwritten", formattedOverwrittenDateTime);
+                        //newObject.element("__rerum", originalProperties);
+                        //DBObject udbo = (DBObject) JSON.parse(newObject.toString());
+                        //mongoDBService.update(Constant.COLLECTION_ANNOTATION, originalObject, udbo);
+                        UpdateItemSpec updateItemSpec = new UpdateItemSpec().withPrimaryKey("id", primarykey)
+                                .withUpdateExpression("set alpha = :alpha")
+                                .withValueMap(new ValueMap().withJSON(":alpha", newObject.toString())).withReturnValues(ReturnValue.ALL_NEW);
+                        UpdateItemOutcome outcome = table.updateItem(updateItemSpec);
+                        System.out.println(outcome.getItem().toJSONPretty());
+                        Item updatedItem = table.getItem("id", primarykey);
+                        System.out.println("item in getByID" + item);
+                        String json_obj = updatedItem.toJSON();
+                        Object tempjso = json_obj;
+               
+                        newObject = JSONObject.fromObject(tempjso);
+                        JSONObject originalProperties = newObject.getJSONObject("alpha");
+//originalProperties.getJSONObject("__rerum").element("isOverwritten", formattedOverwrittenDateTime)
                         originalProperties.getJSONObject("__rerum").element("isOverwritten", formattedOverwrittenDateTime);
-                        newObject.element("__rerum", originalProperties);
-                        DBObject udbo = (DBObject) JSON.parse(newObject.toString());
-                        mongoDBService.update(Constant.COLLECTION_ANNOTATION, originalObject, udbo);
+                        UpdateItemSpec newUpdateItemSpec = new UpdateItemSpec().withPrimaryKey("id", primarykey)
+                                .withUpdateExpression("set alpha = :alpha")
+                                .withValueMap(new ValueMap().withJSON(":alpha", originalProperties.toString())).withReturnValues(ReturnValue.ALL_NEW);
+                        UpdateItemOutcome newOutcome = table.updateItem(newUpdateItemSpec);
                         JSONObject jo = new JSONObject();
-                        JSONObject iiif_validation_response = checkIIIFCompliance(receivedID, "2.1");
+                        //JSONObject iiif_validation_response = checkIIIFCompliance(receivedID, "2.1");
                         System.out.println("object overwritten: "+receivedID);
-                        expandPrivateRerumProperty(newObject);
-                        newObject.remove("_id");
+                        //expandPrivateRerumProperty(newObject);
+                        //newObject.remove("_id");
                         jo.element("code", HttpServletResponse.SC_OK);
                         jo.element("new_obj_state", newObject); //FIXME: @webanno standards say this should be the response.
-                        jo.element("iiif_validation", iiif_validation_response);
+                        //jo.element("iiif_validation", iiif_validation_response);
                         try {
+                            System.out.println("Inside the try block");
                             addWebAnnotationHeaders(receivedID, isContainerType(newObject), isLD(newObject));
                             addLocationHeader(newObject);
                             response.addHeader("Access-Control-Allow-Origin", "*");
@@ -2707,7 +2948,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             Algorithm algorithm = Algorithm.RSA256(pubKey, null);
             JWTVerifier verifier = JWT.require(algorithm).build(); //Reusable verifier instance
                //.withIssuer("auth0")
-            generatorID = receivedToken.getClaim(Constant.RERUM_AGENT_ClAIM).asString();
+             System.out.println("receivedToken is : "+receivedToken); 
+             String rerum_agent = Constant.RERUM_AGENT_CLAIM;
+             System.out.println("rerum_agent :"+rerum_agent);
+             System.out.println("receivedToken.getClaim(Constant.RERUM_AGENT_CLAIM) value is"+receivedToken.getClaim(Constant.RERUM_AGENT_CLAIM));
+            generatorID = receivedToken.getClaim(Constant.RERUM_AGENT_CLAIM).asString();
+            System.out.println("generatorID:"+generatorID);
             //System.out.println("Was I able to pull the agent claim from the token directly without userinfo without verifying?  Value below");
             //System.out.println("Value: "+generatorID);
             if(botCheck(generatorID)){
@@ -2770,6 +3016,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @return true if matched
      */
     private boolean botCheck(String agent) {
+        System.out.println("agent:"+agent);
+        System.out.println("getRerumProperty(\"bot_agent\"):"+getRerumProperty("bot_agent"));
         return agent.equals(getRerumProperty("bot_agent"));
     }
        
