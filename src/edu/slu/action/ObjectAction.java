@@ -2016,7 +2016,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         String newNextAtID = Constant.RERUM_ID_PREFIX + newNextID;
                         //BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject) dbo);
                        // dboWithObjectID.append("@id", newNextAtID);
-                        //newObject.element("@id", newNextAtID);
+                        newObject.element("id", newPrimaryKeyId);
                         expandPrivateRerumProperty(newObject);
                         //newObject.remove("_id");
                         //mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
