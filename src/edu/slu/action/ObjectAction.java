@@ -2000,10 +2000,10 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         originalProperties = originalJSONObj.getJSONObject("__rerum");
                         newObject.element("__rerum", originalProperties);
                         //Since this is a put update, it is possible __rerum is not in the object provided by the user.  We get a reliable copy oof the original out of mongo
-                        newObject = configureRerumOptions(newObject, true); //__rerum for the new object being created because of the update action
+                        //newObject = configureRerumOptions(newObject, true); //__rerum for the new object being created because of the update action
                         newObject.remove("@id"); //This is being saved as a new object, so remove this @id for the new one to be set.
                         newObject.remove("_id");
-                        DBObject dbo = (DBObject) JSON.parse(newObject.toString());
+                        //DBObject dbo = (DBObject) JSON.parse(newObject.toString());
                         String newNextID = updateHistoryNextID;//mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
                         String newNextAtID = Constant.RERUM_ID_PREFIX + newNextID;
                         //BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject) dbo);
@@ -2022,6 +2022,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                             jo.element("new_obj_state", newObjectProperties); //FIXME: @webanno standards say this should be the response.
                             //jo.element("iiif_validation", iiif_validation_response);
                             try {
+                                System.out.println("In try block before addWebAnnotationHeaders and addLocationHeader");
                                 addWebAnnotationHeaders(newNextID, isContainerType(newObjectProperties), isLD(newObjectProperties));
                                 addLocationHeader(newObjectProperties);
                                 response.addHeader("Access-Control-Allow-Origin", "*");
