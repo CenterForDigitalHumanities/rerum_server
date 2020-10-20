@@ -1973,15 +1973,23 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         .withValueMap(new ValueMap().withJSON(":alpha", originalProperties.toString())).withReturnValues(ReturnValue.ALL_NEW);
                 UpdateItemOutcome outcome = table.updateItem(updateItemSpec);
                 query.append("id", updateHistoryNextID);
-                Item origObj = table.getItem("id", updateHistoryNextID);
+                Item origObj = table.getItem("id", primarykey);
                 String orig_json_obj = origObj.toJSON();
                 Object jso = json_obj;
                 String received_str = received.toString();
+                UpdateItemSpec newUpdateItemSpec = new UpdateItemSpec().withPrimaryKey("id", newPrimaryKeyId)
+                        .withUpdateExpression("set alpha = :alpha")
+                        .withValueMap(new ValueMap().withJSON(":alpha", newObjectProperties.toString())).withReturnValues(ReturnValue.ALL_NEW);
                 //SONObject newjsonobj = new JSONObject(received_str);
                 //JSONParser parser = new JSONParser();
+                UpdateItemOutcome newUpdatedoutcome = table.updateItem(newUpdateItemSpec);
+                query.append("id", updateHistoryNextID);
+                Item newObj = table.getItem("id", newPrimaryKeyId);
+                String update_json_obj = newObj.toJSON();
+                Object update_jso = update_json_obj;
                 JSONObject orig_obj = JSONObject.fromObject(jso);
                 System.out.println("orig_obj in putUpdateObject" + orig_obj);
-                JSONObject updatedObj = JSONObject.fromObject(received.toString());
+                JSONObject updatedObj = JSONObject.fromObject(update_jso);
                 System.out.println("updatedObj in putUpdateObject" + updatedObj);
                 BasicDBObject originalObject; //= (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The originalObject DB object
 
@@ -1996,13 +2004,13 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     writeErrorResponse("The object you are trying to update is released.  Fork to make changes.", HttpServletResponse.SC_FORBIDDEN);
                 } else {
                     if (null != orig_obj) {
-                        JSONObject newObject = JSONObject.fromObject(newObjectProperties);//The edited original object meant to be saved as a new object (versioning)
+                        JSONObject newObject = JSONObject.fromObject(updatedObj);//The edited original object meant to be saved as a new object (versioning)
                         originalProperties = originalJSONObj.getJSONObject("__rerum");
-                        newObject.element("__rerum", originalProperties);
+                        //newObject.element("__rerum", originalProperties);
                         //Since this is a put update, it is possible __rerum is not in the object provided by the user.  We get a reliable copy oof the original out of mongo
                         //newObject = configureRerumOptions(newObject, true); //__rerum for the new object being created because of the update action
-                        newObject.remove("@id"); //This is being saved as a new object, so remove this @id for the new one to be set.
-                        newObject.remove("_id");
+                       // newObject.remove("@id"); //This is being saved as a new object, so remove this @id for the new one to be set.
+                       // newObject.remove("_id");
                         //DBObject dbo = (DBObject) JSON.parse(newObject.toString());
                         String newNextID = updateHistoryNextID;//mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
                         String newNextAtID = Constant.RERUM_ID_PREFIX + newNextID;
@@ -2023,8 +2031,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                             //jo.element("iiif_validation", iiif_validation_response);
                             try {
                                 System.out.println("In try block before addWebAnnotationHeaders and addLocationHeader");
-                                addWebAnnotationHeaders(newNextID, isContainerType(newObjectProperties), isLD(newObjectProperties));
-                                addLocationHeader(newObjectProperties);
+                                addWebAnnotationHeaders(newNextID, isContainerType(newObject), isLD(newObject));
+                                addLocationHeader(newObject);
                                 response.addHeader("Access-Control-Allow-Origin", "*");
                                 response.setStatus(HttpServletResponse.SC_OK);
                                 out = response.getWriter();
