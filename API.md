@@ -8,14 +8,14 @@
     - [History tree since this version](#history-tree-since-this-version)
   - [POST](#post)
     - [Create](#create)
-    - [Batch Create (beta)](#batch-create-proposed)
-    - [Custom Query (beta)](#custom-query-beta)
+    - [Batch Create](#batch-create-proposed)
+    - [Custom Query](#custom-query)
     - [Access Token Proxy](#access-token-proxy)
     - [Refresh Token Proxy](#refresh-token-proxy)
     - [HTTP POST Method Override](#http-post-method-override)
   - [PUT](#put)
     - [Update](#update)
-    - [Batch Update (beta)](#batch-update-proposed)
+    - [Batch Update](#batch-update-proposed)
   - [PATCH](#patch)
     - [Patch Update](#patch-update)
     - [Add Properties](#add-properties)
@@ -49,7 +49,7 @@ and will not be attributed to you in any way.
 - http://tinydev.rerum.io/app/create   Uses the rules established by RERUM [create](#create)
 - http://tinydev.rerum.io/app/update   Uses the rules established by RERUM PUT [update](#update)
 - http://tinydev.rerum.io/app/delete   Uses the rules established by RERUM [delete](#delete)
-- http://tinydev.rerum.io/app/query    Uses the rules established by RERUM [Custom Query](#custom-query-beta)
+- http://tinydev.rerum.io/app/query    Uses the rules established by RERUM [Custom Query](#custom-query)
 
 
 ## GET
