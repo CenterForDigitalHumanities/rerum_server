@@ -1,7 +1,7 @@
-# API (0.9)
+# API (1.0.0)
 <!-- TOC -->
 
-- [API (1.0)](#api-10)
+- [API (1.0.0)](#api-10)
   - [GET](#get)
     - [Single object by id](#single-object-by-id)
     - [History tree before this version](#history-tree-before-this-version)
