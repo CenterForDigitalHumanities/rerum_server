@@ -2036,8 +2036,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                                 response.addHeader("Access-Control-Allow-Origin", "*");
                                 response.setStatus(HttpServletResponse.SC_OK);
                                 out = response.getWriter();
-                                //Object obj = jo.remove("code"); 
-                                // jo = JSONObject.fromObject(obj);
+                                Object obj = jo.remove("alpha"); 
+                                jo = JSONObject.fromObject(obj);
                                 System.out.println("jo in try block"+jo);
                                 out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
                             } catch (IOException ex) {
