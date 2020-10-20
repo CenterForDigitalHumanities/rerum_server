@@ -2036,6 +2036,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                                 response.addHeader("Access-Control-Allow-Origin", "*");
                                 response.setStatus(HttpServletResponse.SC_OK);
                                 out = response.getWriter();
+                                System.out.println("jo in try block"+jo);
                                 out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
                             } catch (IOException ex) {
                                 Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
