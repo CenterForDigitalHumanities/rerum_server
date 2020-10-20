@@ -29,9 +29,9 @@ documentation, but broadly, you will find:
 * `@context`   the RERUM API JSON-LD context file for these terms
 * `alpha`  internal flag for RERUM API version control 
 * `APIversion` specific RERUM API release version for this data node
-* `created`  specific creation date for this \[version of this] object
-* `isOverwritten`  specific date (if any) this version was updated without versioning
+* `createdAt`  specific creation date for this \[version of this] object
 * `generatedBy`  the agent for the application that authenticated to create this object
+* `isOverwritten`  specific date (if any) this version was updated without versioning
 * `isReleased`  a special flag for RERUM, indicating this version is intentionally public and immutable
 * `releases`  an object containing the most recent anscestor and descendant releases
 * `history`  an object containing the first, previous, and immediate derivative versions of this object
