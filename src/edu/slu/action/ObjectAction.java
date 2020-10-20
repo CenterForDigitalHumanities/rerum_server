@@ -2027,7 +2027,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                             //JSONObject iiif_validation_response = checkIIIFCompliance(newNextAtID, "2.1");
                             jo.element("code", HttpServletResponse.SC_OK);
                             jo.element("original_object_id", updateHistoryNextID);
-                            jo.element("new_obj_state", newObjectProperties); //FIXME: @webanno standards say this should be the response.
+                            jo.element("new_obj_state", newObject); //FIXME: @webanno standards say this should be the response.
                             //jo.element("iiif_validation", iiif_validation_response);
                             try {
                                 System.out.println("In try block before addWebAnnotationHeaders and addLocationHeader");
