@@ -43,10 +43,6 @@ tested with the development version.
 If you would like to see an example of a web application leveraging the RERUM API visit the 
 testbed at http://tinydev.rerum.io or the [GitHub codebase for TinyThings](https://github.com/CenterForDigitalHumanities/TinyThings).
 
-If you want to see what an application API proxy looks like
-that uses the RERUM API, visit our TinyThings GitHub example at
-https://github.com/CenterForDigitalHumanities/TinyThings/tree/master/Source%20Packages/io/rerum/crud
-
 To have simple CRUD ability from client script without using a back end proxy, you can
 use our public test endpoints.  Note: Your data will be public and could be removed at any time. This is for testing only 
 and will not be attributed to you in any way.
