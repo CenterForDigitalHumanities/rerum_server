@@ -1,21 +1,21 @@
-# API (0.9)
+# API (1.0.0)
 <!-- TOC -->
 
-- [API (1.0)](#api-10)
+- [API (1.0.0)](#api-10)
   - [GET](#get)
     - [Single object by id](#single-object-by-id)
     - [History tree before this version](#history-tree-before-this-version)
     - [History tree since this version](#history-tree-since-this-version)
   - [POST](#post)
-    - [Create](#create)
-    - [Batch Create (beta)](#batch-create-proposed)
-    - [Custom Query (beta)](#custom-query-beta)
     - [Access Token Proxy](#access-token-proxy)
     - [Refresh Token Proxy](#refresh-token-proxy)
+    - [Create](#create)
+    - [Batch Create](#batch-create)
+    - [Custom Query](#custom-query)
     - [HTTP POST Method Override](#http-post-method-override)
   - [PUT](#put)
     - [Update](#update)
-    - [Batch Update (beta)](#batch-update-proposed)
+    - [Batch Update](#batch-update-proposed)
   - [PATCH](#patch)
     - [Patch Update](#patch-update)
     - [Add Properties](#add-properties)
@@ -43,17 +43,13 @@ tested with the development version.
 If you would like to see an example of a web application leveraging the RERUM API visit the 
 testbed at http://tinydev.rerum.io or the [GitHub codebase for TinyThings](https://github.com/CenterForDigitalHumanities/TinyThings).
 
-If you want to see what an application API proxy looks like
-that uses the RERUM API, visit our TinyThings GitHub example at
-https://github.com/CenterForDigitalHumanities/TinyThings/tree/master/Source%20Packages/io/rerum/crud
-
 To have simple CRUD ability from client script without using a back end proxy, you can
 use our public test endpoints.  Note: Your data will be public and could be removed at any time. This is for testing only 
 and will not be attributed to you in any way.
 - http://tinydev.rerum.io/app/create   Uses the rules established by RERUM [create](#create)
 - http://tinydev.rerum.io/app/update   Uses the rules established by RERUM PUT [update](#update)
 - http://tinydev.rerum.io/app/delete   Uses the rules established by RERUM [delete](#delete)
-- http://tinydev.rerum.io/app/query    Uses the rules established by RERUM [Custom Query](#custom-query-beta)
+- http://tinydev.rerum.io/app/query    Uses the rules established by RERUM [Custom Query](#custom-query)
 
 
 ## GET
@@ -62,7 +58,7 @@ and will not be attributed to you in any way.
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/id/_id` | `empty` | 200: `{JSON}`
+| `/id/_id` | `empty` | 200 `{JSON}`
 
 - **`_id`**—the id of the object in RERUM.
 - **Response: `{JSON}`**—The object at `_id`
@@ -73,7 +69,7 @@ Example: http://devstore.rerum.io/v1/id/11111
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/history/_id` | `empty` | 200: `[{JSON}]`
+| `/history/_id` | `empty` | 200 `[{JSON}]`
 
 - **`_id`**—the id of the object in RERUM.
 - **Response: `[{JSON}]`**—an array of the resolved objects of all parent history objects
@@ -89,7 +85,7 @@ Example: http://devstore.rerum.io/v1/history/11111
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/since/_id` | `empty` | 200: `[{JSON}]`
+| `/since/_id` | `empty` | 200 `[{JSON}]`
 
 - **`_id`**—the id of the object in RERUM.
 - **Response: `[{JSON}]`**—an array of the resolved objects of all child history objects
@@ -102,11 +98,65 @@ Example: http://devstore.rerum.io/v1/since/11111
 
 ## POST
 
+### Access Token Proxy
+
+| Patterns | Payloads | Responses
+| ---     | ---     | ---
+| `/accessToken.action` | `{JSON}` | 200 `{JSON}`
+
+- **`{JSON}`**— Auth0 requirements [here](https://auth0.com/docs/tokens/refresh-token/current#use-a-refresh-token)
+- **Response: `{JSON}`**— Containing the Auth0 /oauth/token `JSON` response
+
+RERUM works as a proxy with Auth0 to help manage tokens from registered applications.
+This will form the request necessary to get a response from Auth0 which contains
+a new access token.
+
+Example Response:
+
+- **Header:** `HTTP/1.1 200 OK`
+- **Body:**
+
+~~~ (json)
+{
+  "access_token":"eyJz93a...k4laUWw",
+  "token_type":"Bearer",
+  "expires_in":86400
+}
+~~~
+
+### Refresh Token Proxy
+
+| Patterns | Payloads | Responses
+| ---     | ---     | ---
+| `/refreshToken.action` | `{JSON}` | 200 `{JSON}`
+
+- **`{JSON}`**— Auth0 requirements [here](https://auth0.com/docs/tokens/refresh-token/current#get-a-refresh-token)
+- **Response: `{JSON}`**— Containing the Auth0 /oauth/token `JSON` response
+
+RERUM works as a proxy with Auth0 to help manage tokens from registered applications.
+This will form the request necessary to get a response from Auth0 which contains
+a new refresh token.
+
+Example Response:
+
+- **Header:** `HTTP/1.1 200 OK`
+- **Body:**
+
+~~~ (json)
+{
+  "access_token":"eyJz93a...k4laUWw",
+  "refresh_token":"GEbRxBN...edjnXbL",
+  "id_token":"eyJ0XAi...4faeEoQ",
+  "token_type":"Bearer",
+  "expires_in":86400
+}
+~~~
+
 ### Create
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/create.action` | `{JSON}` | 201: `header.Location` "Created @ `[@id]`", `{JSON}`
+| `/create.action` | `{JSON}` | 201 `Location: http://devstore.rerum.io/v1/id/11111` `{JSON}`
 
 - **`{JSON}`**—The object to create
 - **Response: `{JSON}`**—Containing various bits of information about the create.
@@ -137,65 +187,11 @@ Example Response:
 }
 ~~~
 
-### Access Token Proxy
-
-| Patterns | Payloads | Responses
-| ---     | ---     | ---
-| `/accessToken.action` | `{JSON}` | 200: `{JSON}`
-
-- **`{JSON}`**— Auth0 requirements [here](https://auth0.com/docs/tokens/refresh-token/current#use-a-refresh-token)
-- **Response: `{JSON}`**— Containing the Auth0 /oauth/token `JSON` response
-
-RERUM works as a proxy with Auth0 to help manage tokens from registered applications.
-This will form the request necessary to get a response from Auth0 which contains
-a new access token.
-
-Example Response:
-
-- **Header:** `HTTP/1.1 200 OK`
-- **Body:**
-
-~~~ (json)
-{
-  "access_token":"eyJz93a...k4laUWw",
-  "token_type":"Bearer",
-  "expires_in":86400
-}
-~~~
-
-### Refresh Token Proxy
-
-| Patterns | Payloads | Responses
-| ---     | ---     | ---
-| `/refreshToken.action` | `{JSON}` | 200: `{JSON}`
-
-- **`{JSON}`**— Auth0 requirements [here](https://auth0.com/docs/tokens/refresh-token/current#get-a-refresh-token)
-- **Response: `{JSON}`**— Containing the Auth0 /oauth/token `JSON` response
-
-RERUM works as a proxy with Auth0 to help manage tokens from registered applications.
-This will form the request necessary to get a response from Auth0 which contains
-a new refresh token.
-
-Example Response:
-
-- **Header:** `HTTP/1.1 200 OK`
-- **Body:**
-
-~~~ (json)
-{
-  "access_token":"eyJz93a...k4laUWw",
-  "refresh_token":"GEbRxBN...edjnXbL",
-  "id_token":"eyJ0XAi...4faeEoQ",
-  "token_type":"Bearer",
-  "expires_in":86400
-}
-~~~
-
 ### Batch Create
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/batchCreate.action` | `[{JSON}]` | 200: `[{JSON}]`
+| `/batchCreate.action` | `[{JSON}]` | 200 `Location: https://devstore.rerum.io/v1/id/11111, ...` `[{JSON}]`
 
 - **`[{JSON}]`**—an array of objects to create in RERUM
 - **Response: `[{JSON}]`**—an array of the resolved objects from the creation process
@@ -210,7 +206,7 @@ will attempt to continue for all submitted items.
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/getByProperties.action` | `{JSON}` | 200: `[{JSON}]`
+| `/getByProperties.action` | `{JSON}` | 200 `[{JSON}]`
 
 - **`{JSON}`**—the properties in JSON format for the query
 - **Response: `[{JSON}]`**—an array of the resolved objects of all objects that match the query
@@ -239,7 +235,7 @@ and return each matched object in a JSON array in no particular order.
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/patch.action` | `{JSON}` | 201: `header.Location` "Created @ `[@id]`", `{JSON}`
+| `/patch.action` | `{JSON}` | 201 `Location: http://devstore.rerum.io/v1/id/22222` `{JSON}`
 
 - **`{JSON}`**—The object to patch update. 
 - **Response: `{JSON}`**—Containing various bits of information about the patch.
@@ -247,8 +243,8 @@ and return each matched object in a JSON array in no particular order.
 Some programming languages and some servers do not consider `PATCH` to be a standard method.
 As a result, some software is unable to make a `PATCH` update request directly.
 RERUM still wants these applications to fit within these standards.  We support
-the `X-HTTP-Method-Override` header on `POST` requests to make them act like `PATCH` requests
-in this API.  
+the `X-HTTP-Method-Override` header on `POST` requests to make them act like [`PATCH` requests
+in this API](#patch-update).  
 
 Example Method Override Request:
 
@@ -263,7 +259,7 @@ to so.
 
 Example Response:
 
-- **Header:** `Location: http://devstore.rerum.io/v1/id/22222`
+- **Header:** `Location: http://devstore.rerum.io/v1/id/22222` `{JSON}`
 - **Body:**
 
 ~~~ (json)
@@ -304,7 +300,7 @@ the previous version will be represented in the `__rerum.history.previous` of th
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/update.action` | `{JSON}` | 200: `header.Location` New state `{JSON}`
+| `/update.action` | `{JSON}` | 200 `Location: http://devstore.rerum.io/v1/id/22222` `{JSON}`
 
 - **`{JSON}`**—The requested new state for the object.
 - **Response Body: `{JSON}`**—Containing various bits of information about the PUT update.
@@ -341,7 +337,7 @@ Example Response:
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/batch_update.action` | `[{JSON}]` | 200: "[header.Location]" New state `[{JSON}]`
+| `/batch_update.action` | `[{JSON}]` | 200 `Location: http://devstore.rerum.io/v1/id/22222, ...` `[{JSON}]`
 
 - **`[{JSON}]`**—an array of objects to update in RERUM.  Each object MUST contain an `@id`.
 - **Response: `[{JSON}]`**—an array of the resolved objects in their new state from the update process
@@ -361,7 +357,7 @@ same order.
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/patch.action` | `{JSON}` | 200: `header.Location` New state `{JSON}`
+| `/patch.action` | `{JSON}` | 200 `Location: http://devstore.rerum.io/v1/id/22222` `{JSON}`
 
 - **`{JSON}`**—The requested new state for the object.  MUST contain an `@id`
 - **Response Body: `{JSON}`**—Containing various bits of information about the PATCH update.
@@ -405,7 +401,7 @@ Example Response:
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/set.action` | `{JSON}` | 200: `header.Location` New state `{JSON}`
+| `/set.action` | `{JSON}` | 200 `Location: http://devstore.rerum.io/v1/id/22222` `{JSON}`
 
 - **`{JSON}`**—The requested new state for the object MUST contain an `@id`
 - **Response: `{JSON}`**—Containing various bits of information about the PATCH update. (see PUT Update for example)
@@ -419,7 +415,7 @@ is a specialized PATCH update with the same request, response, and history behav
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/unset.action` | `{JSON}` | 202: `header.Location` New state `{JSON}`
+| `/unset.action` | `{JSON}` | 202 `Location: http://devstore.rerum.io/v1/id/22222` `{JSON}`
 
 - **`{JSON}`**—The requested new state for the object.  Must contain an `@id`.
 - **`{JSON}`**—Containing various bits of information about the PATCH update. (see PUT Update for example)
@@ -434,7 +430,7 @@ is a specialized PATCH update with the same request, response, and history behav
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/release.action` | `String @id` or `{JSON}` | 200: `header.Location` New state `{JSON}`
+| `/release.action` | `String @id` or `{JSON}` | 200 `Location: http://devstore.rerum.io/v1/id/11111` `{JSON}`
 
 - **`String @id`**—The `@id` of the version to be released.
 - **`{JSON}`**—The object.  Must contain `@id`.
@@ -451,7 +447,8 @@ Example Response:
 ~~~ (json)
 {
   "code" : 200,
-  "original_object_id" : "http://devstore.rerum.io/v1/id/11111",
+  "previously_released_id" : "http://devstore.rerum.io/v1/id/00001",
+  "next_releases_ids" : ["http://devstore.rerum.io/v1/id/11112", ...],
   "new_obj_state" : {
     "@id": "http://devstore.rerum.io/v1/id/11111",
     "__rerum":{
@@ -569,7 +566,7 @@ http://devstore.rerum.io/v1/context.json
 
 ## IIIF
 
-RERUM fully supports the IIIF standard and makes third party calls to the [IIIF validation API](http://iiif.io/api/presentation/validator/service/). A piece of the RERUM response is the validation response of this API so the user knows whether or not their data conforms to this standard. Objects that fail IIIF validation are still saved.
+RERUM fully supports [IIIF standards](https://iiif.io/technical-details/) and makes third party calls to the [IIIF validation API](http://iiif.io/api/presentation/validator/service/). A piece of the RERUM response is the validation response of this API so the user knows whether or not their data conforms to this standard. Objects that fail IIIF validation are still saved.
 
 ## Web Annotation
 
