@@ -191,7 +191,7 @@ Example Response:
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/batchCreate.action` | `[{JSON}]` | 200 `Location: https://devstore.rerum.io/v1/id/11111, ...` `[{JSON}]`
+| `/batchCreate.action` | `[{JSON}]` | 201 `Location: https://devstore.rerum.io/v1/id/11111, ...` `[{JSON}]`
 
 - **`[{JSON}]`**—an array of objects to create in RERUM
 - **Response: `[{JSON}]`**—an array of the resolved objects from the creation process
