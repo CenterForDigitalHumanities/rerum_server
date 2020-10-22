@@ -8,7 +8,7 @@
     - [History tree since this version](#history-tree-since-this-version)
   - [POST](#post)
     - [Create](#create)
-    - [Batch Create](#batch-create-proposed)
+    - [Batch Create](#batch-create)
     - [Custom Query](#custom-query)
     - [Access Token Proxy](#access-token-proxy)
     - [Refresh Token Proxy](#refresh-token-proxy)
@@ -102,7 +102,7 @@ Example: http://devstore.rerum.io/v1/since/11111
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/create.action` | `{JSON}` | 201: `header.Location` "Created @ `[@id]`", `{JSON}`
+| `/create.action` | `{JSON}` | 201: `Location: http://devstore.rerum.io/v1/id/11111` `{JSON}`
 
 - **`{JSON}`**—The object to create
 - **Response: `{JSON}`**—Containing various bits of information about the create.
@@ -235,7 +235,7 @@ and return each matched object in a JSON array in no particular order.
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/patch.action` | `{JSON}` | 201: `header.Location` "Created @ `[@id]`", `{JSON}`
+| `/patch.action` | `{JSON}` | 201: `Location: http://devstore.rerum.io/v1/id/22222`
 
 - **`{JSON}`**—The object to patch update. 
 - **Response: `{JSON}`**—Containing various bits of information about the patch.
@@ -300,7 +300,7 @@ the previous version will be represented in the `__rerum.history.previous` of th
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/update.action` | `{JSON}` | 200: `header.Location` New state `{JSON}`
+| `/update.action` | `{JSON}` | 200: `Location: http://devstore.rerum.io/v1/id/22222`
 
 - **`{JSON}`**—The requested new state for the object.
 - **Response Body: `{JSON}`**—Containing various bits of information about the PUT update.
@@ -337,7 +337,7 @@ Example Response:
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/batch_update.action` | `[{JSON}]` | 200: "[header.Location]" New state `[{JSON}]`
+| `/batch_update.action` | `[{JSON}]` | 200: `Location: http://devstore.rerum.io/v1/id/22222, ...`
 
 - **`[{JSON}]`**—an array of objects to update in RERUM.  Each object MUST contain an `@id`.
 - **Response: `[{JSON}]`**—an array of the resolved objects in their new state from the update process
@@ -357,7 +357,7 @@ same order.
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/patch.action` | `{JSON}` | 200: `header.Location` New state `{JSON}`
+| `/patch.action` | `{JSON}` | 200: `Location: http://devstore.rerum.io/v1/id/22222`
 
 - **`{JSON}`**—The requested new state for the object.  MUST contain an `@id`
 - **Response Body: `{JSON}`**—Containing various bits of information about the PATCH update.
@@ -401,7 +401,7 @@ Example Response:
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/set.action` | `{JSON}` | 200: `header.Location` New state `{JSON}`
+| `/set.action` | `{JSON}` | 200: `Location: http://devstore.rerum.io/v1/id/22222`
 
 - **`{JSON}`**—The requested new state for the object MUST contain an `@id`
 - **Response: `{JSON}`**—Containing various bits of information about the PATCH update. (see PUT Update for example)
@@ -415,7 +415,7 @@ is a specialized PATCH update with the same request, response, and history behav
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/unset.action` | `{JSON}` | 202: `header.Location` New state `{JSON}`
+| `/unset.action` | `{JSON}` | 202: `Location: http://devstore.rerum.io/v1/id/22222`
 
 - **`{JSON}`**—The requested new state for the object.  Must contain an `@id`.
 - **`{JSON}`**—Containing various bits of information about the PATCH update. (see PUT Update for example)
@@ -430,7 +430,7 @@ is a specialized PATCH update with the same request, response, and history behav
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/release.action` | `String @id` or `{JSON}` | 200: `header.Location` New state `{JSON}`
+| `/release.action` | `String @id` or `{JSON}` | 200: `Location: http://devstore.rerum.io/v1/id/11111`
 
 - **`String @id`**—The `@id` of the version to be released.
 - **`{JSON}`**—The object.  Must contain `@id`.
