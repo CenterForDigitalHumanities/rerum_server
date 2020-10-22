@@ -15,7 +15,7 @@
     - [HTTP POST Method Override](#http-post-method-override)
   - [PUT](#put)
     - [Update](#update)
-    - [Batch Update](#batch-update-beta)
+    - [Batch Update (beta)](#batch-update-beta)
   - [PATCH](#patch)
     - [Patch Update](#patch-update)
     - [Add Properties](#add-properties)
