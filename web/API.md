@@ -15,7 +15,7 @@
     - [HTTP POST Method Override](#http-post-method-override)
   - [PUT](#put)
     - [Update](#update)
-    - [Batch Update](#batch-update-proposed)
+    - [Batch Update](#batch-update-beta)
   - [PATCH](#patch)
     - [Patch Update](#patch-update)
     - [Add Properties](#add-properties)
@@ -333,7 +333,7 @@ Example Response:
 }
 ~~~
 
-### Batch Update (proposed)
+### Batch Update (beta)
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
