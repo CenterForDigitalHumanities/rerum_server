@@ -243,8 +243,8 @@ and return each matched object in a JSON array in no particular order.
 Some programming languages and some servers do not consider `PATCH` to be a standard method.
 As a result, some software is unable to make a `PATCH` update request directly.
 RERUM still wants these applications to fit within these standards.  We support
-the `X-HTTP-Method-Override` header on `POST` requests to make them act like `PATCH` requests
-in this API.  
+the `X-HTTP-Method-Override` header on `POST` requests to make them act like [`PATCH` requests
+in this API](#patch-update).  
 
 Example Method Override Request:
 
@@ -566,7 +566,7 @@ http://devstore.rerum.io/v1/context.json
 
 ## IIIF
 
-RERUM fully supports the IIIF standard and makes third party calls to the [IIIF validation API](http://iiif.io/api/presentation/validator/service/). A piece of the RERUM response is the validation response of this API so the user knows whether or not their data conforms to this standard. Objects that fail IIIF validation are still saved.
+RERUM fully supports [IIIF standards](https://iiif.io/technical-details/) and makes third party calls to the [IIIF validation API](http://iiif.io/api/presentation/validator/service/). A piece of the RERUM response is the validation response of this API so the user knows whether or not their data conforms to this standard. Objects that fail IIIF validation are still saved.
 
 ## Web Annotation
 
