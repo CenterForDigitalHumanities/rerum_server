@@ -440,7 +440,7 @@ Objects in released states are locked such that further changes are refused.
 Calling any update or delete action on a released object will result in an error response. 
 The release action will alter the `__rerum.isReleased` of the version identified 
 and alter `__rerum.releases` properties throughout the object's history without making a 
-new history state for the resulting object (the @id does not change). Any version of an object 
+new history state for the resulting object (the `@id` does not change). Any version of an object 
 with an `oa:Motivation` containing `rr:releasing` will be released as soon as it is saved.
 
 Example Response:

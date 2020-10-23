@@ -440,7 +440,7 @@ Objects in released states are locked such that further changes are refused.
 Calling any update or delete action on a released object will result in an error response. 
 The release action will alter the `__rerum.isReleased` of the version identified 
 and alter `__rerum.releases` properties throughout the object's history without making a 
-new history state for the resulting object (the @id does not change). Any version of an object 
+new history state for the resulting object (the `@id` does not change). Any version of an object 
 with an `oa:Motivation` containing `rr:releasing` will be released as soon as it is saved.
 
 Example Response:
@@ -520,7 +520,7 @@ object about the version retrieved.
 
 | Property         | Type      | Description
 | ---              | ---       | ---
-| @context         | String    | The RERUM context file http://devstore.rerum.io/v1/context.json.
+| @context         | String    | The RERUM context file http://store.rerum.io/v1/context.json.
 | alpha            | Boolean   | An Internal flag for RERUM API version control.
 | APIversion       | String    | Specific RERUM API release version for this data node, currently 1.0.0.
 | history.prime    | String    | The URI of the object initializing this history.
@@ -562,7 +562,7 @@ The API key at Auth0 persists for each application, which may manage its own ses
 
 Objects in RERUM should be JSON-LD, which means they should have an `@context` provided when they are created.  However, ordinary JSON documents are allowed in the store. These JSON documents can be interpreted as JSON-LD by referencing a JSON-LD context document in an [HTTP Link Header](https://www.w3.org/TR/json-ld/#h3_interpreting-json-as-json-ld). RERUM provides this `@context` in the `Link` header and also provides an `@context` for the `__rerum` terms mentioned above.
 
-http://devstore.rerum.io/v1/context.json
+http://store.rerum.io/v1/context.json
 
 ## IIIF
 
