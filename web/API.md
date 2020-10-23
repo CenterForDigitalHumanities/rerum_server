@@ -494,7 +494,7 @@ A deleted object is easily recognized by `__deleted`
   "__deleted" : {
     "object" : {
       "@id" : "http://devstore.rerum.io/v1/id/11111",
-      "@type": "sc:Canvas"
+      "@type": "sc:Canvas",
       "label": "page 46",
       "width": 730,
       "images": [],
