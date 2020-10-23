@@ -25,7 +25,7 @@
   - [Smart objects](#smart-objects)
   - [__rerum](#rerum)
     - [History](#history)
-    - [`generator` Attribution](#generator-attribution)
+    - [Attribution](#generator-attribution)
   - [Authentication](#authentication)
   - [@context](#context)
   - [IIIF](#iiif)
@@ -435,7 +435,7 @@ is a specialized PATCH update with the same request, response, and history behav
 - **`String @id`**—The `@id` of the version to be released.
 - **`{JSON}`**—The object.  Must contain `@id`.
 
-RERUM allows for the `generator` of a version of an object to assign a `released` state. 
+RERUM allows for the Generator of a version of an object to assign a `released` state. 
 Objects in released states are locked such that further changes are refused. 
 Calling any update or delete action on a released object will result in an error response. 
 The release action will alter the `__rerum.isReleased` of the version identified 
@@ -470,7 +470,7 @@ Example Response:
 
 ## DELETE
 
-RERUM allows the `generator` of an object to delete that object.  
+RERUM allows the Generator of an object to delete that object.  
 Requests can be made by the string `@id` or a JSON object containing the `@id`.
 RERUM DELETE does not remove anything from the server. Deleted objects are only marked as deleted.
 Objects marked as deleted do not return in query results and may only be directly retrieved by `@id`.
@@ -550,9 +550,9 @@ You can ask for all descendants or all ancestors from any given node so long as 
 
 Deleted objects are not present in any B-Tree, but do exist as separate nodes that can be requested by the URI directly.  A snapshot their position at the time of deletion persists in these deleted nodes.
 
-### `generator` Attribution
+### Generator Attribution
 
-RERUM associates a `foaf:Agent` with each action performed on an item in `__rerum.generatedBy`. An API key authenticated application requesting an overwrite, release, or delete action can only do so if they are the `generator` of the object the action is performed on. If an unauthorized application attempts one of these actions a `401 Unauthorized` response is returned with an explanation on how to branch versions instead.
+RERUM associates a `foaf:Agent` with each action performed on an item in `__rerum.generatedBy`which is referred to as the "Generator". An API key authenticated application requesting an overwrite, release, or delete action can only do so if they are the Generator of the object the action is performed on. If an unauthorized application attempts one of these actions a `401 Unauthorized` response is returned with an explanation on how to branch versions instead.
 
 Applications are _strongly_ encouraged to record their own assertions within the objects, as consuming applications may reliably use a combination of the authoritative `generatedBy` property and an intrinsic `creator` to establish a reliable attribution.
 
