@@ -8,9 +8,7 @@
       "rerum_v1":"https://github.com/CenterForDigitalHumanities/rerum_server/blob/master/API.md#",
       "id":"@id",
       "type":"@type",
-      "__rerum":{
-          "@id" : "rerum_v1:__rerum"
-      },
+      "__rerum": "rerum_v1:__rerum",
       "Agent":{
          "@id":"foaf:Agent",
          "@type":"@id"
