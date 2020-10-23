@@ -23,7 +23,7 @@
     - [RERUM released](#rerum-released)
   - [DELETE](#delete)
   - [Smart objects](#smart-objects)
-  - [__rerum](#rerum)
+  - [__rerum](#__rerum)
     - [History](#history)
     - [Attribution](#generator-attribution)
   - [Authentication](#authentication)
