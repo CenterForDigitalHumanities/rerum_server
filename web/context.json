@@ -5,21 +5,21 @@
       "dcterms":"http://purl.org/dc/terms/",
       "prov":"https://www.w3.org/TR/prov/#",
       "foaf":"http://xmlns.com/foaf/spec/#term_",
-      "oa" : "http://www.w3.org/ns/oa#",
+      "oa":"http://www.w3.org/ns/oa#",
       "rerum_v1":"https://github.com/CenterForDigitalHumanities/rerum_server/blob/master/API.md#",
       "id":"@id",
       "type":"@type",
-      "releasing" : {
-          "@id":"rerum_v1:releasing",
-          "@type":"oa:Motivation"
+      "releasing":{
+         "@id":"rerum_v1:releasing",
+         "@type":"oa:Motivation"
       },
-      "working" : {
-          "@id":"rerum_v1:releasing",
-          "@type":"oa:Motivation"
+      "working":{
+         "@id":"rerum_v1:releasing",
+         "@type":"oa:Motivation"
       },
       "__rerum":{
-          "@id" : "rerum_v1:__rerum",
-          "@container" : "@graph"
+         "@id":"rerum_v1:__rerum",
+         "@container":"@graph"
       },
       "Agent":{
          "@id":"foaf:Agent",
@@ -47,7 +47,7 @@
       },
       "releases":{
          "@id":"rerum_v1:releases",
-         "container" : "@graph",
+         "container":"@graph",
          "@context":{
             "previous":{
                "@id":"rerum_v1:releases.previous",
@@ -65,7 +65,7 @@
       },
       "history":{
          "@id":"rerum_v1:history",
-         "container" : "@graph",
+         "container":"@graph",
          "@context":{
             "previous":{
                "@id":"prov:wasRevisionOf",
@@ -83,25 +83,25 @@
       },
       "APIversion":{
          "@id":"rerum_v1:APIversion",
-         "@type" : "xsd:string"
+         "@type":"xsd:string"
       },
       "__deleted":{
-            "@id" : "rerum_v1:delete",
-            "@container" : "@graph",
-            "@context":{
-                "object":{
-                    "@id" : "rerum_v1:object",
-                    "@container" : "@graph"
-                },
-                "deletor":{
-                    "@id" : "rerum_v1:deletor",
-                    "@type" : "@id"
-                },
-                "time" : {
-                    "@id" : "dcterms:date",
-                    "@type":"xsd:time"
-                }
+         "@id":"rerum_v1:delete",
+         "@container":"@graph",
+         "@context":{
+            "object":{
+               "@id":"rerum_v1:object",
+               "@container":"@graph"
+            },
+            "deletor":{
+               "@id":"rerum_v1:deletor",
+               "@type":"@id"
+            },
+            "time":{
+               "@id":"dcterms:date",
+               "@type":"xsd:time"
             }
+         }
       }
    }
 }
