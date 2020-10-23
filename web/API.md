@@ -508,6 +508,7 @@ A deleted object is easily recognized by `__deleted`
 ~~~
 
 > **Note:** The `__deleted.object` contains a snapshot of this version of the object when it was deleted, including its place in the history.
+
 > **Note:** The `__deleted.deletor` is the URI of the agent that marked this object as deleted.
 
 ___
