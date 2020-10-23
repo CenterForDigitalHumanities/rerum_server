@@ -4,49 +4,48 @@
 
 
 rerum:__rerum
-     dcterms:description "A set of properties that pertain specifically to the RERUM API."@en ;
-     rerum: releases "A set of properties to describe the rerum:isReleased history tree of a resource."@en ;
-     rerum: history "A set of properties to describe the history tree of a resource."@en ;
-     rerum: APIVersion "The version of the RERUM API the resource was created under "@en ;
-     rerum: createdAt "The xsd:Date that this specific object was created"@en ;
+     dcterms:description "A set of properties that pertain specifically to the RERUM API"@en ;
+     rerum: alpha "A set of properties to describe the rerum:isReleased history tree of a resource"@en ;
+     rerum: releases "A set of properties to describe the rerum:isReleased history tree of a resource"@en ;
+     rerum: history "A set of properties to describe the history tree of a resource"@en ;
+     rerum: APIversion "The version of the RERUM API the resource was created under "@en ;
+     rerum: createdAt "The xsd:dateTime that this specific object was created"@en ;
      rerum: generatedBy "The application whose API key wrote this object"@en ;
-     rerum: isReleased "The most recent xsd:Date for the last object in rerum:releases.previous "@en ;
-     rerum isOverwritten "The most recent xsd:Date that this specific object was forcibly overwritten instead of versioned"@en ;
+     rerum: isReleased "The most recent xsd:dateTime for the last object in rerum:releases.previous "@en ;
+     rerum: isOverwritten "The most recent xsd:dateTime that this specific object was forcibly overwritten instead of versioned"@en ;
 
 rerum:releases
-    dcterms:description "A set of properties to describe the rerum:isReleased history tree of a resource."@en ;
-    rerum:previous "An ordered list of resource @id representing the previous release states of this resource."@en ;
-    rerum:next "An ordered list of resource @id representing the previous release states of this resource."@en ;
+    dcterms:description "A set of properties to describe the rerum:isReleased history tree of a resource"@en ;
+    rerum:previous "An ordered list of resource URIs representing the previous release states of this resource"@en ;
+    rerum:next "An ordered list of resource URIs representing the previous release states of this resource"@en ;
+    rerum:replaces "URI of the previous release this node is motivated to supplant, displace, or supersede"@en ;
 
 rerum:history
-    dcterms:description "A set of properties to describe the history tree of a resource."@en ;
-    rerum:previous "An ordered list of resource @id representing the previous release states of this resource."@en ;
-    rerum:next "An ordered list of resource @id representing the previous release states of this resource."@en ;
-    rerum:prime "A resource @id representing the original state of this resource.  If it is the origin it is rerum:prime "@en ;
+    dcterms:description "A set of properties to describe the history tree of a resource"@en ;
+    rerum:previous "An ordered list of resource URIs representing the previous release states of this resource"@en ;
+    rerum:next "An ordered list of resource URIs representing the previous release states of this resource"@en ;
+    rerum:prime "A resource URI representing the original state of this resource.  If it is the origin it is rerum:prime"@en ;
 
-rerum:next
-    dcterms:description "An ordered list of resource @id representing the previous release states of this resource."@en ;
-
-rerum:previous
-    dcterms:description "An ordered list of resource @id representing the previous release states of this resource."@en ;
-
-rerum:prime
-    dcterms:description "A resource @id representing the original state of this resource.  If the described resource is the original, then it is root so as not to repeat the resource @id. "@en ;
+rerum:__deleted
+    dcterms:description "A wrapper to encase objects that are marked deleted"@en ;
+    rerum: object "A snapshot of the object before it was marked as deleted"@en ;
+    rerum: deletor "The URI of the agent that marked this object as deleted"@en ;
+    rerum: time "Time in miliseconds since the UNIX Epoc that this object was deleted"@en ;
 
 rerum:APIversion
-    dcterms:description "The version of the RERUM API the resource was created under "@en ;
+    dcterms:description "The version of the RERUM API the resource was created under"@en ;
 
 rerum:createdAt
-    dcterms:description "The xsd:Date that this specific object was created"@en ;
+    dcterms:description "The xsd:dateTime that this specific object was created"@en ;
 
 rerum:isOverwritten
-    dcterms:description "The most recent xsd:Date that this specific object was forcibly overwritten instead of versioned"@en ;
+    dcterms:description "The most recent xsd:dateTime that this specific object was forcibly overwritten instead of versioned"@en ;
 
 rerum:isReleased
-    dcterms:description "The most recent xsd:Date for the last object in rerum:releases.previous "@en ;
+    dcterms:description "The most recent xsd:dateTime for the last object in rerum:releases.previous"@en ;
 
 rerum:generatedBy
-    dcterms:description "The application whose API key wrote this object"@en ;
+    dcterms:description "The agent URI of the application whose API key wrote this object"@en ;
 
-rerum:replaces
-    dcterms:description "A related resource that is supplanted, displaced, or superseded by the described resource."@en ;
+rerum:alpha
+    dcterms:description "An Internal flag for RERUM API version control"

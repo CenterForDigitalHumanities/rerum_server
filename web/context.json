@@ -1,5 +1,5 @@
 {
-   "@context":{
+  "@context":{
       "as":"http://www.w3.org/ns/activitystreams#",
       "xsd":"http://www.w3.org/2001/XMLSchema#",
       "dcterms":"http://purl.org/dc/terms/",
@@ -8,12 +8,9 @@
       "rerum_v1":"https://github.com/CenterForDigitalHumanities/rerum_server/blob/master/API.md#",
       "id":"@id",
       "type":"@type",
+      "__rerum": "rerum_v1:__rerum",
       "Agent":{
          "@id":"foaf:Agent",
-         "@type":"@id"
-      },
-      "__rerum":{
-         "@id":"rerum_v1:__rerum",
          "@type":"@id"
       },
       "alpha":{
@@ -40,15 +37,15 @@
          "@id":"rerum_v1:releases",
          "@context":{
             "previous":{
-               "@id":"rerum_v1:releases.previous",
+               "@id":"prov:wasRevisionOf",
                "@type":"@id"
             },
             "next":{
-               "@id":"rerum_v1:releases.next",
-               "@container":"@set"
+               "@id":"dcterms:isVersionOf",
+               "@container":["@set", "@id"]
             },
             "replaces":{
-               "@id":"rerum_v1:releases.replaces",
+               "@id":"dcterms:replaces",
                "@type":"@id"
             }
          }
@@ -62,15 +59,31 @@
             },
             "next":{
                "@id":"dcterms:isVersionOf",
-               "@container":"@set"
+               "@container":["@set", "@id"]
             },
             "prime":{
-               "@id":"rerum_v1:prime"
+               "@id":"rerum_v1:prime",
+               "@type":"@id"
             }
          }
       },
       "APIversion":{
-         "@id":"rerum_v1:APIversion"
+         "@id":"rerum_v1:APIversion",
+         "@type" : "xsd:string"
+      },
+      "__deleted":{
+            "@id" : "rerum_v1:__deleted",
+            "@context":{
+                "object":"rerum_v1:object",
+                "deletor":{
+                    "@id" : "rerum_v1:deletor",
+                    "@type" : "@id"
+                },
+                "time" : {
+                    "@id" : "dcterms:date",
+                    "@type":"xsd:time"
+                }
+            }
       }
    }
 }
