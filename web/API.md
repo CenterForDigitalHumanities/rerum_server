@@ -1,21 +1,21 @@
-# API (0.9)
+# API (1.0.0)
 <!-- TOC -->
 
-- [API (0.9)](#api-09)
+- [API (1.0.0)](#api-10)
   - [GET](#get)
     - [Single object by id](#single-object-by-id)
     - [History tree before this version](#history-tree-before-this-version)
     - [History tree since this version](#history-tree-since-this-version)
   - [POST](#post)
-    - [Create](#create)
-    - [Batch Create (beta)](#batch-create-proposed)
-    - [Custom Query (beta)](#custom-query-beta)
     - [Access Token Proxy](#access-token-proxy)
     - [Refresh Token Proxy](#refresh-token-proxy)
+    - [Create](#create)
+    - [Batch Create](#batch-create)
+    - [Custom Query](#custom-query)
     - [HTTP POST Method Override](#http-post-method-override)
   - [PUT](#put)
     - [Update](#update)
-    - [Batch Update (beta)](#batch-update-proposed)
+    - [Batch Update (beta)](#batch-update-beta)
   - [PATCH](#patch)
     - [Patch Update](#patch-update)
     - [Add Properties](#add-properties)
@@ -34,25 +34,22 @@
 
 <!-- /TOC -->
 All the following interactions will take place between
-the server running RERUM and the application server.  A call
-to one of these APIs from a front end will fail.  Please note that all
+the server running RERUM and the application server.  Direct connection from client script
+to the RERUM server is not allowed.  Please note that all
 examples are pointing at the development version of the RERUM API, not the
 production version.  Only point to the production version once you have
 tested with the development version.
 
-If you would like to see an example application front end that uses
-its back end as a proxy to the RERUM API, visit http://tinydev.rerum.io.
+If you would like to see an example of a web application leveraging the RERUM API visit the 
+testbed at http://tinydev.rerum.io or the [GitHub codebase for TinyThings](https://github.com/CenterForDigitalHumanities/TinyThings).
 
-If you want to see what an application API proxy looks like
-that uses the RERUM API, visit our TinyThings GitHub example at
-https://github.com/CenterForDigitalHumanities/TinyThings/tree/master/Source%20Packages/io/rerum/crud
-
-To have simple CRUD ability from a front end without using a back end proxy, you can
-use our public test endpoints.  Note: Your data could be removed at any time, this is for testing only.
+To have simple CRUD ability from client script without using a back end proxy, you can
+use our public test endpoints.  Note: Your data will be public and could be removed at any time. This is for testing only 
+and will not be attributed to you in any way.
 - http://tinydev.rerum.io/app/create   Uses the rules established by RERUM [create](#create)
 - http://tinydev.rerum.io/app/update   Uses the rules established by RERUM PUT [update](#update)
 - http://tinydev.rerum.io/app/delete   Uses the rules established by RERUM [delete](#delete)
-- http://tinydev.rerum.io/app/query    Uses the rules established by RERUM [Custom Query](#custom-query-beta)
+- http://tinydev.rerum.io/app/query    Uses the rules established by RERUM [Custom Query](#custom-query)
 
 
 ## GET
@@ -61,7 +58,7 @@ use our public test endpoints.  Note: Your data could be removed at any time, th
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/id/_id` | `empty` | 200: `{JSON}`
+| `/id/_id` | `empty` | 200 `{JSON}`
 
 - **`_id`**—the id of the object in RERUM.
 - **Response: `{JSON}`**—The object at `_id`
@@ -72,7 +69,7 @@ Example: http://devstore.rerum.io/v1/id/11111
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/history/_id` | `empty` | 200: `[{JSON}]`
+| `/history/_id` | `empty` | 200 `[{JSON}]`
 
 - **`_id`**—the id of the object in RERUM.
 - **Response: `[{JSON}]`**—an array of the resolved objects of all parent history objects
@@ -88,7 +85,7 @@ Example: http://devstore.rerum.io/v1/history/11111
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/since/_id` | `empty` | 200: `[{JSON}]`
+| `/since/_id` | `empty` | 200 `[{JSON}]`
 
 - **`_id`**—the id of the object in RERUM.
 - **Response: `[{JSON}]`**—an array of the resolved objects of all child history objects
@@ -97,51 +94,15 @@ As objects in RERUM are altered, the next state is retained in
 a history tree.  Requests return all descendants of this object from all branches.  
 The objects in the array are listed in preorder traversal.
 
-Example:  http://devstore.rerum.io/v1/since/11111
+Example: http://devstore.rerum.io/v1/since/11111
 
 ## POST
-
-### Create
-
-| Patterns | Payloads | Responses
-| ---     | ---     | ---
-| `/create.action` | `{JSON}` | 201: `header.Location` "Created @ `[@id]`", `{JSON}`
-
-- **`{JSON}`**—The object to create
-- **Response: `{JSON}`**—Containing various bits of information about the create.
-
-Add a completely new object to RERUM and receive the location
-in response.  Accepts only single JSON objects for RERUM storage.
-Mints a new URI and returns the object's `Location` as a header.
-If the object already contains an `@id` that matches an object in RERUM,
-the API will direct the user to use [update](#update) instead.
-
-Example Response:
-
-- **Header:** `Location: Created @ http://devstore.rerum.io/v1/id/11111`
-- **Body:**
-
-~~~ (json)
-{
-  "code" : 201,
-  "@id" : "http://devstore.rerum.io/v1/since/11111",
-  "new_obj_state" : {
-    "@id": "http://devstore.rerum.io/v1/id/11111",
-    ...
-  },
-  "iiif_validation" : {
-    "warnings" : ["Array of warnings from IIIF validator"],
-    "error" : "Error for why this object failed validation",
-    "okay" : 1 // 0 or 1 as to whether or not it passed IIIF validation
-  }
-}
-~~~
 
 ### Access Token Proxy
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/accessToken.action` | `{JSON}` | 200: `{JSON}`
+| `/accessToken.action` | `{JSON}` | 200 `{JSON}`
 
 - **`{JSON}`**— Auth0 requirements [here](https://auth0.com/docs/tokens/refresh-token/current#use-a-refresh-token)
 - **Response: `{JSON}`**— Containing the Auth0 /oauth/token `JSON` response
@@ -167,7 +128,7 @@ Example Response:
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/refreshToken.action` | `{JSON}` | 200: `{JSON}`
+| `/refreshToken.action` | `{JSON}` | 200 `{JSON}`
 
 - **`{JSON}`**— Auth0 requirements [here](https://auth0.com/docs/tokens/refresh-token/current#get-a-refresh-token)
 - **Response: `{JSON}`**— Containing the Auth0 /oauth/token `JSON` response
@@ -191,11 +152,46 @@ Example Response:
 }
 ~~~
 
-### Batch Create (proposed)
+### Create
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/batchCreate.action` | `[{JSON}]` | 200: `[{JSON}]`
+| `/create.action` | `{JSON}` | 201 `Location: http://devstore.rerum.io/v1/id/11111` `{JSON}`
+
+- **`{JSON}`**—The object to create
+- **Response: `{JSON}`**—Containing various bits of information about the create.
+
+Add a completely new object to RERUM and receive the location URI
+in response.  Accepts only single JSON objects for RERUM storage.
+Mints a new URI and returns the object's `Location` as a header.
+If the object already contains an `@id` that matches an object in RERUM,
+the API will direct the user to use [update](#update) instead.
+
+Example Response:
+
+- **Header:** `Location: http://devstore.rerum.io/v1/id/11111`
+- **Body:**
+
+~~~ (json)
+{
+  "code" : 201,
+  "new_obj_state" : {
+    "@id": "http://devstore.rerum.io/v1/id/11111",
+    ...
+  },
+  "iiif_validation" : {
+    "warnings" : ["Array of warnings from IIIF validator"],
+    "error" : "Error for why this object failed validation",
+    "okay" : 1 // 0 or 1 as to whether or not it passed IIIF validation
+  }
+}
+~~~
+
+### Batch Create
+
+| Patterns | Payloads | Responses
+| ---     | ---     | ---
+| `/batchCreate.action` | `[{JSON}]` | 201 `Location: https://devstore.rerum.io/v1/id/11111, ...` `[{JSON}]`
 
 - **`[{JSON}]`**—an array of objects to create in RERUM
 - **Response: `[{JSON}]`**—an array of the resolved objects from the creation process
@@ -206,11 +202,11 @@ resource or an error message in the body as an array in the
 same order.  When errors are encountered, the batch process
 will attempt to continue for all submitted items.
 
-### Custom Query (beta)
+### Custom Query
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/getByProperties.action` | `{JSON}` | 200: `[{JSON}]`
+| `/getByProperties.action` | `{JSON}` | 200 `[{JSON}]`
 
 - **`{JSON}`**—the properties in JSON format for the query
 - **Response: `[{JSON}]`**—an array of the resolved objects of all objects that match the query
@@ -219,34 +215,36 @@ This simple format will be made more complex
 in the future, but should serve the basic needs as it is.
 All responses are in a JSON Array, even if zero records or a single
 record is returned.  RERUM will test for property matches, 
-so `{ "@type" : "sc:Canvas", "label" : "page 46" }` will match
+so `{ "@type" : "sc:Canvas", "label" : "page 46" }` will match objects like
 
 ~~~ (json)
-[{
-  "@id": "https://devstore.rerum.io/v1/id/11111",
+{
+  "@id": "https://devstore.rerum.io/v1/id/00000",
   "otherContent": [],
   "label": "page 46",
   "width": 730,
   "images": [],
   "height": 1000,
   "@type": "sc:Canvas"
-}]
+}
 ~~~
+
+and return each matched object in a JSON array in no particular order.
 
 ### HTTP POST Method Override
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/patch.action` | `{JSON}` | 201: `header.Location` "Created @ `[@id]`", `{JSON}`
+| `/patch.action` | `{JSON}` | 201 `Location: http://devstore.rerum.io/v1/id/22222` `{JSON}`
 
 - **`{JSON}`**—The object to patch update. 
 - **Response: `{JSON}`**—Containing various bits of information about the patch.
 
 Some programming languages and some servers do not consider `PATCH` to be a standard method.
-As a result, some software is unable to make a `PATCH` update request.
+As a result, some software is unable to make a `PATCH` update request directly.
 RERUM still wants these applications to fit within these standards.  We support
-the `X-HTTP-Method-Override` header on `POST` requests to make them act like `PATCH` requests
-in this API.  
+the `X-HTTP-Method-Override` header on `POST` requests to make them act like [`PATCH` requests
+in this API](#patch-update).  
 
 Example Method Override Request:
 
@@ -254,14 +252,14 @@ Example Method Override Request:
           `Method: POST`,
           `X-HTTP-Method-Override: PATCH`
 - **Body:**
-          **`{JSON}`**—An object containing the @id for upate and the fields in that object to patch. 
+          **`{JSON}`**—An object containing the @id for update and the fields in that object to patch. 
           
 This grants software that is otherwise unable to make these requests the ability
 to so.
 
 Example Response:
 
-- **Header:** `Location: Updated @ http://devstore.rerum.io/v1/id/22222`
+- **Header:** `Location: http://devstore.rerum.io/v1/id/22222` `{JSON}`
 - **Body:**
 
 ~~~ (json)
@@ -269,7 +267,14 @@ Example Response:
   "code" : 200,
   "original_object_id" : "http://devstore.rerum.io/v1/id/11111",
   "new_obj_state" : {
-    "@id": "http://devstore.rerum.io/v1/id/22222"
+    "@id": "http://devstore.rerum.io/v1/id/22222",
+    "__rerum":{
+        "history":{
+            "previous":"http://devstore.rerum.io/v1/id/11111",
+            ...
+        }
+      ...
+    }
     ...
   },
   "iiif_validation" : {
@@ -281,25 +286,28 @@ Example Response:
 ~~~
 
 ## PUT
+ >**NB:** `__rerum`, `@id` and `_id` updates are ignored.
+ >
+ > Updates to released or deleted objects fail with an error.
 
 ### Update
 
 Replace an existing record through reference to its internal
 RERUM id.  This will have the effects of update, set, and unset actions.
-New keys will be created and keys not present in the request will be dropped.
-When an object is updated, the `@id` will change, as the previous
-version will maintain its place in the history of that object.
+New keys will be created and keys not present in the request will not be present in the resulting object.
+When an object is updated, the `@id` will change.  This results in the need to track history and
+the previous version will be represented in the `__rerum.history.previous` of the resulting object.
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/update.action` | `{JSON}` | 200: `header.Location` New state `{JSON}`
+| `/update.action` | `{JSON}` | 200 `Location: http://devstore.rerum.io/v1/id/22222` `{JSON}`
 
 - **`{JSON}`**—The requested new state for the object.
 - **Response Body: `{JSON}`**—Containing various bits of information about the PUT update.
 
 Example Response:
 
-- **Header:** `Location: Updated @ http://devstore.rerum.io/v1/id/22222`
+- **Header:** `Location: http://devstore.rerum.io/v1/id/22222`
 - **Body:**
 
 ~~~ (json)
@@ -308,6 +316,13 @@ Example Response:
   "original_object_id" : "http://devstore.rerum.io/v1/id/11111",
   "new_obj_state" : {
     "@id": "http://devstore.rerum.io/v1/id/22222",
+    "__rerum":{
+        "history":{
+            "previous":"http://devstore.rerum.io/v1/id/11111",
+            ...
+        }
+      ...
+    }
     ...
   },
   "iiif_validation" : {
@@ -318,11 +333,11 @@ Example Response:
 }
 ~~~
 
-### Batch Update (proposed)
+### Batch Update (beta)
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/batch_update.action` | `[{JSON}]` | 200: "[header.Location]" New state `[{JSON}]`
+| `/batch_update.action` | `[{JSON}]` | 200 `Location: http://devstore.rerum.io/v1/id/22222, ...` `[{JSON}]`
 
 - **`[{JSON}]`**—an array of objects to update in RERUM.  Each object MUST contain an `@id`.
 - **Response: `[{JSON}]`**—an array of the resolved objects in their new state from the update process
@@ -342,19 +357,21 @@ same order.
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/patch.action` | `{JSON}` | 200: `header.Location` New state `{JSON}`
+| `/patch.action` | `{JSON}` | 200 `Location: http://devstore.rerum.io/v1/id/22222` `{JSON}`
 
 - **`{JSON}`**—The requested new state for the object.  MUST contain an `@id`
 - **Response Body: `{JSON}`**—Containing various bits of information about the PATCH update.
 
 A single object is updated by altering the set or subset of properties in the JSON
-payload. This method only updates existing keys. If a property submitted in the payload which does not exist, an error will be returned to the user. If
-`{key:null}` is submitted, the value will be set to `null`.
-Properties not mentioned in the payload object remain unaltered.
+payload. This method only updates existing keys. If a property submitted in the payload 
+which does not exist, an error will be returned to the user. If `{"key":null}` is submitted, 
+the value will be set to `null`. Properties not mentioned in the payload object remain 
+unaltered in the resulting object.  This results in the need to track history and
+the previous version will be represented in the `__rerum.history.previous` of the resulting object.
 
 Example Response:
 
-- **Header:** `Location: Updated @ http://devstore.rerum.io/v1/id/22222`
+- **Header:** `Location: http://devstore.rerum.io/v1/id/22222`
 - **Body:**
 
 ~~~ (json)
@@ -363,6 +380,13 @@ Example Response:
   "original_object_id" : "http://devstore.rerum.io/v1/id/11111",
   "new_obj_state" : {
     "@id": "http://devstore.rerum.io/v1/id/22222",
+    "__rerum":{
+        "history":{
+            "previous":"http://devstore.rerum.io/v1/id/11111",
+            ...
+        }
+      ...
+    }
     ...
   },
   "iiif_validation" : {
@@ -377,47 +401,79 @@ Example Response:
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/set.action` | `{JSON}` | 200: `header.Location` New state `{JSON}`
+| `/set.action` | `{JSON}` | 200 `Location: http://devstore.rerum.io/v1/id/22222` `{JSON}`
 
 - **`{JSON}`**—The requested new state for the object MUST contain an `@id`
 - **Response: `{JSON}`**—Containing various bits of information about the PATCH update. (see PUT Update for example)
 
 A single object is updated by adding all properties in the JSON
-payload. If a property already exists, a warning is returned to the user. 
+payload. If a property already exists, a warning is returned to the user. This
+is a specialized PATCH update with the same request, response, and history behavior.
+
 
 ### Remove Properties
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/unset.action` | `{JSON}` | 202: `header.Location` New state `{JSON}`
+| `/unset.action` | `{JSON}` | 202 `Location: http://devstore.rerum.io/v1/id/22222` `{JSON}`
 
 - **`{JSON}`**—The requested new state for the object.  Must contain an `@id`.
 - **`{JSON}`**—Containing various bits of information about the PATCH update. (see PUT Update for example)
 
 A single object is updated by dropping all properties
 in the JSON payload list like `{key:null}`. Keys must match
-to be dropped otherwise a warning is returned to the user.
+to be dropped otherwise a warning is returned to the user.  This
+is a specialized PATCH update with the same request, response, and history behavior.
+
 
 ### RERUM released
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
-| `/release.action` | `String @id` or `{JSON}` | 200: `header.Location` New state `{JSON}`
+| `/release.action` | `String @id` or `{JSON}` | 200 `Location: http://devstore.rerum.io/v1/id/11111` `{JSON}`
 
 - **`String @id`**—The `@id` of the version to be released.
 - **`{JSON}`**—The object.  Must contain `@id`.
 
-RERUM allows for the `generator` of a version of an object to assign a `released` state. Objects in released states are locked such that further changes are refused. Calling any update or delete action on a released object will result in an error response. The release action will perform an update to the `__rerum.isReleased` of the version identified and update `__rerum.releases` properties throughout the object's history. Any version of an object with an `oa:Motivation` containing `rr:releasing` will be released as soon as it is saved.
+RERUM allows for the `generator` of a version of an object to assign a `released` state. 
+Objects in released states are locked such that further changes are refused. 
+Calling any update or delete action on a released object will result in an error response. 
+The release action will alter the `__rerum.isReleased` of the version identified 
+and alter `__rerum.releases` properties throughout the object's history without making a 
+new history state for the resulting object (the `@id` does not change). Any version of an object 
+with an `oa:Motivation` containing `rr:releasing` will be released as soon as it is saved.
 
 Example Response:
-%)($NF)D*NS_$
+~~~ (json)
+{
+  "code" : 200,
+  "previously_released_id" : "http://devstore.rerum.io/v1/id/00001",
+  "next_releases_ids" : ["http://devstore.rerum.io/v1/id/11112", ...],
+  "new_obj_state" : {
+    "@id": "http://devstore.rerum.io/v1/id/11111",
+    "__rerum":{
+        "isReleased":Date.now(),
+        "releases"{
+            ...
+        }
+      ...
+    }
+    ...
+  },
+  "iiif_validation" : {
+    "warnings" : ["Array of warnings from IIIF validator"],
+    "error" : "Error for why this object failed validation",
+    "okay" : 1 // 0 or 1 as to whether or not it passed IIIF validation
+  }
+}
+~~~
 
 ## DELETE
 
 RERUM allows the `generator` of an object to delete that object.  
 Requests can be made by the string `@id` or a JSON object containing the `@id`.
 RERUM DELETE does not remove anything from the server. Deleted objects are only marked as deleted.
-Objects marked as deleted do not return in query results and may only be directly retreived by `@id`.
+Objects marked as deleted do not return in query results and may only be directly retrieved by `@id`.
 
 | Patterns | Payloads | Responses
 | ---     | ---     | ---
@@ -428,7 +484,9 @@ Objects marked as deleted do not return in query results and may only be directl
 
 There is no batch `DELETE` planned.
 
-A deleted object is easily recognized:
+### __deleted
+
+A deleted object is easily recognized by `__deleted`
 
 ~~~ (json)
 {
@@ -436,7 +494,7 @@ A deleted object is easily recognized:
   "__deleted" : {
     "object" : {
       "@id" : "http://devstore.rerum.io/v1/id/11111",
-      "@type": "sc:Canvas"
+      "@type": "sc:Canvas",
       "label": "page 46",
       "width": 730,
       "images": [],
@@ -451,6 +509,8 @@ A deleted object is easily recognized:
 
 > **Note:** The `__deleted.object` contains a snapshot of this version of the object when it was deleted, including its place in the history.
 
+> **Note:** The `__deleted.deletor` is the URI of the agent that marked this object as deleted.
+
 ___
 
 ## Smart objects
@@ -464,7 +524,9 @@ object about the version retrieved.
 
 | Property         | Type      | Description
 | ---              | ---       | ---
-| @context         | String    | The RERUM context file http://store.rerum.io/v1/context.json
+| @context         | String    | The RERUM context file http://store.rerum.io/v1/context.json.
+| alpha            | Boolean   | An Internal flag for RERUM API version control.
+| APIversion       | String    | Specific RERUM API release version for this data node, currently 1.0.0.
 | history.prime    | String    | The URI of the object initializing this history.
 | history.next     | [String]  | An array of URIs for the immediate derivatives of this version. A length > 1 indicates a branch.
 | history.previous | String    | The URI of the immediately previous version.
@@ -473,7 +535,7 @@ object about the version retrieved.
 | isOverwritten    | timestamp | Written when the overwrite endpoint is used. Exposes the date and time of the change.
 | isReleased       | timestamp | Written when the release endpoint is used.  Exposes the date and time this node was released.
 | releases.previous| String    | URI of the most recent released version from which this version is derived.
-| releases.next    | [String]  | Array of URIs for the first `released` decendant in the downstream branches
+| releases.next    | [String]  | Array of URIs for the first `released` decendant in the downstream branches.
 | releases.replaces| String    | URI of the previous release this node is motivated to replace. This is only present on released versions and will always match the value of `releases.previous`.
 
 >In the future, this may be encoded as an annotation on the object, using
@@ -508,7 +570,7 @@ http://store.rerum.io/v1/context.json
 
 ## IIIF
 
-RERUM fully supports the IIIF standard and makes third party calls to the [IIIF validation API](http://iiif.io/api/presentation/validator/service/). A piece of the RERUM response is the validation response of this API so the user knows whether or not their data conforms to this standard. Objects that fail IIIF validation are still saved.
+RERUM fully supports [IIIF standards](https://iiif.io/technical-details/) and makes third party calls to the [IIIF validation API](http://iiif.io/api/presentation/validator/service/). A piece of the RERUM response is the validation response of this API so the user knows whether or not their data conforms to this standard. Objects that fail IIIF validation are still saved.
 
 ## Web Annotation
 
