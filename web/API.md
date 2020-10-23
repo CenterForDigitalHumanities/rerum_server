@@ -484,7 +484,9 @@ Objects marked as deleted do not return in query results and may only be directl
 
 There is no batch `DELETE` planned.
 
-A deleted object is easily recognized:
+### __deleted
+
+A deleted object is easily recognized by `__deleted`
 
 ~~~ (json)
 {
@@ -506,6 +508,7 @@ A deleted object is easily recognized:
 ~~~
 
 > **Note:** The `__deleted.object` contains a snapshot of this version of the object when it was deleted, including its place in the history.
+> **Note:** The `__deleted.deletor` is the URI of the agent that marked this object as deleted.
 
 ___
 
