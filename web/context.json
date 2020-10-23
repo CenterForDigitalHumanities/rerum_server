@@ -8,12 +8,12 @@
       "rerum_v1":"https://github.com/CenterForDigitalHumanities/rerum_server/blob/master/API.md#",
       "id":"@id",
       "type":"@type",
+      "__rerum":{
+          "@id" : "rerum_v1:__rerum",
+          "@container" : "@graph"
+      },
       "Agent":{
          "@id":"foaf:Agent",
-         "@type":"@id"
-      },
-      "__rerum":{
-         "@id":"rerum_v1:__rerum",
          "@type":"@id"
       },
       "alpha":{
@@ -38,6 +38,7 @@
       },
       "releases":{
          "@id":"rerum_v1:releases",
+         "@type" : "@graph",
          "@context":{
             "previous":{
                "@id":"rerum_v1:releases.previous",
@@ -45,7 +46,7 @@
             },
             "next":{
                "@id":"rerum_v1:releases.next",
-               "@container":"@set"
+               "@container":["@set", "@id"]
             },
             "replaces":{
                "@id":"rerum_v1:releases.replaces",
@@ -55,6 +56,7 @@
       },
       "history":{
          "@id":"rerum_v1:history",
+         "@type" : "@graph",
          "@context":{
             "previous":{
                "@id":"prov:wasRevisionOf",
@@ -62,7 +64,7 @@
             },
             "next":{
                "@id":"dcterms:isVersionOf",
-               "@container":"@set"
+               "@container":["@set", "@id"]
             },
             "prime":{
                "@id":"rerum_v1:prime"
@@ -70,7 +72,8 @@
          }
       },
       "APIversion":{
-         "@id":"rerum_v1:APIversion"
+         "@id":"rerum_v1:APIversion",
+         "@type" : "xsd:string"
       }
    }
 }

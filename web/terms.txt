@@ -5,13 +5,14 @@
 
 rerum:__rerum
      dcterms:description "A set of properties that pertain specifically to the RERUM API."@en ;
+     rerum: alpha "A set of properties to describe the rerum:isReleased history tree of a resource."@en ;
      rerum: releases "A set of properties to describe the rerum:isReleased history tree of a resource."@en ;
      rerum: history "A set of properties to describe the history tree of a resource."@en ;
-     rerum: APIVersion "The version of the RERUM API the resource was created under "@en ;
+     rerum: APIversion "The version of the RERUM API the resource was created under "@en ;
      rerum: createdAt "The xsd:Date that this specific object was created"@en ;
      rerum: generatedBy "The application whose API key wrote this object"@en ;
      rerum: isReleased "The most recent xsd:Date for the last object in rerum:releases.previous "@en ;
-     rerum isOverwritten "The most recent xsd:Date that this specific object was forcibly overwritten instead of versioned"@en ;
+     rerum: isOverwritten "The most recent xsd:Date that this specific object was forcibly overwritten instead of versioned"@en ;
 
 rerum:releases
     dcterms:description "A set of properties to describe the rerum:isReleased history tree of a resource."@en ;
