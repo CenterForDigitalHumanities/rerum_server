@@ -5,9 +5,18 @@
       "dcterms":"http://purl.org/dc/terms/",
       "prov":"https://www.w3.org/TR/prov/#",
       "foaf":"http://xmlns.com/foaf/spec/#term_",
+      "oa" : "http://www.w3.org/ns/oa#",
       "rerum_v1":"https://github.com/CenterForDigitalHumanities/rerum_server/blob/master/API.md#",
       "id":"@id",
       "type":"@type",
+      "releasing" : {
+          "@id":"rerum_v1:releasing",
+          "@type":"oa:Motivation"
+      },
+      "working" : {
+          "@id":"rerum_v1:releasing",
+          "@type":"oa:Motivation"
+      },
       "__rerum":{
           "@id" : "rerum_v1:__rerum",
           "@container" : "@graph"
@@ -38,7 +47,7 @@
       },
       "releases":{
          "@id":"rerum_v1:releases",
-         "@type" : "@graph",
+         "container" : "@graph",
          "@context":{
             "previous":{
                "@id":"rerum_v1:releases.previous",
@@ -56,7 +65,7 @@
       },
       "history":{
          "@id":"rerum_v1:history",
-         "@type" : "@graph",
+         "container" : "@graph",
          "@context":{
             "previous":{
                "@id":"prov:wasRevisionOf",
@@ -67,13 +76,32 @@
                "@container":["@set", "@id"]
             },
             "prime":{
-               "@id":"rerum_v1:prime"
+               "@id":"rerum_v1:prime",
+               "@type":"@id"
             }
          }
       },
       "APIversion":{
          "@id":"rerum_v1:APIversion",
          "@type" : "xsd:string"
+      },
+      "__deleted":{
+            "@id" : "rerum_v1:delete",
+            "@container" : "@graph",
+            "@context":{
+                "object":{
+                    "@id" : "rerum_v1:object",
+                    "@container" : "@graph"
+                },
+                "deletor":{
+                    "@id" : "rerum_v1:deletor",
+                    "@type" : "@id"
+                },
+                "time" : {
+                    "@id" : "dcterms:date",
+                    "@type":"xsd:time"
+                }
+            }
       }
    }
 }
