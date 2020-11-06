@@ -47,7 +47,7 @@
  * but that functionality is not specified in this document.
  */
 
-package edu.slu.action;
+package java.edu.slu.action;
 
 import com.auth0.jwk.Jwk;
 import com.auth0.jwk.JwkException;
@@ -69,9 +69,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.struts2.interceptor.ServletRequestAware;
@@ -103,7 +103,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
-import javax.servlet.ServletInputStream;
+import jakarta.servlet.ServletInputStream;
 
 
 /**
@@ -795,7 +795,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @param supportStringID The request may be allowed to pass the @id as the body.
      * @return String of anticipated JSON format.
      * @throws java.io.IOException
-     * @throws javax.servlet.ServletException
+     * @throws jakarta.servlet.ServletException
      * @throws java.lang.Exception
      */
     public String processRequestBody(HttpServletRequest http_request, boolean supportStringID) throws IOException, ServletException, Exception{
@@ -1228,7 +1228,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @param oid variable assigned by urlrewrite rule for /id in urlrewrite.xml
      * @rspond with the new annotation ID in the Location header and the new object created in the body.
      * @throws java.io.IOException
-     * @throws javax.servlet.ServletException
+     * @throws jakarta.servlet.ServletException
      */
     public void getByID() throws IOException, ServletException, Exception{
         request.setCharacterEncoding("UTF-8");
@@ -1344,7 +1344,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         * Mongo allows us to bulk save.  
         * The content is from an HTTP request posting in an array filled with annotations to copy.  
      * @throws java.io.UnsupportedEncodingException
-     * @throws javax.servlet.ServletException
+     * @throws jakarta.servlet.ServletException
         * @see MongoDBAbstractDAO.bulkSaveFromCopy(String collectionName, BasicDBList entity_array);
         * @see MongoDBAbstractDAO.bulkSetIDProperty(String collectionName, BasicDBObject[] entity_array);
     */ 
@@ -1391,7 +1391,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     /**
      * Save a new annotation provided by the user. 
      * @throws java.io.IOException
-     * @throws javax.servlet.ServletException
+     * @throws jakarta.servlet.ServletException
      * @respond with new @id in Location header and the new annotation in the body.
      */
     public void saveNewObject() throws IOException, ServletException, Exception{
@@ -1446,7 +1446,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * Public facing servlet to PATCH set values of an existing RERUM object.
      * @respond with state of new object in the body
      * @throws java.io.IOException
-     * @throws javax.servlet.ServletException
+     * @throws jakarta.servlet.ServletException
      */
     public void patchSetUpdate()throws IOException, ServletException, Exception{
         Boolean historyNextUpdatePassed = false;
@@ -1542,7 +1542,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * Public facing servlet to PATCH unset values of an existing RERUM object.
      * @respond with state of new object in the body
      * @throws java.io.IOException
-     * @throws javax.servlet.ServletException
+     * @throws jakarta.servlet.ServletException
      */
     public void patchUnsetUpdate()throws IOException, ServletException, Exception{
         Boolean historyNextUpdatePassed = false;
@@ -1753,7 +1753,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * Public facing servlet to PUT replace an existing object.  Can set and unset keys.
      * @respond with new state of the object in the body.
      * @throws java.io.IOException
-     * @throws javax.servlet.ServletException
+     * @throws jakarta.servlet.ServletException
      */
     public void putUpdateObject()throws IOException, ServletException, Exception{
         //@webanno The client should use the If-Match header with a value of the ETag it received from the server before the editing process began, 
@@ -1841,7 +1841,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * 
      * @respond with new state of the object in the body.
      * @throws java.io.IOException
-     * @throws javax.servlet.ServletException
+     * @throws jakarta.servlet.ServletException
      */
     public void overwriteObject()throws IOException, ServletException, Exception{
         System.out.println("overwrite object");
@@ -1913,7 +1913,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * 
      * @respond with new state of the object in the body.
      * @throws java.io.IOException
-     * @throws javax.servlet.ServletException
+     * @throws jakarta.servlet.ServletException
      */
     public void releaseObject() throws IOException, ServletException, Exception{
         boolean treeHealed = false;
