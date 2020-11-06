@@ -69,9 +69,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+//import jakarta.servlet.ServletException;
+//import jakarta.servlet.http.HttpServletRequest;
+//import jakarta.servlet.http.HttpServletResponse;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.struts2.interceptor.ServletRequestAware;
@@ -103,7 +106,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
-import jakarta.servlet.ServletInputStream;
+//import jakarta.servlet.ServletInputStream;
+import javax.servlet.ServletInputStream;
 
 
 /**
