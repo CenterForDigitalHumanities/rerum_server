@@ -4,9 +4,12 @@
  */
 package edu.slu.util;
 
-import com.mongodb.DB;
 import com.mongodb.MongoClient;
-import com.mongodb.MongoOptions;
+import com.mongodb.MongoClientOptions;
+import com.mongodb.ServerAddress;
+import com.mongodb.client.MongoDatabase;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -16,49 +19,50 @@ import java.util.logging.Logger;
  * @author hanyan
  */
 public class MongoDBUtil {
+
     private static MongoClient mg = null;
-    private static DB db = null;
+    private static MongoDatabase db = null;
     private static boolean auth = false;
 
     private final static MongoDBUtil instance = new MongoDBUtil();
 
     /**
      * Instantiate
+     *
      * @return
-     * @throws Exception
      */
-     public static MongoDBUtil getInstance() {
-            return instance;
-     }
-    
+    public static MongoDBUtil getInstance() {
+        return instance;
+    }
+
     static {
         try {
-            mg = new MongoClient("127.0.0.1", 27017);
-            DB dbAuth = mg.getDB("admin");
+            final MongoClientOptions options = MongoClientOptions.builder()
+                    .connectionsPerHost(100)
+                    .build();
+            ServerAddress serverAddress = new ServerAddress("127.0.0.1", 27017);
+            mg = new MongoClient(serverAddress, options);
+            MongoDatabase dbAuth = mg.getDatabase("admin");
 //            if(!auth){
 //                auth = dbAuth.authenticate("root", "root".toCharArray());
-                db = mg.getDB("annotationStore");
-                MongoOptions options = mg.getMongoOptions();
-                options.autoConnectRetry = true;
-                options.connectionsPerHost = 100;
+            db = mg.getDatabase("annotationStore");
 //            }
         } catch (Exception e) {
             Logger.getLogger(MongoDBUtil.class.getName()).log(Level.SEVERE, null, e);
-            e.printStackTrace();
         }
     }
 
     /**
      * @return the db
      */
-    public static DB getDb() {
+    public static MongoDatabase getDb() {
         return db;
     }
-    
-    public Set<String> getCollectionNames(){
-        Set<String> results = null;
-        results = db.getCollectionNames();
-        return results;
+
+    public Set<String> getCollectionNames() {
+        ArrayList<String> results = db.listCollectionNames()
+                .into(new ArrayList<>());
+        return new LinkedHashSet<>(results);
     }
-           
+
 }
