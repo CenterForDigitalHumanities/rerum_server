@@ -6,6 +6,7 @@ package edu.slu.util;
 
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientOptions;
+import com.mongodb.MongoClientURI;
 import com.mongodb.ServerAddress;
 import com.mongodb.client.MongoDatabase;
 import java.util.ArrayList;
@@ -40,13 +41,11 @@ public class MongoDBUtil {
             final MongoClientOptions options = MongoClientOptions.builder()
                     .connectionsPerHost(100)
                     .build();
-            ServerAddress serverAddress = new ServerAddress("127.0.0.1", 27017);
-            mg = new MongoClient(serverAddress, options);
-            MongoDatabase dbAuth = mg.getDatabase("admin");
-//            if(!auth){
-//                auth = dbAuth.authenticate("root", "root".toCharArray());
+
+            MongoClientURI uri = new MongoClientURI(
+                    "mongodb+srv://rerumBot:f%40kePassword@cluster0.qytdr.mongodb.net/<dbname>?retryWrites=true&w=majority");
+            mg = new MongoClient(uri);
             db = mg.getDatabase("annotationStore");
-//            }
         } catch (Exception e) {
             Logger.getLogger(MongoDBUtil.class.getName()).log(Level.SEVERE, null, e);
         }
