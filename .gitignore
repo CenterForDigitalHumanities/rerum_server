@@ -1,9 +1,0 @@
-catalog.xml
-dist/
-build/
-*.properties
-src/java/rerum.properties
-nbproject/
-.vscode/settings.json
-build.xml
-/rerum_server/target/
