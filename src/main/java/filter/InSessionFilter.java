@@ -8,12 +8,9 @@ package filter;
 import com.opensymphony.xwork2.ActionInvocation;
 import com.opensymphony.xwork2.interceptor.MethodFilterInterceptor;
 import java.io.PrintWriter;
-//import jakarta.servlet.http.HttpServletRequest;
-//import jakarta.servlet.http.HttpServletResponse;
-//import jakarta.servlet.http.HttpSession;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import org.apache.struts2.ServletActionContext;
 
 /**
@@ -26,14 +23,14 @@ public class InSessionFilter extends MethodFilterInterceptor {
 
     @Override
     protected String doIntercept(ActionInvocation ai) throws Exception {
-        HttpServletRequest request = ServletActionContext.getRequest();
+        HttpServletRequest request = (HttpServletRequest) ServletActionContext.getRequest();
         HttpSession session = request.getSession();
         if(null != session){
             return ai.invoke();
         }
         else{
             System.out.println("403 because session was null");
-            HttpServletResponse respond_403 = ServletActionContext.getResponse();
+            HttpServletResponse respond_403 = (HttpServletResponse) ServletActionContext.getResponse();
             respond_403.setStatus(403);
             respond_403.addHeader("Access-Control-Allow-Origin", "*");
             PrintWriter out = respond_403.getWriter();

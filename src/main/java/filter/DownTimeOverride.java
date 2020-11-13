@@ -9,8 +9,7 @@ import com.opensymphony.xwork2.ActionInvocation;
 import com.opensymphony.xwork2.interceptor.MethodFilterInterceptor;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
-//import jakarta.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.struts2.ServletActionContext;
 
 /**
@@ -23,7 +22,7 @@ public class DownTimeOverride extends MethodFilterInterceptor {
     protected String doIntercept(ActionInvocation ai) throws Exception {
         String offSwitch = getRerumProperty("down"); //Get this switch from the properties file.
         if(offSwitch.equals("true")){
-            HttpServletResponse response = ServletActionContext.getResponse();
+            HttpServletResponse response = (HttpServletResponse) ServletActionContext.getResponse();
             String body = "The RERUM API is down for maintenance.  Please try again later.  Sorry for the inconvenience.";
             response.setCharacterEncoding("UTF-8");
             response.addHeader("Access-Control-Allow-Origin", "*");

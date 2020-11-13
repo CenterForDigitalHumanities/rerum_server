@@ -18,10 +18,8 @@ import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
-//import jakarta.servlet.http.HttpServletRequest;
-//import jakarta.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.struts2.ServletActionContext;
 
 /**
@@ -36,7 +34,7 @@ public class RequestServerAuthenticationFilter extends MethodFilterInterceptor {
     @Override
     protected String doIntercept(ActionInvocation ai) throws Exception {
         //get remote server host ip
-        HttpServletRequest request = ServletActionContext.getRequest();
+        HttpServletRequest request = (HttpServletRequest) ServletActionContext.getRequest();
         String requestIP = request.getRemoteAddr();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
         //check if the domain name and ip is in database
@@ -55,7 +53,7 @@ public class RequestServerAuthenticationFilter extends MethodFilterInterceptor {
             return ai.invoke();
         }else{
             System.out.println("403 because session ip not registered");
-            HttpServletResponse respond_403 = ServletActionContext.getResponse();
+            HttpServletResponse respond_403 = (HttpServletResponse) ServletActionContext.getResponse();
             respond_403.setStatus(403);
             respond_403.addHeader("Access-Control-Allow-Origin", "*");
             PrintWriter out = respond_403.getWriter();

@@ -69,12 +69,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-//import jakarta.servlet.ServletException;
-//import jakarta.servlet.http.HttpServletRequest;
-//import jakarta.servlet.http.HttpServletResponse;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.struts2.interceptor.ServletRequestAware;
@@ -106,8 +103,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
-//import jakarta.servlet.ServletInputStream;
-import javax.servlet.ServletInputStream;
+import jakarta.servlet.ServletInputStream;
+//import javax.servlet.ServletInputStream;
 
 
 /**
@@ -121,8 +118,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     private String oid;
     private AcceptedServer acceptedServer;
     private MongoDBService mongoDBService;
-    private HttpServletRequest request;
-    private HttpServletResponse response;
+    private jakarta.servlet.http.HttpServletRequest request;
+    private jakarta.servlet.http.HttpServletResponse response;
     private StringBuilder bodyString;
     private BufferedReader bodyReader;
     private PrintWriter out;
@@ -2746,14 +2743,15 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     }
     
     @Override
-    public void setServletRequest(HttpServletRequest hsr) {
-        this.request = hsr;
+    public void setServletRequest(javax.servlet.http.HttpServletRequest hsr) {
+        this.request = (HttpServletRequest) hsr;
     }
 
     @Override
-    public void setServletResponse(HttpServletResponse hsr) {
-        this.response = hsr;
+    public void setServletResponse(javax.servlet.http.HttpServletResponse hsr) {
+        this.response = (HttpServletResponse) hsr;
     }
+
 
     /**
      * @return the mongoDBService

@@ -17,12 +17,9 @@ import java.io.PrintWriter;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-//import jakarta.servlet.ServletException;
-//import jakarta.servlet.http.HttpServletRequest;
-//import jakarta.servlet.http.HttpServletResponse;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import org.apache.struts2.interceptor.ServletRequestAware;
@@ -257,13 +254,13 @@ public class ServerAction extends ActionSupport implements ServletRequestAware, 
     }
 
     @Override
-    public void setServletRequest(HttpServletRequest hsr) {
-        this.request = hsr;
+    public void setServletRequest(javax.servlet.http.HttpServletRequest hsr) {
+        this.request = (HttpServletRequest) hsr;
     }
 
     @Override
-    public void setServletResponse(HttpServletResponse hsr) {
-        this.response = hsr;
+    public void setServletResponse(javax.servlet.http.HttpServletResponse hsr) {
+        this.response = (HttpServletResponse) hsr;
     }
 
     
