@@ -7,7 +7,6 @@ package edu.slu.util;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientOptions;
 import com.mongodb.MongoClientURI;
-import com.mongodb.ServerAddress;
 import com.mongodb.client.MongoDatabase;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
