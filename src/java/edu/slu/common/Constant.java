@@ -26,12 +26,12 @@ public class Constant {
     public static final String AGENT_DEPENDENCY_TYPE_USER = "user";
     public static final String AGENT_DEPENDENCY_TYPE_STRING = "string";
     
-    public static final String RERUM_BASE="http://devstore.rerum.io";
-    public static final String RERUM_PREFIX="http://devstore.rerum.io/v1/";
-    public static final String RERUM_ID_PREFIX="http://devstore.rerum.io/v1/id/";
-    public static final String RERUM_AGENT_PREFIX="http://devstore.rerum.io/v1/agent/";
+    public static final String RERUM_BASE="http://devstore-atlas.rerum.io";
+    public static final String RERUM_PREFIX="http://devstore-atlas.rerum.io/v1_atlas/";
+    public static final String RERUM_ID_PREFIX="http://devstore-atlas.rerum.io/v1_atlas/id/";
+    public static final String RERUM_AGENT_PREFIX="http://devstore.rerum.io/v1/agent";
     public static final String RERUM_AGENT_ClAIM="http://devstore.rerum.io/v1/agent";
-    public static final String RERUM_CONTEXT="http://devstore.rerum.io/v1/context.json";
+    public static final String RERUM_CONTEXT="http://devstore-atlas.rerum.io/v1_atlas/context.json";
     public static final String RERUM_API_VERSION="1.0.0";
     //The location of the public API documents.  This is necessary for JSON-LD context purposes.
     public static final String RERUM_API_DOC="https://github.com/CenterForDigitalHumanities/rerum_server/blob/master/API.md#__rerum";
@@ -40,7 +40,7 @@ public class Constant {
     public static final int NUMBER_OF_ANNO_VERSION = 10;
     
     //get by objectID url
-    //public static final String GET_BY_OBJECTid_URL = "http://devstore.rerum.io/rerumserver/anno/getAnnotationByObjectID";
+    //public static final String GET_BY_OBJECTid_URL = "http://devstore-atlas.rerum.io/rerumserver/anno/getAnnotationByObjectID";
     
     //return result message
     public static final String DUPLICATED = "duplicated";

@@ -7,6 +7,7 @@ package edu.slu.abstractUtil;
 import com.mongodb.BasicDBList;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Projections;
@@ -18,6 +19,7 @@ import java.util.Map;
 import java.util.regex.Pattern;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
@@ -28,7 +30,10 @@ import org.bson.types.ObjectId;
 public abstract class MongoDBAbstractDAO implements MongoDBDAOInterface {
 
     private final MongoDatabase db = MongoDBUtil.getDb();
-
+    
+    //private static MongoClient mg = null;
+    //private static MongoDatabase db = null;
+    
     @Override
     public List<DBObject> findAll(String collectionName, int firstResult, int maxResults) {
         ArrayList results;
@@ -110,7 +115,7 @@ public abstract class MongoDBAbstractDAO implements MongoDBDAOInterface {
         });
         query.put(OROperator, values);
         results = db.getCollection(collectionName)
-                .find(query)
+                .find((Bson) query)
                 .sort((Bson) orderby)
                 .into(new ArrayList<>());
         return results;
@@ -124,7 +129,7 @@ public abstract class MongoDBAbstractDAO implements MongoDBDAOInterface {
             Pattern p = Pattern.compile(e.getValue(), CASE_INSENSITIVE);
             dbo.put(e.getKey(), p);
         });
-        results = (ArrayList) db.getCollection(collectionName).find(dbo);
+        results = (ArrayList) db.getCollection(collectionName).find((Bson) dbo);
         return results;
     }
 
@@ -135,7 +140,7 @@ public abstract class MongoDBAbstractDAO implements MongoDBDAOInterface {
         m_pattern.entrySet().forEach(p -> {
             dbo.put(p.getKey(), p.getValue());
         });
-        results = (ArrayList) db.getCollection(collectionName).find(dbo);
+        results = (ArrayList) db.getCollection(collectionName).find((Bson) dbo);
         return results;
     }
 
@@ -148,7 +153,7 @@ public abstract class MongoDBAbstractDAO implements MongoDBDAOInterface {
             dbo.put(e.getKey(), p);
         });
         results = db.getCollection(collectionName)
-                .find(dbo)
+                .find((Bson) dbo)
                 .sort((Bson) orderby)
                 .into(new ArrayList<>());
         return results;
@@ -162,7 +167,7 @@ public abstract class MongoDBAbstractDAO implements MongoDBDAOInterface {
             dbo.put(p.getKey(), p.getValue());
         }
         results = db.getCollection(collectionName)
-                .find(dbo)
+                .find((Bson) dbo)
                 .sort((Bson) orderby)
                 .into(new ArrayList<>());
         return results;
@@ -183,7 +188,7 @@ public abstract class MongoDBAbstractDAO implements MongoDBDAOInterface {
         });
         query.put(OROperator, values);
         results = db.getCollection(collectionName)
-                .find(query)
+                .find((Bson) query)
                 .sort((Bson)orderby)
                 .into(new ArrayList<>());
         return results;
@@ -198,7 +203,7 @@ public abstract class MongoDBAbstractDAO implements MongoDBDAOInterface {
             dbo.put(e.getKey(), p);
         });
         results = db.getCollection(collectionName)
-                .find(dbo)
+                .find((Bson) dbo)
                 .skip(firstResult)
                 .limit(maxResult)
                 .into(new ArrayList<>());
@@ -220,7 +225,7 @@ public abstract class MongoDBAbstractDAO implements MongoDBDAOInterface {
         });
         query.put(OROperator, values);
         results = db.getCollection(collectionName)
-                .find(query)
+                .find((Bson) query)
                 .skip(firstResult)
                 .limit(maxResult)
                 .into(new ArrayList<>());
@@ -240,7 +245,7 @@ public abstract class MongoDBAbstractDAO implements MongoDBDAOInterface {
     @Override
     public DBObject findOneByExample(String collectionName, DBObject queryEntity) {
         Document result = db.getCollection(collectionName).find((Bson)queryEntity).limit(1).first();
-        return BasicDBObject.parse(result.toJson());
+        return new BasicDBObject(result);
     }
 
     @Override
@@ -250,8 +255,8 @@ public abstract class MongoDBAbstractDAO implements MongoDBDAOInterface {
             Pattern p = Pattern.compile(s.getValue(), CASE_INSENSITIVE);
             dbo.put(s.getKey(), p);
         });
-        Document result = db.getCollection(collectionName).find(dbo).limit(1).first();
-        return BasicDBObject.parse(result.toJson());
+        Document result = db.getCollection(collectionName).find((Bson) dbo).limit(1).first();
+        return new BasicDBObject(result);
     }
 
     @Override
@@ -260,7 +265,7 @@ public abstract class MongoDBAbstractDAO implements MongoDBDAOInterface {
                 .projection(Projections.fields((Bson)returnFields))
                 .sort((Bson)orderBy)
                 .first();
-        return BasicDBObject.parse(result.toJson());
+        return new BasicDBObject(result);
     }
 
     @Override
@@ -282,11 +287,16 @@ public abstract class MongoDBAbstractDAO implements MongoDBDAOInterface {
      */
     @Override
     public String save(String collectionName, DBObject targetEntity) {
+        System.out.println("Overwritten mong save called");
+        System.out.println("Collection to find in MongoDB is "+collectionName);
         MongoCollection coll = db.getCollection(collectionName);
+        System.out.println("Found the collection");
         String generatedID = new ObjectId().toHexString(); //Should always be a hex string for our purposes.
         //If you do not explicitly create a new objectID hexidecimal string here, it could be a date.
         targetEntity.put("_id", generatedID);
+        System.out.println("insert into collection...");
         coll.insertOne(targetEntity);
+        System.out.println("insert complete.  Resulting ID is "+generatedID);
         return generatedID;
     }
 

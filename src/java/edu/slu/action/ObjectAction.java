@@ -1412,7 +1412,9 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     // cubap: if we want, we can just copy the Slug to @id, warning
                     // if there was some mismatch, since versions are fine with that.
                 }
+                System.out.println("MongoDB service to save...");
                 String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
+                System.out.println("Finished saving through mongoDB service");
                 //set @id from _id and update the annotation
                 BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
                 String newid = Constant.RERUM_ID_PREFIX+newObjectID;
@@ -2638,8 +2640,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             JWTVerifier verifier = JWT.require(algorithm).build(); //Reusable verifier instance
                //.withIssuer("auth0")
             generatorID = receivedToken.getClaim(Constant.RERUM_AGENT_ClAIM).asString();
-            //System.out.println("Was I able to pull the agent claim from the token directly without userinfo without verifying?  Value below");
-            //System.out.println("Value: "+generatorID);
+            System.out.println("Was I able to pull the agent claim from the token directly without userinfo without verifying?  Value below");
+            System.out.println("Value: "+generatorID);
             if(botCheck(generatorID)){
                 System.out.println("It passed the bot check, no need to verify the access token.  I have the generator ID.  ");
                 verified = true;
@@ -2700,6 +2702,10 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @return true if matched
      */
     private boolean botCheck(String agent) {
+        System.out.println("This is throwing null...");
+        System.out.println(agent);
+        System.out.println("equals");
+        System.out.println(getRerumProperty("bot_agent"));
         return agent.equals(getRerumProperty("bot_agent"));
     }
        
