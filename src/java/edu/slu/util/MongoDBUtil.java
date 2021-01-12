@@ -44,7 +44,7 @@ public class MongoDBUtil {
                     .build();
             System.out.println("MongoDBUTIL - Connection");
             MongoClientURI uri = new MongoClientURI(
-                    "mongodb+srv://rerumBot:f%40kePassword@cluster0.qytdr.mongodb.net/<dbname>?retryWrites=true&w=majority");
+                    "mongodb+srv://rerumBot:f%40kePassword@cluster0.qytdr.mongodb.net/annotationStore?retryWrites=true&w=majority");
             mg = new MongoClient(uri);
             System.out.println("MongoDBUTIL - Connected");
             System.out.println("Get DB");
