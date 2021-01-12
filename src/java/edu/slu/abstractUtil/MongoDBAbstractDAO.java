@@ -287,6 +287,8 @@ public abstract class MongoDBAbstractDAO implements MongoDBDAOInterface {
      */
     @Override
     public String save(String collectionName, DBObject targetEntity) {
+        System.out.println("Overwritten mong save called");
+        System.out.println("DB is "+db.getName());
         MongoCollection coll = db.getCollection(collectionName);
         String generatedID = new ObjectId().toHexString(); //Should always be a hex string for our purposes.
         //If you do not explicitly create a new objectID hexidecimal string here, it could be a date.
