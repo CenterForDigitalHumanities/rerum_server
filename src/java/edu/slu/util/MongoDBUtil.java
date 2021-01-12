@@ -4,10 +4,10 @@
  */
 package edu.slu.util;
 
+import com.mongodb.DB;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientOptions;
 import com.mongodb.MongoClientURI;
-import com.mongodb.ServerAddress;
 import com.mongodb.client.MongoDatabase;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -45,7 +45,7 @@ public class MongoDBUtil {
             MongoClientURI uri = new MongoClientURI(
                     "mongodb+srv://rerumBot:f%40kePassword@cluster0.qytdr.mongodb.net/<dbname>?retryWrites=true&w=majority");
             mg = new MongoClient(uri);
-            db = mg.getDatabase("annotationStore");
+            DB db = (DB) MongoDBUtil.getDb();
         } catch (Exception e) {
             Logger.getLogger(MongoDBUtil.class.getName()).log(Level.SEVERE, null, e);
         }
