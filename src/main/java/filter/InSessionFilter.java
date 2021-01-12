@@ -8,9 +8,9 @@ package filter;
 import com.opensymphony.xwork2.ActionInvocation;
 import com.opensymphony.xwork2.interceptor.MethodFilterInterceptor;
 import java.io.PrintWriter;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import org.apache.struts2.ServletActionContext;
 
 /**
@@ -23,7 +23,7 @@ public class InSessionFilter extends MethodFilterInterceptor {
 
     @Override
     protected String doIntercept(ActionInvocation ai) throws Exception {
-        HttpServletRequest request = (HttpServletRequest) ServletActionContext.getRequest();
+        HttpServletRequest request = ServletActionContext.getRequest();
         HttpSession session = request.getSession();
         if(null != session){
             return ai.invoke();

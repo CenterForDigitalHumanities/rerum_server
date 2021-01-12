@@ -10,15 +10,15 @@
 >
     
     
-    <bean id="objectAction" class="edu.slu.action.ObjectAction" scope="prototype">
+    <bean id="objectAction" class="action.ObjectAction" scope="prototype">
         <property name="mongoDBService" ref="mongoDBService" />
     </bean>
     
-    <bean id="serverAction" class="edu.slu.action.ServerAction" scope="prototype">
+    <bean id="serverAction" class="action.ServerAction" scope="prototype">
         <property name="mongoDBService" ref="mongoDBService" />
     </bean>
     
-    <bean id="userAction" class="edu.slu.action.UserAction" scope="prototype">
+    <bean id="userAction" class="action.UserAction" scope="prototype">
         <property name="mongoDBService" ref="mongoDBService" />
     </bean>
 </beans>

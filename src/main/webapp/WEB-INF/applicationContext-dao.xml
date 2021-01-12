@@ -9,7 +9,7 @@
        http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-2.5.xsd"
        >
        
-    <bean id="mongoDBDAO" class="edu.slu.DAO.impl.MongoDBDAOImpl">
+    <bean id="mongoDBDAO" class="DAO.impl.MongoDBDAOImpl">
     </bean>
     
 </beans>

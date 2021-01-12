@@ -15,7 +15,7 @@
          <!-- this tells the package what to do when the result is an expected string.  @see RequestServerAuthenticationFilter.java && AnnotationAction.java &&DownTimeOverride.java -->
          <!-- Only put handlers here that need to apply to ALL PACKAGES -->
          <interceptors>
-            <interceptor name="downTimeOverride" class="edu.slu.filter.DownTimeOverride"></interceptor>
+            <interceptor name="downTimeOverride" class="filter.DownTimeOverride"></interceptor>
          </interceptors>
          
         <global-results>
@@ -68,7 +68,7 @@
     <package name="v1" extends="default" namespace="/api">
         <!-- INTERCEPTOR -->
         <interceptors>
-            <interceptor name="getRequestClientInfoRecorder" class="edu.slu.filter.GetRequestClientInfoRecorder">
+            <interceptor name="getRequestClientInfoRecorder" class="filter.GetRequestClientInfoRecorder">
             <param name="includeMethods">askAuth0, getByProperties, getByID, getAllAncestors, getAllDescendants, getAllVersions</param>
             </interceptor>
             <interceptor-stack name="myDefault">

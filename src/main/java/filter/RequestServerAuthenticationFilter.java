@@ -18,8 +18,8 @@ import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import org.apache.struts2.ServletActionContext;
 
 /**
@@ -34,7 +34,7 @@ public class RequestServerAuthenticationFilter extends MethodFilterInterceptor {
     @Override
     protected String doIntercept(ActionInvocation ai) throws Exception {
         //get remote server host ip
-        HttpServletRequest request = (HttpServletRequest) ServletActionContext.getRequest();
+        HttpServletRequest request = ServletActionContext.getRequest();
         String requestIP = request.getRemoteAddr();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
         //check if the domain name and ip is in database

@@ -5,7 +5,7 @@
 --%>
 
 <%@page import="java.util.ResourceBundle"%>
-<%@page import="edu.slu.action.ObjectAction"%>
+<%@page import="action.ObjectAction"%>
 <%@page contentType="text/html" pageEncoding="UTF-8" buffer="1000kb"%>
 <% 
     String basePath = request.getContextPath(); 

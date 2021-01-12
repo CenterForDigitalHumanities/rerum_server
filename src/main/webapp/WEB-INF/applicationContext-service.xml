@@ -10,7 +10,7 @@
 >
 
     <!-- mongoDB service -->
-    <bean id="mongoDBService" class="edu.slu.service.impl.MongoDBServiceImpl">
+    <bean id="mongoDBService" class="service.impl.MongoDBServiceImpl">
         <property name="mongoDBDAO" ref="mongoDBDAO" />
     </bean>
     
