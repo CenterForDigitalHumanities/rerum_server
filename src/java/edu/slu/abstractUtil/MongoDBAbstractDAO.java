@@ -9,10 +9,6 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DB;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
-import com.mongodb.MongoClient;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.model.Projections;
 import edu.slu.common.Constant;
 import edu.slu.util.MongoDBUtil;
 import java.util.ArrayList;
@@ -21,9 +17,6 @@ import java.util.Map;
 import java.util.regex.Pattern;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
-import org.bson.Document;
-import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 
 /**
