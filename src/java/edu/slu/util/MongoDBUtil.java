@@ -22,7 +22,7 @@ import java.util.logging.Logger;
 public class MongoDBUtil {
 
     private static MongoClient mg = null;
-    private static MongoDatabase db = null;
+    private static DB db = null;
     private static boolean auth = false;
 
     private final static MongoDBUtil instance = new MongoDBUtil();
@@ -48,9 +48,9 @@ public class MongoDBUtil {
             mg = new MongoClient(uri);
             System.out.println("MongoDBUTIL - Connected");
             System.out.println("Get DB");
-            DB db = (DB) MongoDBUtil.getDb();
+            db = mg.getDB("annotationStore");
             System.out.println("Got the DB...hoping it is DB 'annotationStore' with db.alpha collection");
-            //System.out.println("DB is "+db.getName());
+            System.out.println("DB is "+db.getName());
         } catch (Exception e) {
             Logger.getLogger(MongoDBUtil.class.getName()).log(Level.SEVERE, null, e);
         }
@@ -59,14 +59,12 @@ public class MongoDBUtil {
     /**
      * @return the db
      */
-    public static MongoDatabase getDb() {
+    public static DB getDb() {
         return db;
     }
 
     public Set<String> getCollectionNames() {
-        ArrayList<String> results = db.listCollectionNames()
-                .into(new ArrayList<>());
-        return new LinkedHashSet<>(results);
+        return db.getCollectionNames();
     }
 
 }
