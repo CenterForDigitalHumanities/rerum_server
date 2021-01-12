@@ -50,7 +50,7 @@ public class MongoDBUtil {
             System.out.println("Get DB");
             DB db = (DB) MongoDBUtil.getDb();
             System.out.println("Got the DB...hoping it is DB 'annotationStore' with db.alpha collection");
-            System.out.println("DB is "+db.getName());
+            //System.out.println("DB is "+db.getName());
         } catch (Exception e) {
             Logger.getLogger(MongoDBUtil.class.getName()).log(Level.SEVERE, null, e);
         }

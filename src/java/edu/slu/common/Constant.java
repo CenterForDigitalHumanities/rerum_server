@@ -30,7 +30,7 @@ public class Constant {
     public static final String RERUM_PREFIX="http://devstore-atlas.rerum.io/v1_atlas/";
     public static final String RERUM_ID_PREFIX="http://devstore-atlas.rerum.io/v1_atlas/id/";
     public static final String RERUM_AGENT_PREFIX="http://devstore.rerum.io/v1/agent/";
-    public static final String RERUM_AGENT_ClAIM="http://devstore-atlas.rerum.io/v1_atlas/agent";
+    public static final String RERUM_AGENT_ClAIM="http://devstore.rerum.io/v1/agent/";
     public static final String RERUM_CONTEXT="http://devstore-atlas.rerum.io/v1_atlas/context.json";
     public static final String RERUM_API_VERSION="1.0.0";
     //The location of the public API documents.  This is necessary for JSON-LD context purposes.
