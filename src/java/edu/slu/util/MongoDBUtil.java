@@ -35,19 +35,13 @@ public class MongoDBUtil {
 
     static {
         try {
-            System.out.println("MongoDBUTIL");
             final MongoClientOptions options = MongoClientOptions.builder()
                     .connectionsPerHost(100)
                     .build();
-            System.out.println("MongoDBUTIL - Connection");
             MongoClientURI uri = new MongoClientURI(
                     "mongodb+srv://rerumBot:f%40kePassword@cluster0.qytdr.mongodb.net/annotationStore?retryWrites=true&w=majority");
             mg = new MongoClient(uri);
-            System.out.println("MongoDBUTIL - Connected");
-            System.out.println("Get DB");
             db = mg.getDB("annotationStore");
-            System.out.println("Got the DB...hoping it is DB 'annotationStore' with db.alpha collection");
-            System.out.println("DB is "+db.getName());
         } catch (Exception e) {
             Logger.getLogger(MongoDBUtil.class.getName()).log(Level.SEVERE, null, e);
         }

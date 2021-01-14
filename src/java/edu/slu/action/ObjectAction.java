@@ -1412,9 +1412,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     // cubap: if we want, we can just copy the Slug to @id, warning
                     // if there was some mismatch, since versions are fine with that.
                 }
-                System.out.println("MongoDB service to save...");
                 String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, dbo);
-                System.out.println("Finished saving through mongoDB service");
                 //set @id from _id and update the annotation
                 BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)dbo);
                 String newid = Constant.RERUM_ID_PREFIX+newObjectID;
@@ -2702,10 +2700,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @return true if matched
      */
     private boolean botCheck(String agent) {
-        System.out.println("This is throwing null...");
-        System.out.println(agent);
-        System.out.println("equals");
-        System.out.println(getRerumProperty("bot_agent"));
         return agent.equals(getRerumProperty("bot_agent"));
     }
        

@@ -239,7 +239,6 @@ public abstract class MongoDBAbstractDAO implements MongoDBDAOInterface {
 
     @Override
     public DBObject findOneByExample(String collectionName, DBObject queryEntity) {
-        //FIXME probably a better way to do this
         Map result = db.getCollection(collectionName).find(queryEntity).limit(1).one().toMap();
         return new BasicDBObject(result);
     }
@@ -289,16 +288,11 @@ public abstract class MongoDBAbstractDAO implements MongoDBDAOInterface {
      */
     @Override
     public String save(String collectionName, DBObject targetEntity) {
-        System.out.println("Overwritten mong save called");
-        System.out.println("Collection to find in MongoDB is "+collectionName);
         DBCollection coll = db.getCollection(collectionName);
-        System.out.println("Found the collection");
         String generatedID = new ObjectId().toHexString(); //Should always be a hex string for our purposes.
         //If you do not explicitly create a new objectID hexidecimal string here, it could be a date.
         targetEntity.put("_id", generatedID);
-        System.out.println("insert into collection...");
         coll.insert(targetEntity);
-        System.out.println("insert complete.  Resulting ID is "+generatedID);
         return generatedID;
     }
 
