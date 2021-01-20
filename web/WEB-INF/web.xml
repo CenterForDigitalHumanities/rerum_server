@@ -17,7 +17,7 @@
     </listener>-->
     <!-- for log4j end -->
     <!-- filters start -->
-<!--    <filter>
+    <!--    <filter>
         <filter-name>CorsFilter</filter-name>
         <filter-class>org.apache.catalina.filters.CorsFilter</filter-class>
       </filter>
@@ -76,6 +76,14 @@
         <dispatcher>FORWARD</dispatcher>
         <dispatcher>INCLUDE</dispatcher>
     </filter-mapping>
+    <servlet>
+        <servlet-name>ActionValidator</servlet-name>
+        <servlet-class>edu.slu.action.ActionValidator</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ActionValidator</servlet-name>
+        <url-pattern>/validate</url-pattern>
+    </servlet-mapping>
     <session-config>
         <session-timeout>40</session-timeout>
     </session-config>
