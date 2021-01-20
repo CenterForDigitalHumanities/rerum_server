@@ -1869,7 +1869,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         JSONObject newObject = received;//The edited original object meant to be saved as a new object (versioning)
                         newObject.remove("_id");
                         JSONObject originalProperties = originalJSONObj.getJSONObject("__rerum");
-                        
                         LocalDateTime dt = LocalDateTime.now();
                         DateTimeFormatter dtFormat = DateTimeFormatter.ISO_DATE_TIME;
                         String formattedOverwrittenDateTime = dt.format(dtFormat);
