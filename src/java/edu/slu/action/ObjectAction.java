@@ -485,9 +485,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             try{
                 annoToUpdate.getJSONObject("__rerum").getJSONObject("history").getJSONArray("next").add(newNextID); //write back to the anno from mongo
                 myAnnoWithHistoryUpdate = (DBObject)JSON.parse(annoToUpdate.toString()); //make the JSONObject a DB object
-                System.out.println("Update in Mongo");
                 mongoDBService.update(Constant.COLLECTION_ANNOTATION, myAnno, myAnnoWithHistoryUpdate); //update in mongo
-                System.out.println("Done");
                 altered = true;
             }
             catch(Exception e){ 
@@ -1875,7 +1873,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         LocalDateTime dt = LocalDateTime.now();
                         DateTimeFormatter dtFormat = DateTimeFormatter.ISO_DATE_TIME;
                         String formattedOverwrittenDateTime = dt.format(dtFormat);
-                        originalProperties.getJSONObject("__rerum").element("isOverwritten", formattedOverwrittenDateTime);
+                        originalProperties.element("isOverwritten", formattedOverwrittenDateTime);
                         newObject.element("__rerum", originalProperties);
                         DBObject udbo = (DBObject) JSON.parse(newObject.toString());
                         mongoDBService.update(Constant.COLLECTION_ANNOTATION, originalObject, udbo);
