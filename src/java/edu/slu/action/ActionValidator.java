@@ -44,7 +44,7 @@ public class ActionValidator extends HttpServlet {
             String createResult, putUpdateResult, patchUpdateResult, patchSetResult, patchUnsetResult, overwriteResult, deleteResult, queryResult;
             createResult=putUpdateResult=patchUpdateResult=patchSetResult=patchUnsetResult=overwriteResult=deleteResult=queryResult="<font color='red'>ERROR</font>";
             JSONObject jo = new JSONObject();
-            jo.element("validator", formattedOverwrittenDateTime);
+            jo.element("validate_create", formattedOverwrittenDateTime);
             DBObject test = (DBObject) JSON.parse(jo.toString());
             
             //For saving a new object, which is a save and update in mongo unit actions.  Both have to be working.
@@ -69,13 +69,9 @@ public class ActionValidator extends HttpServlet {
                 query.append("@id", origID);
                 BasicDBObject originalObject = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The originalObject DB object
                 if(null != originalObject){
-                    jo.element("updateServices", "ok");
+                    jo.element("validate_services", formattedOverwrittenDateTime);
                     test = (DBObject) JSON.parse(jo.toString());
-                    String newNextID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, test);
-                    String newNextAtID = Constant.RERUM_ID_PREFIX+newNextID;
-                    BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)test);
-                    dboWithObjectID.append("@id", newNextAtID);
-                    jo.element("@id", newNextAtID);
+                    mongoDBService.update(Constant.COLLECTION_ANNOTATION, originalObject, test);
                     createResult=putUpdateResult=patchUpdateResult=patchSetResult=patchUnsetResult=deleteResult=overwriteResult="<font color='green'>available</font>";
                 }
                 else{
@@ -96,7 +92,7 @@ public class ActionValidator extends HttpServlet {
                     queryResult = "<font color='green'>available</font>";
                 }
                 else{
-                    queryResult = "<font color='red'>Error finding 11111</font>";
+                    queryResult = "<font color='red'>unavailable</font>";
                 }
             }
             catch(Exception e){
