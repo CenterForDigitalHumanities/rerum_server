@@ -76,6 +76,7 @@
         <dispatcher>FORWARD</dispatcher>
         <dispatcher>INCLUDE</dispatcher>
     </filter-mapping>
+    
     <servlet>
         <servlet-name>ActionValidator</servlet-name>
         <servlet-class>edu.slu.action.ActionValidator</servlet-class>
@@ -84,6 +85,7 @@
         <servlet-name>ActionValidator</servlet-name>
         <url-pattern>/validate</url-pattern>
     </servlet-mapping>
+    
     <session-config>
         <session-timeout>40</session-timeout>
     </session-config>
