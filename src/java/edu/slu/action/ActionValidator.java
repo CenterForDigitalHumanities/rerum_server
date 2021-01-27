@@ -1,7 +1,6 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Test MongoDBAbstractDAO.java unit functions that are required to work for the interactions with mongo.  You can find what actions are required by viewing
+ * the various actions and private helpers in ObjectAction.java.  
  */
 package edu.slu.action;
 
@@ -47,13 +46,13 @@ public class ActionValidator extends HttpServlet {
             jo.element("validate_create", formattedOverwrittenDateTime);
             DBObject test = (DBObject) JSON.parse(jo.toString());
             
-            //For saving a new object, which is a save and update in mongo unit actions.  Both have to be working.
+            //For CREATE, which is a save and update in mongo unit actions (make it exist for the _id, update it with an @id)
             try{
-                String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, test);
+                String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, test); //put in DB
                 //set @id from _id and update the annotation
                 BasicDBObject dboWithObjectID = new BasicDBObject((BasicDBObject)test);
                 String newid = Constant.RERUM_ID_PREFIX+newObjectID;
-                dboWithObjectID.put("@id", newid);
+                dboWithObjectID.put("@id", newid); //give @id
                 mongoDBService.update(Constant.COLLECTION_ANNOTATION, test, dboWithObjectID);
                 jo = JSONObject.fromObject(dboWithObjectID);
                 createResult = "<font color='green'>available</font>";
@@ -62,16 +61,21 @@ public class ActionValidator extends HttpServlet {
                 createResult = "<font color='red'>unavailable</font>";
             }
             
-            //For PUT/PATCH/SET/UNSET/DELETE all use the same mongodbservice unit functionality.  findOneByExample - save - update.  OVERWRITE uses findOnByExample and update.
+            //For PUT/PATCH/SET/UNSET/DELETE all use the same mongodbservice unit functionality.  findOneByExample - save - give @id - update - manage versioning (more mongo unit updates).  
+            //OVERWRITE uses findOnByExample and update and so if covered by this test.
             try{
-                String origID = Constant.RERUM_ID_PREFIX + "11111";
+                String newObjectID = mongoDBService.save(Constant.COLLECTION_ANNOTATION, test); //put object to update to in db
+                String origID = Constant.RERUM_ID_PREFIX + newObjectID;
+                BasicDBObject testWithObjectID = new BasicDBObject((BasicDBObject)test);
+                testWithObjectID.append("@id", newObjectID);
+                mongoDBService.update(Constant.COLLECTION_ANNOTATION, test, testWithObjectID); //give it an @id (need for versioning)
                 BasicDBObject query = new BasicDBObject();
                 query.append("@id", origID);
-                BasicDBObject originalObject = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //The originalObject DB object
+                BasicDBObject originalObject = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); //Find obj that needs to be updated
                 if(null != originalObject){
                     jo.element("validate_services", formattedOverwrittenDateTime);
                     test = (DBObject) JSON.parse(jo.toString());
-                    mongoDBService.update(Constant.COLLECTION_ANNOTATION, originalObject, test);
+                    mongoDBService.update(Constant.COLLECTION_ANNOTATION, originalObject, test); //update it & get versioning right
                     createResult=putUpdateResult=patchUpdateResult=patchSetResult=patchUnsetResult=deleteResult=overwriteResult="<font color='green'>available</font>";
                 }
                 else{
@@ -99,13 +103,17 @@ public class ActionValidator extends HttpServlet {
                 queryResult = "<font color='red'>unavailable</font>";
             }
             
+            /**
+             * Note if there are other MongoDBAbstractDAO.java unit functions that MUST be working, it would be wise to test them here. 
+             */
+            
             String generatedHTML = "<!DOCTYPE html>";
             generatedHTML += "<html>";
             generatedHTML += "<head>";        
             generatedHTML += "<title> RERUM Endpoint Validator </title>";
             generatedHTML += "</head>";
             generatedHTML += "<body>";
-            generatedHTML += "<p>Below is a report on the avilability of RERUM endpoints as of "+formattedOverwrittenDateTime+"</p>";
+            generatedHTML += "<p>Below is a report on the MongoDB connections for RERUM as of "+formattedOverwrittenDateTime+"</p>";
             generatedHTML += "<table><tr>";
             generatedHTML += "<th>Action</th><th>Availability</th></tr>";
             
