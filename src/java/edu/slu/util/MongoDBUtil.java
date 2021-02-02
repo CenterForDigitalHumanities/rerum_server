@@ -39,7 +39,7 @@ public class MongoDBUtil {
                     .connectionsPerHost(100)
                     .build();
             MongoClientURI uri = new MongoClientURI(
-                    "mongodb+srv://rerumBot:f%40kePassword@cluster0.qytdr.mongodb.net/annotationStore?retryWrites=true&w=majority");
+                    "mongodb://f-vl-cdh-img-01:27017?retryWrites=true&w=majority");
             mg = new MongoClient(uri);
             db = mg.getDB("annotationStore");
         } catch (Exception e) {
