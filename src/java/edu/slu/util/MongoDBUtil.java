@@ -35,14 +35,14 @@ public class MongoDBUtil {
 
     static {
         try {
-final MongoClientOptions options = MongoClientOptions.builder()
-        .connectionsPerHost(100)
-        .build();
-        MongoClientURI uri = new MongoClientURI(
-                "mongodb://USER:PASS@f-vl-cdh-img-01:27017/DATABASE?w=majority&authMechanism=PICK_ONE"
-        );
-mg = new MongoClient(uri);
-db = mg.getDB("annotationStoreDev");
+            final MongoClientOptions options = MongoClientOptions.builder()
+            .connectionsPerHost(100)
+            .build();
+            MongoClientURI uri = new MongoClientURI(
+                    "mongodb://USER:PASS@f-vl-cdh-img-01:27017/DATABASE?w=majority&authMechanism=PICK_ONE"
+            );
+            mg = new MongoClient(uri);
+            db = mg.getDB("annotationStoreDev");
         } catch (Exception e) {
             Logger.getLogger(MongoDBUtil.class.getName()).log(Level.SEVERE, null, e);
         }
