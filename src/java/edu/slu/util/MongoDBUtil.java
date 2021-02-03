@@ -38,8 +38,7 @@ public class MongoDBUtil {
             final MongoClientOptions options = MongoClientOptions.builder()
                     .connectionsPerHost(100)
                     .build();
-            MongoClientURI uri = new MongoClientURI(
-                    "mongodb://f-vl-cdh-img-01:27017?retryWrites=true&w=majority");
+            MongoClientURI uri = new MongoClientURI("mongodb://f-vl-cdh-img-01:27017/?retryWrites=true&w=majority");
             mg = new MongoClient(uri);
             db = mg.getDB("annotationStore");
         } catch (Exception e) {
