@@ -239,8 +239,8 @@ public abstract class MongoDBAbstractDAO implements MongoDBDAOInterface {
 
     @Override
     public DBObject findOneByExample(String collectionName, DBObject queryEntity) {
-        Map result = db.getCollection(collectionName).find(queryEntity).limit(1).one().toMap();
-        return new BasicDBObject(result);
+        DBObject result = db.getCollection(collectionName).findOne(queryEntity);
+        return result;
     }
 
     @Override
