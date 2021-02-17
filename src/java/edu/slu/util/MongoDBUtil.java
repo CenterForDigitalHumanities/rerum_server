@@ -39,7 +39,7 @@ public class MongoDBUtil {
             .connectionsPerHost(100)
             .build();
             MongoClientURI uri = new MongoClientURI(
-                    "mongodb://USER:PASS@f-vl-cdh-img-01:27017/DATABASE?w=majority&authMechanism=PICK_ONE"
+                    "mongodb://rerum-dev:69Trombones@f-vl-cdh-img-01:27017/annotationStoreDev?w=majority&authMechanism=SCRAM-SHA-256"
             );
             mg = new MongoClient(uri);
             db = mg.getDB("annotationStoreDev");
