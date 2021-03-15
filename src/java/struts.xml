@@ -13,11 +13,7 @@
     
     <package name="default" extends="struts-default">
          <!-- this tells the package what to do when the result is an expected string.  @see RequestServerAuthenticationFilter.java && AnnotationAction.java &&DownTimeOverride.java -->
-         <!-- Only put handlers here that need to apply to ALL PACKAGES -->
-         <interceptors>
-            <interceptor name="downTimeOverride" class="edu.slu.filter.DownTimeOverride"></interceptor>
-         </interceptors>
-         
+         <!-- Only put handlers here that need to apply to ALL PACKAGES -->      
         <global-results>
             <result name="403">/403.jsp</result>
             <result name="503">/down.html</result>
@@ -30,7 +26,6 @@
         <!-- INTERCEPTOR -->
         <interceptors>
             <interceptor-stack name="myDefault">
-                <interceptor-ref name="downTimeOverride" />
                 <interceptor-ref name="defaultStack" />
             </interceptor-stack>
         </interceptors>
@@ -43,7 +38,6 @@
         <!-- INTERCEPTOR -->
         <interceptors>
             <interceptor-stack name="myDefault">
-                <interceptor-ref name="downTimeOverride" />
                 <interceptor-ref name="defaultStack" />
             </interceptor-stack>
         </interceptors>
@@ -56,7 +50,6 @@
         <!-- INTERCEPTOR -->
         <interceptors>
             <interceptor-stack name="myDefault">
-                <interceptor-ref name="downTimeOverride" />
                 <interceptor-ref name="defaultStack" />
             </interceptor-stack>
         </interceptors>
@@ -69,13 +62,21 @@
         <!-- INTERCEPTOR -->
         <interceptors>
             <interceptor name="getRequestClientInfoRecorder" class="edu.slu.filter.GetRequestClientInfoRecorder">
-            <param name="includeMethods">askAuth0, getByProperties, getByID, getAllAncestors, getAllDescendants, getAllVersions</param>
+                <param name="includeMethods">askAuth0, getByProperties, getByID, getAllAncestors, getAllDescendants, getAllVersions</param>
             </interceptor>
+            
+            <interceptor name="DownTimeOverride" class="edu.slu.filter.DownTimeOverride">
+                <param name="includeMethods">
+                    saveNewObject, batchSaveFromCopy, releaseObject, patchUpdateObject, putUpdateObject, overwriteObject, patchSetUpdate, patchUnsetUpdate, deleteObject 
+                </param>
+            </interceptor>
+            
             <interceptor-stack name="myDefault">
                 <interceptor-ref name="downTimeOverride" />
                 <interceptor-ref name="getRequestClientInfoRecorder" />
                 <interceptor-ref name="defaultStack" />
             </interceptor-stack>
+            
         </interceptors>
         <default-interceptor-ref name="myDefault" />
         

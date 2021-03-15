@@ -8,6 +8,7 @@ import com.mongodb.DB;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientOptions;
 import com.mongodb.MongoClientURI;
+import edu.slu.common.Constant;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -38,11 +39,9 @@ public class MongoDBUtil {
             final MongoClientOptions options = MongoClientOptions.builder()
             .connectionsPerHost(100)
             .build();
-            MongoClientURI uri = new MongoClientURI(
-                    "mongodb://USER:PASS@f-vl-cdh-img-01:27017/DATABASE?w=majority&authMechanism=PICK_ONE"
-            );
+            MongoClientURI uri = new MongoClientURI(Constant.DATABASE_CONNECTION);
             mg = new MongoClient(uri);
-            db = mg.getDB("annotationStoreDev");
+            db = mg.getDB(Constant.DATABASE_NAME);
         } catch (Exception e) {
             Logger.getLogger(MongoDBUtil.class.getName()).log(Level.SEVERE, null, e);
         }
