@@ -2612,7 +2612,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         JSONObject userInfo;
         try {
             DecodedJWT receivedToken = JWT.decode(access_token);
-            System.out.println("initialize cache...");
+            System.out.println("initialize jwks cache...");
             cache = JCS.getInstance("jwksCache");
             String KID = receivedToken.getKeyId();
             // Could cache this so we don't have to keep grabbing it since it has to happen on every call. 
@@ -2635,8 +2635,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             JWTVerifier verifier = JWT.require(algorithm).build(); //Reusable verifier instance
                //.withIssuer("auth0")
             generatorID = receivedToken.getClaim(Constant.RERUM_AGENT_ClAIM).asString();
-            //System.out.println("Was I able to pull the agent claim from the token directly without userinfo without verifying?  Value below");
-            //System.out.println("Value: "+generatorID);
+            System.out.println("Generator id from key "+generatorID);
             if(botCheck(generatorID)){
                 System.out.println("It passed the bot check, no need to verify the access token.  I have the generator ID.  ");
                 verified = true;

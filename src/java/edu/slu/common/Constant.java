@@ -10,37 +10,33 @@ package edu.slu.common;
  * @author hanyan
  */
 public class Constant {
+    public static final String RERUM_API_VERSION="1.0.0";
     
-    //permission of annotation
-    public static final int PERMISSION_PRIVATE = 0;
-    public static final int PERMISSION_PROJECT = 1;
-    public static final int PERMISSION_PUBLIC = 2;
+//Mongo Connection String
+public static final String DATABASE_CONNECTION = "mongodb://rerum-dev:69Trombones@f-vl-cdh-img-01:27017/annotationStoreDev?w=majority&authMechanism=SCRAM-SHA-256";
+//"mongodb://rerum:Singul4rity@f-vl-cdh-img-01:27017/annotationStore?w=majority&authMechanism=SCRAM-SHA-256";
+
+//Mongo Database Name
+public static final String DATABASE_NAME = "annotationStoreDev"; // NOTE this changes between dev and prod.  Check the connection string.
     
-    //collection name
-    public static final String COLLECTION_ANNOTATION = "alpha"; // for RERUM alpha
-    public static final String COLLECTION_ACCEPTEDSERVER = "acceptedServer";
-    public static final String COLLECTION_USER = "user";
-    public static final String COLLECTION_PROJECT_USER_PROFILE = "projectUserProfile";
-    public static final String COLLECTION_AGENT = "agent";
+    //Database Collection Name
+    public static final String COLLECTION_ANNOTATION = "alpha"; //db.alpha.doStuff()
     
-    public static final String AGENT_DEPENDENCY_TYPE_USER = "user";
-    public static final String AGENT_DEPENDENCY_TYPE_STRING = "string";
+    //Legacy Collection Names
+    public static final String COLLECTION_ACCEPTEDSERVER = "acceptedServer"; //db.acceptedServer.doStuff()
+    public static final String COLLECTION_V0 = "annotation"; // db.annotation.doStuff()
     
+    //RERUM URL and endpoint paterns
     public static final String RERUM_BASE="http://devstore.rerum.io";
     public static final String RERUM_PREFIX="http://devstore.rerum.io/v1/";
     public static final String RERUM_ID_PREFIX="http://devstore.rerum.io/v1/id/";
-    public static final String RERUM_AGENT_PREFIX="http://devstore.rerum.io/v1/agent/";
     public static final String RERUM_AGENT_ClAIM="http://devstore.rerum.io/v1/agent";
+    
+    //RERUM API Linked Data context
     public static final String RERUM_CONTEXT="http://devstore.rerum.io/v1/context.json";
-    public static final String RERUM_API_VERSION="1.0.0";
+    
     //The location of the public API documents.  This is necessary for JSON-LD context purposes.
     public static final String RERUM_API_DOC="https://github.com/CenterForDigitalHumanities/rerum_server/blob/master/API.md#__rerum";
-    
-    //number of annotation versions
-    public static final int NUMBER_OF_ANNO_VERSION = 10;
-    
-    //get by objectID url
-    //public static final String GET_BY_OBJECTid_URL = "http://devstore.rerum.io/rerumserver/anno/getAnnotationByObjectID";
     
     //return result message
     public static final String DUPLICATED = "duplicated";

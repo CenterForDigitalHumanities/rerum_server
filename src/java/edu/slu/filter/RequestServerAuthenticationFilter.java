@@ -40,7 +40,7 @@ public class RequestServerAuthenticationFilter extends MethodFilterInterceptor {
         //check if the domain name and ip is in database
         BasicDBObject query = new BasicDBObject();
         query.append("ip", requestIP);
-        DB db = MongoDBUtil.getDb();
+        DB db = (DB) MongoDBUtil.getDb();
         DBCollection coll = db.getCollection(Constant.COLLECTION_ACCEPTEDSERVER);
         DBCursor cursor = coll.find(query);
         List<DBObject> ls_results = cursor.toArray();
