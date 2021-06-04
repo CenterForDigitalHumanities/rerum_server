@@ -233,7 +233,7 @@
         var responseJSON = {};
         var myURL = document.location.href;
         var R_B = document.location.origin;
-        var R_P = document.location.origin+"/img01-v1/";
+        var R_P = document.location.origin+"/v1/";
 
         if(myURL.indexOf("access_token=") > -1){
             //The user registered or asked for a new token through the Client Credentials Grant flow https://auth0.com/docs/api-auth/tutorials/client-credentials

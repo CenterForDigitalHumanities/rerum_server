@@ -12,8 +12,7 @@
     <constant name="struts.multipart.saveDir" value="/tmp"></constant>
     
     <package name="default" extends="struts-default">
-         <!-- this tells the package what to do when the result is an expected string.  @see RequestServerAuthenticationFilter.java && AnnotationAction.java &&DownTimeOverride.java -->
-         <!-- Only put handlers here that need to apply to ALL PACKAGES -->
+         <!-- Packages that extend this one will get these interceptors and result handlers. -->
          <interceptors>
             <interceptor name="downTimeOverride" class="edu.slu.filter.DownTimeOverride">
                 <param name="includeMethods">saveNewObject,batchSaveFromCopy,releaseObject,patchUpdateObject,putUpdateObject,overwriteObject,patchSetUpdate,patchUnsetUpdate,deleteObject</param>
@@ -23,7 +22,8 @@
                 <param name="includeMethods">askAuth0,getByProperties,getByID,getAllAncestors,getAllDescendants,getAllVersions</param>
             </interceptor>
          </interceptors>
-         
+        
+        <!-- this tells the package what to do when the result is an expected string.  @see RequestServerAuthenticationFilter.java && AnnotationAction.java &&DownTimeOverride.java -->
         <global-results>
             <result name="403">/403.jsp</result>
             <result name="503">/down.html</result>

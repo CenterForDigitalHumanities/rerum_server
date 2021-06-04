@@ -29,7 +29,6 @@ public class DownTimeOverride extends MethodFilterInterceptor {
             response.addHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT, DELETE");
             response.setStatus(503);
             response.getWriter().write(body);
-            ai.setResultCode("503"); 
             System.out.println("DOWN TIME 503");
             //Make sure to return here, this will stop the API from moving into the next intercept
             return "503";
