@@ -549,7 +549,7 @@ History is stored through pointers that create a B-Tree.  All nodes in the B-tre
 
 You can ask for all descendants or all ancestors from any given node so long as you know the node's `@id` and the node has not been deleted.  See [history parents](#history-tree-before-id) and [history children](#history-tree-since-id) for more details about this process.
 
-Deleted objects are not present in any B-Tree, but do exist as separate nodes that can be requested by the URI directly.  A snapshot their position at the time of deletion persists in these deleted nodes.
+Deleted objects are not present in any B-Tree, but do exist as separate nodes that can be requested by the URI directly.  A snapshot of their position at the time of deletion persists in these deleted nodes.
 
 ### Generator Attribution
 
@@ -559,8 +559,8 @@ Applications are _strongly_ encouraged to record their own assertions within the
 
 ## Authentication
 
-RERUM creates an `agent` for each successful registration. This `agent` is in JSON-LD format and stored publicly. Authentication is managed by [Auth0](https://auth0.com/). 
-When RERUM creates an `agent`, Auth0 generates a refresh token and an access token.  Applications are responsible for providing their access tokens via a `Authentication` Header in their CRUD requests.  Get requests do not require this header.  As access tokens expire every hour, the applications are responsible for requesting and keeping track of valid access tokens.  For an example on how to do this, see this example from [TinyThings](https://github.com/CenterForDigitalHumanities/TinyThings/blob/master/Source%20Packages/io/rerum/tokens/TinyTokenManager.java).
+RERUM creates an `Agent` for each successful registration. This `Agent` is in JSON-LD format and stored publicly. Authentication is managed by [Auth0](https://auth0.com/). 
+When RERUM creates an `Agent`, Auth0 generates a refresh token and an access token.  Applications are responsible for providing their access tokens via a `Authentication` Header in their CRUD requests.  Get requests do not require this header.  As access tokens expire every hour, the applications are responsible for requesting and keeping track of valid access tokens.  For an example on how to do this, see this example from [TinyThings](https://github.com/CenterForDigitalHumanities/TinyThings/blob/master/Source%20Packages/io/rerum/tokens/TinyTokenManager.java).
 The API key at Auth0 persists for each application, which may manage its own sessions. Expired (unauthorized) sessions receive a `401 Unauthorized` response with instructions to refresh the session or to register the application.
 
 ## @context
