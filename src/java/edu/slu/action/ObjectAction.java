@@ -2717,7 +2717,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         if(legacyUserObj.containsKey("website") && !"".equals(legacyUserObj.getString("website"))){
             homepage = legacyUserObj.getString("website");
         }
-        newAgent.element("@type", "foaf:Agent");
+        newAgent.element("@type", "Agent");
         newAgent.element("@context", Constant.RERUM_PREFIX+"context.json");
         newAgent.element("mbox", mbox); 
         newAgent.element("label", label); 
