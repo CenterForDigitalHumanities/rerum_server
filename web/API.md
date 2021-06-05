@@ -45,7 +45,7 @@ testbed at http://tinydev.rerum.io or the [GitHub codebase for TinyThings](https
 
 To have simple CRUD ability from client script without using a back end proxy, you can
 use our public test endpoints.  
-**NB**: Your data will be public and could be removed at any time. This is for testing only 
+**NB:**: Your data will be public and could be removed at any time. This is for testing only 
 and will not be attributed to you in any way.
 - http://tinydev.rerum.io/app/create   Uses the rules established by RERUM [create](#create)
 - http://tinydev.rerum.io/app/update   Uses the rules established by RERUM PUT [update](#update)
@@ -539,7 +539,7 @@ object about the version retrieved.
 | releases.next    | [String]  | Array of URIs for the first `released` decendant in the downstream branches.
 | releases.replaces| String    | URI of the previous release this node is motivated to replace. This is only present on released versions and will always match the value of `releases.previous`.
 
->**NB** In the future, this may be encoded as an annotation on the object, using
+>**NB:** In the future, this may be encoded as an annotation on the object, using
 existing vocabularies, but for now the applications accessing RERUM will
 need to interpret this data if it is relevant.
 
