@@ -21,7 +21,7 @@ public class Agent {
     private String aID;
     private String mbox;//personal mail box
     private String mbox_sha1sum;
-    private String type = "foaf:Agent";
+    private String type = "Agent";
     private Long created;
     private Long modified;
     private JSONArray group;

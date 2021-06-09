@@ -44,7 +44,8 @@ If you would like to see an example of a web application leveraging the RERUM AP
 testbed at http://tinydev.rerum.io or the [GitHub codebase for TinyThings](https://github.com/CenterForDigitalHumanities/TinyThings).
 
 To have simple CRUD ability from client script without using a back end proxy, you can
-use our public test endpoints.  Note: Your data will be public and could be removed at any time. This is for testing only 
+use our public test endpoints.  
+**NB:** Your data will be public and could be removed at any time. This is for testing only 
 and will not be attributed to you in any way.
 - http://tinydev.rerum.io/app/create   Uses the rules established by RERUM [create](#create)
 - http://tinydev.rerum.io/app/update   Uses the rules established by RERUM PUT [update](#update)
@@ -75,7 +76,7 @@ Example: http://devstore.rerum.io/v1/id/11111
 - **Response: `[{JSON}]`**—an array of the resolved objects of all parent history objects
 
 As objects in RERUM are altered, the previous state is retained in
-a history tree. Requests return ancestors of this object on it's
+a history tree. Requests return ancestors of this object on its
 branch.  The objects in the array are listed in inorder traversal but 
 ignoring other branches.
 
@@ -213,8 +214,8 @@ will attempt to continue for all submitted items.
 
 This simple format will be made more complex
 in the future, but should serve the basic needs as it is.
-All responses are in a JSON Array, even if zero records or a single
-record is returned.  RERUM will test for property matches, 
+All responses are in a JSON Array, even if a single or zero
+records are returned.  RERUM will test for property matches, 
 so `{ "@type" : "sc:Canvas", "label" : "page 46" }` will match objects like
 
 ~~~ (json)
@@ -255,7 +256,7 @@ Example Method Override Request:
           **`{JSON}`**—An object containing the @id for update and the fields in that object to patch. 
           
 This grants software that is otherwise unable to make these requests the ability
-to so.
+to do so.
 
 Example Response:
 
@@ -363,8 +364,8 @@ same order.
 - **Response Body: `{JSON}`**—Containing various bits of information about the PATCH update.
 
 A single object is updated by altering the set or subset of properties in the JSON
-payload. This method only updates existing keys. If a property submitted in the payload 
-which does not exist, an error will be returned to the user. If `{"key":null}` is submitted, 
+payload. This method only updates existing keys. If a new property is submitted in the payload 
+an error will be returned to the user as this is not a legal PATCH. If `{"key":null}` is submitted, 
 the value will be set to `null`. Properties not mentioned in the payload object remain 
 unaltered in the resulting object.  This results in the need to track history and
 the previous version will be represented in the `__rerum.history.previous` of the resulting object.
@@ -507,9 +508,9 @@ A deleted object is easily recognized by `__deleted`
 }
 ~~~
 
-> **Note:** The `__deleted.object` contains a snapshot of this version of the object when it was deleted, including its place in the history.
+> **NB:** The `__deleted.object` contains a snapshot of this version of the object when it was deleted, including its place in the history.
 
-> **Note:** The `__deleted.deletor` is the URI of the agent that marked this object as deleted.
+> **NB:** The `__deleted.deletor` is the URI of the agent that marked this object as deleted.
 
 ___
 
@@ -538,7 +539,7 @@ object about the version retrieved.
 | releases.next    | [String]  | Array of URIs for the first `released` decendant in the downstream branches.
 | releases.replaces| String    | URI of the previous release this node is motivated to replace. This is only present on released versions and will always match the value of `releases.previous`.
 
->In the future, this may be encoded as an annotation on the object, using
+>**NB:** In the future, this may be encoded as an annotation on the object, using
 existing vocabularies, but for now the applications accessing RERUM will
 need to interpret this data if it is relevant.
 
@@ -548,7 +549,7 @@ History is stored through pointers that create a B-Tree.  All nodes in the B-tre
 
 You can ask for all descendants or all ancestors from any given node so long as you know the node's `@id` and the node has not been deleted.  See [history parents](#history-tree-before-id) and [history children](#history-tree-since-id) for more details about this process.
 
-Deleted objects are not present in any B-Tree, but do exist as separate nodes that can be requested by the URI directly.  A snapshot their position at the time of deletion persists in these deleted nodes.
+Deleted objects are not present in any B-Tree, but do exist as separate nodes that can be requested by the URI directly.  A snapshot of their position at the time of deletion persists in these deleted nodes.
 
 ### Generator Attribution
 
@@ -558,8 +559,8 @@ Applications are _strongly_ encouraged to record their own assertions within the
 
 ## Authentication
 
-RERUM creates an `agent` for each successful registration. This `agent` is in JSON-LD format and stored publicly. Authentication is managed by [Auth0](https://auth0.com/). 
-When RERUM creates an `agent`, Auth0 generates a refresh token and an access token.  Applications are responsible for providing their access tokens via a `Authentication` Header in their CRUD requests.  Get requests do not require this header.  As access tokens expire every hour, the applications are responsible for requesting and keeping track of valid access tokens.  For an example on how to do this, see this example from [TinyThings](https://github.com/CenterForDigitalHumanities/TinyThings/blob/master/Source%20Packages/io/rerum/tokens/TinyTokenManager.java).
+RERUM creates an `Agent` for each successful registration. This `Agent` is in JSON-LD format and stored publicly. Authentication is managed by [Auth0](https://auth0.com/). 
+When RERUM creates an `Agent`, Auth0 generates a refresh token and an access token.  Applications are responsible for providing their access tokens via a `Authentication` Header in their CRUD requests.  Get requests do not require this header.  As access tokens expire every hour, the applications are responsible for requesting and keeping track of valid access tokens.  For an example on how to do this, see this example from [TinyThings](https://github.com/CenterForDigitalHumanities/TinyThings/blob/master/Source%20Packages/io/rerum/tokens/TinyTokenManager.java).
 The API key at Auth0 persists for each application, which may manage its own sessions. Expired (unauthorized) sessions receive a `401 Unauthorized` response with instructions to refresh the session or to register the application.
 
 ## @context
