@@ -13,11 +13,11 @@ public class Constant {
     public static final String RERUM_API_VERSION="1.0.0";
     
     //Mongo Connection String
-    public static final String DATABASE_CONNECTION = "mongodb://rerum-dev:69Trombones@f-vl-cdh-img-01:27017/annotationStoreDev?w=majority&authMechanism=SCRAM-SHA-256";
+    public static final String DATABASE_CONNECTION = "mongodb://rerum-dev:69Trombones@f-vl-cdh-img-01:27017/annotationStoreTest?w=majority&authMechanism=SCRAM-SHA-256";
     //"mongodb://rerum:Singul4rity@f-vl-cdh-img-01:27017/annotationStore?w=majority&authMechanism=SCRAM-SHA-256";
 
     //Mongo Database Name
-    public static final String DATABASE_NAME = "annotationStoreDev"; // NOTE this changes between dev and prod.  Check the connection string.
+    public static final String DATABASE_NAME = "annotationStoreTest"; // NOTE this changes between dev and prod.  Check the connection string.
 
     //Database Collection Name
     public static final String COLLECTION_ANNOTATION = "alpha"; //db.alpha.doStuff()
