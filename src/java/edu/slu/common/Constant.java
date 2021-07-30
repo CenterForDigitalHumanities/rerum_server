@@ -27,9 +27,9 @@ public class Constant {
     public static final String COLLECTION_V0 = "annotation"; // db.annotation.doStuff()
 
     //RERUM URL and endpoint paterns
-    public static final String RERUM_BASE="http://devstore.rerum.io";
-    public static final String RERUM_PREFIX="http://devstore.rerum.io/v1/";
-    public static final String RERUM_ID_PREFIX="http://devstore.rerum.io/v1/id/";
+    public static final String RERUM_BASE="http://devmatt.rerum.io/mattv1";
+    public static final String RERUM_PREFIX="http://devmatt.rerum.io/mattv1/";
+    public static final String RERUM_ID_PREFIX="http://devmatt.rerum.io/mattv1/id/";
     public static final String RERUM_AGENT_ClAIM="http://devstore.rerum.io/v1/agent";
 
     //RERUM API Linked Data context
