@@ -2304,9 +2304,19 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 mongoDBService.update(Constant.COLLECTION_ANNOTATION, objToUpdate, objWithUpdate);
              }
              else{
-                 System.out.println("could not find an object assosiated with id found in history tree");
-                 success = false;
-                 //Yikes this is an error, could not find an object assosiated with id found in history tree.
+                 //The history.next[i] object could not be found in this RERUM Database.  
+                if(nextID.contains(Constant.RERUM_PREFIX)){
+                    //It has this APIs id pattern, that means we expected to find it.  This is an error, break out of the function with false.
+                    System.out.println("Cannot find object associated with the history.next[i] value in RERUM Database.  URI:"+nextID);
+                    success = false;
+                    detectedPrevious = false; // A cheap hack to avoid looking to history.previous
+                    break;
+                }
+                else{
+                    //The history.next[i] object is an external object.  It does not have history, just move past it and continue the loop.
+                    System.out.println("The value of a vext history node was an external ID.  Nothing to heal.  URI:"+nextID);
+                    continue;
+                }
              }
          }
          if(detectedPrevious){ 
@@ -2334,10 +2344,17 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 mongoDBService.update(Constant.COLLECTION_ANNOTATION, objToUpdate2, objWithUpdate2);
              }
              else{
-                 //Yikes this is an error.  We had a previous id in the object but could not find it in the store.
-                 System.out.println("We had a previous id in the object but could not find it in the store");
-                 success = false;
-             }
+                //The history.previous object could not be found in this RERUM Database.  
+                if(previous_id.contains(Constant.RERUM_PREFIX)){
+                    System.out.println("Cannot find object in RERUM Database.  URI:"+previous_id);
+                    success = false;
+                }
+                else{
+                    //The history.previous is an external object.  It does not have history, the buck stops here and that's OK.
+                    System.out.println("The value of a previous history node was an external ID.  Nothing to heal  URI:"+previous_id);
+                    success = true;
+                }
+            }
          }
          return success;
      }
