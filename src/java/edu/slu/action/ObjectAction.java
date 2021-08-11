@@ -2314,7 +2314,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 }
                 else{
                     //The history.next[i] object is an external object.  It does not have history, just move past it and continue the loop.
-                    System.out.println("The value of a vext history node was an external ID.  Nothing to heal.  URI:"+nextID);
+                    System.out.println("The value of a next history node was an external ID.  Nothing to heal.  URI:"+nextID);
                     continue;
                 }
              }
