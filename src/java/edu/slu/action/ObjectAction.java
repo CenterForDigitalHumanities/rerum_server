@@ -2289,8 +2289,9 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     //Strictly, all history trees must have num(root) > 0.  
                     fixHistory.getJSONObject("__rerum").getJSONObject("history").element("prime", "root");
                     try {
-                        newTreePrime(fixHistory);
+                        success = newTreePrime(fixHistory);
                     } catch (Exception ex) {
+                        previous_id = ""; //A hack to make sure we do not process the history.previous b/c there was an error.
                         success = false;
                     }
                 }
@@ -2360,18 +2361,24 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * This should only be fed a reliable object from mongo
      * @param obj A new prime object whose descendants must take on its id
      */
-     private boolean newTreePrime(JSONObject obj) throws Exception{
+     private boolean newTreePrime(JSONObject obj){
          boolean success = true;
-         String primeID = obj.getString("@id");
-         List<DBObject> ls_versions = getAllVersions(obj);
-         JSONArray descendants = getAllDescendants(ls_versions, obj, new JSONArray());
-         for(int n=0; n< descendants.size(); n++){
-             JSONObject descendantForUpdate = descendants.getJSONObject(n);
-             JSONObject originalDescendant = descendants.getJSONObject(n);
-             BasicDBObject objToUpdate = (BasicDBObject)JSON.parse(originalDescendant.toString());;
-             descendantForUpdate.getJSONObject("__rerum").getJSONObject("history").element("prime", primeID);
-             BasicDBObject objWithUpdate = (BasicDBObject)JSON.parse(descendantForUpdate.toString());
-             mongoDBService.update(Constant.COLLECTION_ANNOTATION, objToUpdate, objWithUpdate);
+         try{
+            String primeID = obj.getString("@id");
+            List<DBObject> ls_versions = getAllVersions(obj);
+            JSONArray descendants = getAllDescendants(ls_versions, obj, new JSONArray());
+            for(int n=0; n< descendants.size(); n++){
+                JSONObject descendantForUpdate = descendants.getJSONObject(n);
+                JSONObject originalDescendant = descendants.getJSONObject(n);
+                BasicDBObject objToUpdate = (BasicDBObject)JSON.parse(originalDescendant.toString());;
+                descendantForUpdate.getJSONObject("__rerum").getJSONObject("history").element("prime", primeID);
+                BasicDBObject objWithUpdate = (BasicDBObject)JSON.parse(descendantForUpdate.toString());
+                mongoDBService.update(Constant.COLLECTION_ANNOTATION, objToUpdate, objWithUpdate);
+            }
+         }
+         catch(Exception e){
+             System.out.println("Could not assign new prime object @id to all descendants history.prime");
+             success = false;
          }
          return success;
      }
