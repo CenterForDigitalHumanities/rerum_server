@@ -2307,14 +2307,14 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                  //The history.next[i] object could not be found in this RERUM Database.  
                 if(nextID.contains(Constant.RERUM_PREFIX)){
                     //It has this APIs id pattern, that means we expected to find it.  This is an error, break out of the function with false.
-                    System.out.println("Cannot find object associated with the history.next[i] value in RERUM Database.  URI:"+nextID);
+                    System.out.println("Cannot find object associated with the history.next[i] URI.  It is not in the RERUM database.  URI:"+nextID);
                     success = false;
                     detectedPrevious = false; // A cheap hack to avoid looking to history.previous
                     break;
                 }
                 else{
                     //The history.next[i] object is an external object.  It does not have history, just move past it and continue the loop.
-                    System.out.println("The value of a next history node was an external ID.  Nothing to heal.  URI:"+nextID);
+                    System.out.println("The value of a history.next[i] was an external URI.  Nothing to heal.  URI:"+nextID);
                     continue;
                 }
              }
@@ -2346,12 +2346,13 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
              else{
                 //The history.previous object could not be found in this RERUM Database.  
                 if(previous_id.contains(Constant.RERUM_PREFIX)){
-                    System.out.println("Cannot find object in RERUM Database.  URI:"+previous_id);
+                    //It has this APIs id pattern, that means we expected to find it.  This is an error, break out of the function with false.
+                    System.out.println("Cannot find object associated with the history.previous URI.  It is not in the RERUM database.  URI:"+previous_id);
                     success = false;
                 }
                 else{
                     //The history.previous is an external object.  It does not have history, the buck stops here and that's OK.
-                    System.out.println("The value of a previous history node was an external ID.  Nothing to heal  URI:"+previous_id);
+                    System.out.println("The value of history.previous was an external URI.  Nothing to heal.  URI:"+previous_id);
                     success = true;
                 }
             }
