@@ -1,4 +1,4 @@
- /*
+/*
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
@@ -15,6 +15,7 @@
     * to request that the origin server accept the entity enclosed in the request
     * as a new subordinate of the resource identified by the Request-URI 
     * in the Request-Line.
+
  * PUT
     * HTTP.PUT can be used when the client is sending data to the the server and
     * the client is determining the URI for the newly created resource. The PUT method 
@@ -27,6 +28,7 @@
     * It is most-often utilized for update capabilities, PUT-ing to a known resource
     * URI with the request body containing the newly-updated representation of the 
     * original resource.
+
  * PATCH
     * HTTP.PATCH can be used when the client is sending one or more changes to be
     * applied by the the server. The PATCH method requests that a set of changes described 
@@ -108,6 +110,7 @@ import javax.servlet.ServletInputStream;
  * @author hanyan &&  bhaberbe
  All the actions hit as an API like ex. /saveNewObject.action
  This implementation follows RESTFUL standards.  If you make changes, please adhere to this standard.
+
  */
 public class ObjectAction extends ActionSupport implements ServletRequestAware, ServletResponseAware{
     private String content;
@@ -355,7 +358,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * @param update A trigger for special handling from update actions
      * @return configuredObject The same object that was recieved but with the proper __rerum options.  This object is intended to be saved as a new object (@see versioning)
      */
-    public JSONObject configureRerumOptions(JSONObject received, boolean update){
+    public JSONObject configureRerumOptions(JSONObject received, boolean update, boolean extUpdate){
         JSONObject configuredObject = received;
         JSONObject received_options;
         try{
@@ -383,47 +386,56 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         rerumOptions.element("createdAt", formattedCreationDateTime);
         rerumOptions.element("isOverwritten", "");
         rerumOptions.element("isReleased", "");
-        if(received_options.containsKey("history")){
-            history = received_options.getJSONObject("history");
-            if(update){
-                //This means we are configuring from the update action and we have passed in a clone of the originating object (with its @id) that contained a __rerum.history
-                if(history.getString("prime").equals("root")){
-                    //Hitting this case means we are updating from the prime object, so we can't pass "root" on as the prime value
-                    history_prime = received.getString("@id");
+        if(extUpdate){
+            //We are "importing" an external object as a new object in RERUM (via an update).  It can knows its previous external self, but is a root for its existence in RERUM.
+            received_options = new JSONObject();
+            history_prime = "root";
+            if(received.containsKey("@id")){
+                history_previous = received.getString("@id");
+            }
+            else if(received.containsKey("id")){
+                history_previous = received.getString("id");
+            }
+            else{
+                history_previous = "";
+            }
+        }
+        else{
+            //We are either updating an existing RERUM object or creating a new one.
+            if(received_options.containsKey("history")){
+                history = received_options.getJSONObject("history");
+                if(update){
+                    //This means we are configuring from the update action and we have passed in a clone of the originating object (with its @id) that contained a __rerum.history
+                    if(history.getString("prime").equals("root")){
+                        //Hitting this case means we are updating from the prime object, so we can't pass "root" on as the prime value
+                        history_prime = received.getString("@id");
+                    }
+                    else{
+                        //Hitting this means we are updating an object that already knows its prime, so we can pass on the prime value
+                        history_prime = history.getString("prime");
+                    }
+                    //Either way, we know the previous value shold be the @id of the object received here. 
+                    history_previous = received.getString("@id");
                 }
                 else{
-                    //Hitting this means we are updating an object that already knows its prime, so we can pass on the prime value
-                    history_prime = history.getString("prime");
+                    //Hitting this means we are saving a new object and found that __rerum.history existed.  We don't trust it, act like it doesn't have it.
+                    history_prime = "root";
+                    history_previous = "";
                 }
-                //Either way, we know the previous value shold be the @id of the object received here. 
-                history_previous = received.getString("@id");
             }
             else{
-                //Hitting this means we are saving a new object and found that __rerum.history existed.  We don't trust it.
+                //Hitting this means we are are saving an object that did not have __rerum history.  This is normal   
                 history_prime = "root";
                 history_previous = "";
             }
-        }
-        else{
-            if(update){
-             //Hitting this means we are updating an object that did not have __rerum history.  This is an external object update.
-                //FIXME @cubap @theHabes
-                history_prime = "root";
-                history_previous = received.getString("@id");
+            if(received_options.containsKey("releases")){
+                releases = received_options.getJSONObject("releases");
+                releases_previous = releases.getString("previous");
             }
             else{
-             //Hitting this means we are are saving an object that did not have __rerum history.  This is normal   
-                history_prime = "root";
-                history_previous = "";
+                releases_previous = "";         
             }
-        }
-        if(received_options.containsKey("releases")){
-            releases = received_options.getJSONObject("releases");
-            releases_previous = releases.getString("previous");
-        }
-        else{
-            releases_previous = "";         
-        }
+        } 
         releases.element("next", emptyArray);
         history.element("next", emptyArray);
         history.element("previous", history_previous);
@@ -1349,7 +1361,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             JSONArray received_array = JSONArray.fromObject(content);
             for(int b=0; b<received_array.size(); b++){ //Configure __rerum on each object
                 JSONObject configureMe = received_array.getJSONObject(b);
-                configureMe = configureRerumOptions(configureMe, false); //configure this object
+                configureMe = configureRerumOptions(configureMe, false, false); //configure this object
                 
                 received_array.set(b, configureMe); //Replace the current iterated object in the array with the configured object
             }
@@ -1399,7 +1411,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             }
             else{
                 JSONObject iiif_validation_response = checkIIIFCompliance(received, true); //This boolean should be provided by the user somehow.  It is a intended-to-be-iiif flag
-                received = configureRerumOptions(received, false);
+                received = configureRerumOptions(received, false, false);
                 received.remove("_id");
                 DBObject dbo = (DBObject) JSON.parse(received.toString());
                 if(null!=request.getHeader("Slug")){
@@ -1478,7 +1490,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         }
                         if(updateCount > 0){
                             JSONObject newObject = JSONObject.fromObject(updatedObject);//The edited original object meant to be saved as a new object (versioning)
-                            newObject = configureRerumOptions(newObject, true); //__rerum for the new object being created because of the update action
+                            newObject = configureRerumOptions(newObject, true, false); //__rerum for the new object being created because of the update action
                             newObject.remove("@id"); //This is being saved as a new object, so remove this @id for the new one to be set.
                             //Since we ignore changes to __rerum for existing objects, we do no configureRerumOptions(updatedObject);
                             DBObject dbo = (DBObject) JSON.parse(newObject.toString());
@@ -1584,7 +1596,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         }
                         if(updateCount > 0){
                             JSONObject newObject = JSONObject.fromObject(updatedObject);//The edited original object meant to be saved as a new object (versioning)
-                            newObject = configureRerumOptions(newObject, true); //__rerum for the new object being created because of the update action
+                            newObject = configureRerumOptions(newObject, true, false); //__rerum for the new object being created because of the update action
                             newObject.remove("@id"); //This is being saved as a new object, so remove this @id for the new one to be set.
                             //Since we ignore changes to __rerum for existing objects, we do no configureRerumOptions(updatedObject);
                             DBObject dbo = (DBObject) JSON.parse(newObject.toString());
@@ -1695,7 +1707,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         }
                         else{
                             JSONObject newObject = JSONObject.fromObject(updatedObject);//The edited original object meant to be saved as a new object (versioning)
-                            newObject = configureRerumOptions(newObject, true); //__rerum for the new object being created because of the update action
+                            newObject = configureRerumOptions(newObject, true, false); //__rerum for the new object being created because of the update action
                             newObject.remove("@id"); //This is being saved as a new object, so remove this @id for the new one to be set.
                             //Since we ignore changes to __rerum for existing objects, we do no configureRerumOptions(updatedObject);
                             DBObject dbo = (DBObject) JSON.parse(newObject.toString());
@@ -1780,7 +1792,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         JSONObject originalProperties = originalJSONObj.getJSONObject("__rerum");
                         newObject.element("__rerum", originalProperties);
                         //Since this is a put update, it is possible __rerum is not in the object provided by the user.  We get a reliable copy oof the original out of mongo
-                        newObject = configureRerumOptions(newObject, true); //__rerum for the new object being created because of the update action
+                        newObject = configureRerumOptions(newObject, true, false); //__rerum for the new object being created because of the update action
                         newObject.remove("@id"); //This is being saved as a new object, so remove this @id for the new one to be set.
                         newObject.remove("_id");
                         DBObject dbo = (DBObject) JSON.parse(newObject.toString());
@@ -2270,7 +2282,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             next_ids = new JSONArray(); //This ensures the loop below does not run.
             success = false; //This will bubble out to deleteObj() and have the side effect that this object is not deleted.  @see treeHealed
          }
-         boolean isRoot = prime_id.equals("root"); 
+         boolean objToDeleteisRoot = prime_id.equals("root"); 
          //Update the history.previous of all the next ids in the array of the deleted object
          for(int n=0; n<next_ids.size(); n++){
              BasicDBObject query = new BasicDBObject();
@@ -2281,9 +2293,19 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
              objToUpdate = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); 
              if(null != objToUpdate){
                 JSONObject fixHistory = JSONObject.fromObject(objToUpdate);
-                if(isRoot){ //The object being deleted was root.  That means these next objects must become root.  Strictly, all history trees must have num(root) > 0.  
+                if(objToDeleteisRoot){ 
+                    //The object being deleted is root.  That means this next object must become root. 
+                    //Strictly, all history trees must have num(root) > 0.  
                     fixHistory.getJSONObject("__rerum").getJSONObject("history").element("prime", "root");
-                    newTreePrime(fixHistory);
+                    try {
+                        //Its descendants need to know this is now a root (change their prime).
+                        success = newTreePrime(fixHistory);
+                    } catch (Exception ex) {
+                        System.out.println("Could not update all descendants with their new prime value");
+                        previous_id = ""; //A hack to make sure we do not process the history.previous b/c there was an error.
+                        success = false; //This is an error
+                        break; //Stop updating things, there has been an error.  This history.next[i] object cannot be considered prime.
+                    }
                 }
                 else if(!previous_id.equals("")){ //The object being deleted had a previous.  That is now absorbed by this next object to mend the gap.  
                     fixHistory.getJSONObject("__rerum").getJSONObject("history").element("previous", previous_id);
@@ -2353,15 +2375,22 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      */
      private boolean newTreePrime(JSONObject obj){
          boolean success = true;
-         String primeID = obj.getString("@id");
-         JSONArray descendants = new JSONArray();
-         for(int n=0; n< descendants.size(); n++){
-             JSONObject descendantForUpdate = descendants.getJSONObject(n);
-             JSONObject originalDescendant = descendants.getJSONObject(n);
-             BasicDBObject objToUpdate = (BasicDBObject)JSON.parse(originalDescendant.toString());;
-             descendantForUpdate.getJSONObject("__rerum").getJSONObject("history").element("prime", primeID);
-             BasicDBObject objWithUpdate = (BasicDBObject)JSON.parse(descendantForUpdate.toString());
-             mongoDBService.update(Constant.COLLECTION_ANNOTATION, objToUpdate, objWithUpdate);
+         try{
+            String primeID = obj.getString("@id");
+            List<DBObject> ls_versions = getAllVersions(obj);
+            JSONArray descendants = getAllDescendants(ls_versions, obj, new JSONArray());
+            for(int n=0; n< descendants.size(); n++){
+                JSONObject descendantForUpdate = descendants.getJSONObject(n);
+                JSONObject originalDescendant = descendants.getJSONObject(n);
+                BasicDBObject objToUpdate = (BasicDBObject)JSON.parse(originalDescendant.toString());;
+                descendantForUpdate.getJSONObject("__rerum").getJSONObject("history").element("prime", primeID);
+                BasicDBObject objWithUpdate = (BasicDBObject)JSON.parse(descendantForUpdate.toString());
+                mongoDBService.update(Constant.COLLECTION_ANNOTATION, objToUpdate, objWithUpdate);
+            }
+         }
+         catch(Exception e){
+             System.out.println("Could not assign new prime object @id to all descendants history.prime");
+             success = false;
          }
          return success;
      }
@@ -2473,7 +2502,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         try {
             JSONObject jo = new JSONObject();
             JSONObject iiif_validation_response = checkIIIFCompliance(externalObj, true);
-            JSONObject newObjState = configureRerumOptions(externalObj, true);
+            JSONObject newObjState = configureRerumOptions(externalObj, false, true);
             DBObject dbo = (DBObject) JSON.parse(newObjState.toString());
             String exernalObjID = newObjState.getString("@id");
             String newRootID;
@@ -2484,8 +2513,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             dboWithObjectID.append("@id", newRootID);
             newObjState.element("@id", newRootID);
             mongoDBService.update(Constant.COLLECTION_ANNOTATION, dbo, dboWithObjectID);
-            newObjState = configureRerumOptions(newObjState, false);
-            newObjState = alterHistoryPrevious(newObjState, exernalObjID); //update history.previous of the new object to contain the external object's @id.
             expandPrivateRerumProperty(newObjState);
             newObjState.remove("_id");
             jo.element("code", HttpServletResponse.SC_CREATED);
@@ -2837,3 +2864,4 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     }
 
 }
+
