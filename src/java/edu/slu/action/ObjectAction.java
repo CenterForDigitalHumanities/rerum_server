@@ -2268,13 +2268,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
          }
          catch(Exception e){
             //@cubap @theHabes #44.  What if obj does not have __rerum or __rerum.history            
-            previous_id = ""; //This ensures detectedPrevious is false
+            previous_id = ""; //This ensures history.previous will not be processed.
             prime_id = ""; //This ensures isRoot is false
             next_ids = new JSONArray(); //This ensures the loop below does not run.
             success = false; //This will bubble out to deleteObj() and have the side effect that this object is not deleted.  @see treeHealed
          }
          boolean isRoot = prime_id.equals("root"); 
-         boolean detectedPrevious = !previous_id.equals("");
          //Update the history.previous of all the next ids in the array of the deleted object
          for(int n=0; n<next_ids.size(); n++){
              BasicDBObject query = new BasicDBObject();
@@ -2289,7 +2288,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     fixHistory.getJSONObject("__rerum").getJSONObject("history").element("prime", "root");
                     newTreePrime(fixHistory);
                 }
-                else if(detectedPrevious){ //The object being deleted had a previous.  That is now absorbed by this next object to mend the gap.  
+                else if(!previous_id.equals("")){ //The object being deleted had a previous.  That is now absorbed by this next object to mend the gap.  
                     fixHistory.getJSONObject("__rerum").getJSONObject("history").element("previous", previous_id);
                 }
                 else{
@@ -2304,23 +2303,16 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 mongoDBService.update(Constant.COLLECTION_ANNOTATION, objToUpdate, objWithUpdate);
              }
              else{
-                 //The history.next[i] object could not be found in this RERUM Database.  
-                if(nextID.contains(Constant.RERUM_PREFIX)){
-                    //It has this APIs id pattern, that means we expected to find it.  This is an error, break out of the function with false.
-                    System.out.println("Cannot find object associated with the history.next[i] URI.  It is not in the RERUM database.  URI:"+nextID);
-                    success = false;
-                    detectedPrevious = false; // A cheap hack to avoid looking to history.previous
-                    break;
-                }
-                else{
-                    //The history.next[i] object is an external object.  It does not have history, just move past it and continue the loop.
-                    System.out.println("The value of a history.next[i] was an external URI.  Nothing to heal.  URI:"+nextID);
-                    continue;
-                }
+                System.out.println("Cannot find object associated with the history.next[i] URI.  It is not in the RERUM database.  URI:"+nextID);
+                previous_id = ""; //A hack to make sure we do not process the history.previous b/c there was an error.
+                success = false;
+                //Yikes this is an error, could not find an object assosiated with id found in history tree.
+                break;
              }
          }
-         if(detectedPrevious){ 
-             //The object being deleted had a previous.  That previous object next[] must be updated with the deleted object's next[].
+         if(previous_id.contains(Constant.RERUM_PREFIX)){ 
+             //The object being deleted had a previous that is internal to RERUM.  That previous object next[] must be updated with the deleted object's next[].
+             //For external objects, do nothing is the right thing to do here.
              BasicDBObject query2 = new BasicDBObject();
              BasicDBObject objToUpdate2;
              BasicDBObject objWithUpdate2;
@@ -2345,17 +2337,14 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
              }
              else{
                 //The history.previous object could not be found in this RERUM Database.  
-                if(previous_id.contains(Constant.RERUM_PREFIX)){
-                    //It has this APIs id pattern, that means we expected to find it.  This is an error, break out of the function with false.
-                    System.out.println("Cannot find object associated with the history.previous URI.  It is not in the RERUM database.  URI:"+previous_id);
-                    success = false;
-                }
-                else{
-                    //The history.previous is an external object.  It does not have history, the buck stops here and that's OK.
-                    System.out.println("The value of history.previous was an external URI.  Nothing to heal.  URI:"+previous_id);
-                    success = true;
-                }
-            }
+                //It has this APIs id pattern, that means we expected to find it.  This is an error.
+                System.out.println("Cannot find object associated with the history.previous URI.  It is not in the RERUM database.  URI:"+previous_id);
+                success = false;
+             }
+         }
+         else{
+            //The history.previous is an external object.  It does not have history, the buck stops here and that's OK.
+            System.out.println("The value of history.previous was an external URI.  Nothing to heal.  URI:"+previous_id); 
          }
          return success;
      }
