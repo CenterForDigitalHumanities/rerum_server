@@ -2284,9 +2284,15 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
              objToUpdate = (BasicDBObject) mongoDBService.findOneByExample(Constant.COLLECTION_ANNOTATION, query); 
              if(null != objToUpdate){
                 JSONObject fixHistory = JSONObject.fromObject(objToUpdate);
-                if(isRoot){ //The object being deleted was root.  That means these next objects must become root.  Strictly, all history trees must have num(root) > 0.  
+                if(isRoot){ 
+                    //The object being deleted was root.  That means these next objects must become root.  Their descendants need to know their new root.  
+                    //Strictly, all history trees must have num(root) > 0.  
                     fixHistory.getJSONObject("__rerum").getJSONObject("history").element("prime", "root");
-                    newTreePrime(fixHistory);
+                    try {
+                        newTreePrime(fixHistory);
+                    } catch (Exception ex) {
+                        success = false;
+                    }
                 }
                 else if(!previous_id.equals("")){ //The object being deleted had a previous.  That is now absorbed by this next object to mend the gap.  
                     fixHistory.getJSONObject("__rerum").getJSONObject("history").element("previous", previous_id);
@@ -2354,10 +2360,11 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      * This should only be fed a reliable object from mongo
      * @param obj A new prime object whose descendants must take on its id
      */
-     private boolean newTreePrime(JSONObject obj){
+     private boolean newTreePrime(JSONObject obj) throws Exception{
          boolean success = true;
          String primeID = obj.getString("@id");
-         JSONArray descendants = new JSONArray();
+         List<DBObject> ls_versions = getAllVersions(obj);
+         JSONArray descendants = getAllDescendants(ls_versions, obj, new JSONArray());
          for(int n=0; n< descendants.size(); n++){
              JSONObject descendantForUpdate = descendants.getJSONObject(n);
              JSONObject originalDescendant = descendants.getJSONObject(n);
