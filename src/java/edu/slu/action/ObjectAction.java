@@ -2298,8 +2298,10 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     //Strictly, all history trees must have num(root) > 0.  
                     fixHistory.getJSONObject("__rerum").getJSONObject("history").element("prime", "root");
                     try {
+                        //Its descendants need to know it is a root (change their prime).
                         success = newTreePrime(fixHistory);
                     } catch (Exception ex) {
+                        System.out.println("Could not update all descendants with their new prime value");
                         previous_id = ""; //A hack to make sure we do not process the history.previous b/c there was an error.
                         success = false;
                     }
@@ -2314,9 +2316,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     // theHabes: Are their bad implications on the relevant nodes in the tree that reference this one if we allow it to delete?  Will their account of the history be correct?
                     //success = false;
                 }
-                Object forMongo = JSON.parse(fixHistory.toString()); //JSONObject cannot be converted to BasicDBObject
-                objWithUpdate = (BasicDBObject)forMongo;
-                mongoDBService.update(Constant.COLLECTION_ANNOTATION, objToUpdate, objWithUpdate);
+                if(success){
+                    //Do not update this object if newTreePrime(fixHistory) failed!
+                    Object forMongo = JSON.parse(fixHistory.toString()); //JSONObject cannot be converted to BasicDBObject
+                    objWithUpdate = (BasicDBObject)forMongo;
+                    mongoDBService.update(Constant.COLLECTION_ANNOTATION, objToUpdate, objWithUpdate);
+                }
              }
              else{
                 System.out.println("Cannot find object associated with the history.next[i] URI.  It is not in the RERUM database.  URI:"+nextID);
