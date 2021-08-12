@@ -14,7 +14,7 @@ public class Constant {
     
     //Mongo Connection String
     public static final String DATABASE_CONNECTION = "mongodb://rerum-dev:69Trombones@f-vl-cdh-img-01:27017/annotationStoreDev?w=majority&authMechanism=SCRAM-SHA-256";
-    //"mongodb://rerum:Singul4rity@f-vl-cdh-img-01:27017/annotationStore?w=majority&authMechanism=SCRAM-SHA-256";
+    //public static final String DATABASE_CONNECTION = "mongodb://rerum:Singul4rity@f-vl-cdh-img-01:27017/annotationStore?w=majority&authMechanism=SCRAM-SHA-256";
 
     //Mongo Database Name
     public static final String DATABASE_NAME = "annotationStoreDev"; // NOTE this changes between dev and prod.  Check the connection string.
@@ -33,7 +33,7 @@ public class Constant {
     public static final String RERUM_AGENT_ClAIM="http://devstore.rerum.io/v1/agent";
 
     //RERUM API Linked Data context
-    public static final String RERUM_CONTEXT="http://devstore.rerum.io/v1/context.json";
+    public static final String RERUM_CONTEXT="http://store.rerum.io/v1/context.json";
 
     //The location of the public API documents.  This is necessary for JSON-LD context purposes.
     public static final String RERUM_API_DOC="https://github.com/CenterForDigitalHumanities/rerum_server/blob/master/API.md#__rerum";

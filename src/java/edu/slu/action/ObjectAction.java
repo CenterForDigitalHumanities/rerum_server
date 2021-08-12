@@ -1,4 +1,4 @@
-/*
+ /*
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
@@ -15,7 +15,6 @@
     * to request that the origin server accept the entity enclosed in the request
     * as a new subordinate of the resource identified by the Request-URI 
     * in the Request-Line.
-
  * PUT
     * HTTP.PUT can be used when the client is sending data to the the server and
     * the client is determining the URI for the newly created resource. The PUT method 
@@ -28,7 +27,6 @@
     * It is most-often utilized for update capabilities, PUT-ing to a known resource
     * URI with the request body containing the newly-updated representation of the 
     * original resource.
-
  * PATCH
     * HTTP.PATCH can be used when the client is sending one or more changes to be
     * applied by the the server. The PATCH method requests that a set of changes described 
@@ -110,7 +108,6 @@ import javax.servlet.ServletInputStream;
  * @author hanyan &&  bhaberbe
  All the actions hit as an API like ex. /saveNewObject.action
  This implementation follows RESTFUL standards.  If you make changes, please adhere to this standard.
-
  */
 public class ObjectAction extends ActionSupport implements ServletRequestAware, ServletResponseAware{
     private String content;
@@ -2268,13 +2265,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
          }
          catch(Exception e){
             //@cubap @theHabes #44.  What if obj does not have __rerum or __rerum.history            
-            previous_id = ""; //This ensures detectedPrevious is false
+            previous_id = ""; //This ensures history.previous will not be processed.
             prime_id = ""; //This ensures isRoot is false
             next_ids = new JSONArray(); //This ensures the loop below does not run.
             success = false; //This will bubble out to deleteObj() and have the side effect that this object is not deleted.  @see treeHealed
          }
          boolean isRoot = prime_id.equals("root"); 
-         boolean detectedPrevious = !previous_id.equals("");
          //Update the history.previous of all the next ids in the array of the deleted object
          for(int n=0; n<next_ids.size(); n++){
              BasicDBObject query = new BasicDBObject();
@@ -2289,7 +2285,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     fixHistory.getJSONObject("__rerum").getJSONObject("history").element("prime", "root");
                     newTreePrime(fixHistory);
                 }
-                else if(detectedPrevious){ //The object being deleted had a previous.  That is now absorbed by this next object to mend the gap.  
+                else if(!previous_id.equals("")){ //The object being deleted had a previous.  That is now absorbed by this next object to mend the gap.  
                     fixHistory.getJSONObject("__rerum").getJSONObject("history").element("previous", previous_id);
                 }
                 else{
@@ -2304,13 +2300,16 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 mongoDBService.update(Constant.COLLECTION_ANNOTATION, objToUpdate, objWithUpdate);
              }
              else{
-                 System.out.println("could not find an object assosiated with id found in history tree");
-                 success = false;
-                 //Yikes this is an error, could not find an object assosiated with id found in history tree.
+                System.out.println("Cannot find object associated with the history.next[i] URI.  It is not in the RERUM database.  URI:"+nextID);
+                previous_id = ""; //A hack to make sure we do not process the history.previous b/c there was an error.
+                success = false;
+                //Yikes this is an error, could not find an object assosiated with id found in history tree.
+                break;
              }
          }
-         if(detectedPrevious){ 
-             //The object being deleted had a previous.  That previous object next[] must be updated with the deleted object's next[].
+         if(previous_id.contains(Constant.RERUM_PREFIX)){ 
+             //The object being deleted had a previous that is internal to RERUM.  That previous object next[] must be updated with the deleted object's next[].
+             //For external objects, do nothing is the right thing to do here.
              BasicDBObject query2 = new BasicDBObject();
              BasicDBObject objToUpdate2;
              BasicDBObject objWithUpdate2;
@@ -2334,10 +2333,15 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 mongoDBService.update(Constant.COLLECTION_ANNOTATION, objToUpdate2, objWithUpdate2);
              }
              else{
-                 //Yikes this is an error.  We had a previous id in the object but could not find it in the store.
-                 System.out.println("We had a previous id in the object but could not find it in the store");
-                 success = false;
+                //The history.previous object could not be found in this RERUM Database.  
+                //It has this APIs id pattern, that means we expected to find it.  This is an error.
+                System.out.println("Cannot find object associated with the history.previous URI.  It is not in the RERUM database.  URI:"+previous_id);
+                success = false;
              }
+         }
+         else{
+            //The history.previous is an external object.  It does not have history, the buck stops here and that's OK.
+            System.out.println("The value of history.previous was an external URI.  Nothing to heal.  URI:"+previous_id); 
          }
          return success;
      }
@@ -2833,4 +2837,3 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     }
 
 }
-
