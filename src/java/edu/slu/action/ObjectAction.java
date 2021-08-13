@@ -2296,12 +2296,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 if(objToDeleteisRoot){ 
                     //The object being deleted is root.  That means this next object must become root. 
                     //Strictly, all history trees must have num(root) > 0.  
-                    fixHistory.getJSONObject("__rerum").getJSONObject("history").element("prime", "root");
-                    fixHistory.getJSONObject("__rerum").getJSONObject("history").element("previous", ""); //The previous is deleted, so forget about it
                     try {
                         //Its descendants need to know this is now a root (change their prime).
                         System.out.println("I am deleteing a root object.  Lets do newTreePrime()");
                         success = newTreePrime(fixHistory);
+                        fixHistory.getJSONObject("__rerum").getJSONObject("history").element("prime", "root");
+                        fixHistory.getJSONObject("__rerum").getJSONObject("history").element("previous", ""); //The previous is deleted, so forget about it
                     } catch (Exception ex) {
                         System.out.println("Could not update all descendants with their new prime value");
                         previous_id = ""; //A hack to make sure we do not process the history.previous b/c there was an error.
@@ -2367,7 +2367,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
          }
          else{
             //The history.previous is an external object.  It does not have history, the buck stops here and that's OK.
-            System.out.println("The value of history.previous was an external URI.  Nothing to heal.  URI:"+previous_id); 
+            System.out.println("The value of history.previous was an external URI or was not present.  Nothing to heal.  URI:"+previous_id); 
          }
          return success;
      }
@@ -2383,6 +2383,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
          try{
             String primeID = obj.getString("@id");
             List<DBObject> ls_versions = getAllVersions(obj);
+            System.out.println("There are "+ls_versions.size()+" nodes in history");
             JSONArray descendants = getAllDescendants(ls_versions, obj, new JSONArray());
             System.out.println("There are "+descendants.size()+" descendants to update.");
             for(int n=0; n< descendants.size(); n++){
