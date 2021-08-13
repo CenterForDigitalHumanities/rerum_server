@@ -714,7 +714,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 }
             break;
             case "delete":
-                System.out.println("Method delete detected");
                 auth_verified =  verifyAccess(access_token);
                 if(auth_verified){
                     if(requestMethod.equals("DELETE")){
@@ -2665,7 +2664,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             JWTVerifier verifier = JWT.require(algorithm).build(); //Reusable verifier instance
                //.withIssuer("auth0")
             generatorID = receivedToken.getClaim(Constant.RERUM_AGENT_ClAIM).asString();
-            System.out.println("Generator id from key "+generatorID);
+           //System.out.println("Generator id from key "+generatorID);
             if(botCheck(generatorID)){
                 System.out.println("It passed the bot check, no need to verify the access token.  I have the generator ID.  ");
                 verified = true;
@@ -2715,7 +2714,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 verified = false;
             }
         }
-        System.out.println("I need a generator out of all this.  Did I get it: "+generatorID);
+        System.out.println("Generator Verified: "+generatorID);
         return verified;
     }
     
