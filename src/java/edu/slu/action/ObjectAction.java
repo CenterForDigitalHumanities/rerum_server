@@ -2300,7 +2300,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         //Its descendants need to know this is now a root (change their prime).
                         success = newTreePrime(fixHistory);
                         fixHistory.getJSONObject("__rerum").getJSONObject("history").element("prime", "root");
-                        fixHistory.getJSONObject("__rerum").getJSONObject("history").element("previous", previous_id); //The previous is deleted, so forget about it
+                        //The previous alwats inherited in this case, even if it isn't there.
+                        fixHistory.getJSONObject("__rerum").getJSONObject("history").element("previous", previous_id); 
                     } catch (Exception ex) {
                         System.out.println("Could not update all descendants with their new prime value");
                         previous_id = ""; //A hack to make sure we do not process the history.previous b/c there was an error.
@@ -2384,7 +2385,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             for(int n=0; n< descendants.size(); n++){
                 JSONObject descendantForUpdate = descendants.getJSONObject(n);
                 JSONObject originalDescendant = descendants.getJSONObject(n);
-                BasicDBObject objToUpdate = (BasicDBObject)JSON.parse(originalDescendant.toString());;
+                BasicDBObject objToUpdate = (BasicDBObject)JSON.parse(originalDescendant.toString());
                 descendantForUpdate.getJSONObject("__rerum").getJSONObject("history").element("prime", primeID);
                 BasicDBObject objWithUpdate = (BasicDBObject)JSON.parse(descendantForUpdate.toString());
                 mongoDBService.update(Constant.COLLECTION_ANNOTATION, objToUpdate, objWithUpdate);
