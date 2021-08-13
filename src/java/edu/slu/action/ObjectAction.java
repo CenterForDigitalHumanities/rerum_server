@@ -1,4 +1,4 @@
-/*
+ /*
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
@@ -15,7 +15,6 @@
     * to request that the origin server accept the entity enclosed in the request
     * as a new subordinate of the resource identified by the Request-URI 
     * in the Request-Line.
-
  * PUT
     * HTTP.PUT can be used when the client is sending data to the the server and
     * the client is determining the URI for the newly created resource. The PUT method 
@@ -28,7 +27,6 @@
     * It is most-often utilized for update capabilities, PUT-ing to a known resource
     * URI with the request body containing the newly-updated representation of the 
     * original resource.
-
  * PATCH
     * HTTP.PATCH can be used when the client is sending one or more changes to be
     * applied by the the server. The PATCH method requests that a set of changes described 
@@ -110,7 +108,6 @@ import javax.servlet.ServletInputStream;
  * @author hanyan &&  bhaberbe
  All the actions hit as an API like ex. /saveNewObject.action
  This implementation follows RESTFUL standards.  If you make changes, please adhere to this standard.
-
  */
 public class ObjectAction extends ActionSupport implements ServletRequestAware, ServletResponseAware{
     private String content;
@@ -2310,9 +2307,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     }
                 }
                 else if(!previous_id.equals("")){ //The object being deleted had a previous.  That is now absorbed by this next object to mend the gap.  
-                    System.out.println("Object being deleted is not root.  It has a previous, That is now absorbed by this next object to mend the gap");
                     fixHistory.getJSONObject("__rerum").getJSONObject("history").element("previous", previous_id);
-                    System.out.println(nextID+" now has previous value of "+previous_id);
                 }
                 else{
                     System.out.println("object did not have previous and was not root.  Weird...");
@@ -2366,7 +2361,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
              }
          }
          else{
-            //System.out.println("The value of history.previous was an external URI or was not present.  Nothing to heal.  URI:"+previous_id); 
+            //System.out.println("The value of history.previous was an external URI or was not present.  Nothing to heal.  URI:"+previous_id);  
          }
          return success;
      }
@@ -2868,4 +2863,3 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     }
 
 }
-
