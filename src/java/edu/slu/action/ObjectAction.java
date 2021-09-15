@@ -1285,6 +1285,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         //System.out.println("v1 getByProperties");
         //want to use methodApproval(request, "get"), but these have body so...post
         if(null != processRequestBody(request, false) && methodApproval(request, "getProps")){
+            String lim = request.getParameter("limit");
+            String skip = request.getParameter("skip");
             JSONObject received = JSONObject.fromObject(content);
             BasicDBObject query = new BasicDBObject();
             Set<String> set_received = received.keySet();
@@ -1295,8 +1297,18 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             JSONObject existsFlag = new JSONObject();
             existsFlag.element("$exists", false);
             query.append("__deleted", existsFlag);
-            List<DBObject> ls_result = mongoDBService.findByExample(Constant.COLLECTION_ANNOTATION, query);
+            List<DBObject> ls_result;
+            if(null!=lim){
+                System.out.println("Get with limits");
+                ls_result = mongoDBService.findByExample(Constant.COLLECTION_ANNOTATION, query, Integer.parseInt(skip), Integer.parseInt(lim));
+            }
+            else{
+                System.out.println("Get NO limits");
+                ls_result = mongoDBService.findByExample(Constant.COLLECTION_ANNOTATION, query);
+            }
+            
             JSONArray ja = new JSONArray();
+            System.out.println("Build ja...");
             for(DBObject dbo : ls_result){
                 BasicDBObject itemToAdd = (BasicDBObject) dbo;
                 itemToAdd.remove("_id");
@@ -1310,9 +1322,12 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 expandPrivateRerumProperty(itemToAdd);
                 ja.add((BasicDBObject) itemToAdd);
             }
+            System.out.println("ja built");
             try {
                 addSupportHeaders("", true);
                 addLocationHeader(ja);
+                System.out.println("Want to know buffer size before we change it: "+response.getBufferSize());
+                //response.setBufferSize(70000);
                 response.addHeader("Access-Control-Allow-Origin", "*");
                 response.setStatus(HttpServletResponse.SC_OK);
                 out = response.getWriter();
