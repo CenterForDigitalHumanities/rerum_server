@@ -25,8 +25,9 @@ public class DownTimeOverride extends MethodFilterInterceptor {
             HttpServletResponse response = ServletActionContext.getResponse();
             String body = "The RERUM API is down for maintenance.  Please try again later.  Sorry for the inconvenience.";
             response.setCharacterEncoding("UTF-8");
-            response.addHeader("Access-Control-Allow-Origin", "*");
-            response.addHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT, DELETE");
+            response.setHeader("Access-Control-Allow-Origin", "*");
+            response.setHeader("Access-Control-Expose-Headers", "*"); //Headers are restricted, unless you explicitly expose them.  Darn Browsers.
+            response.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT, DELETE");
             response.setStatus(503);
             response.getWriter().write(body);
             System.out.println("DOWN TIME 503");

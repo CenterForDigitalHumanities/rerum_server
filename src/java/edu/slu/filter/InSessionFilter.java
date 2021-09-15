@@ -32,7 +32,8 @@ public class InSessionFilter extends MethodFilterInterceptor {
             System.out.println("403 because session was null");
             HttpServletResponse respond_403 = ServletActionContext.getResponse();
             respond_403.setStatus(403);
-            respond_403.addHeader("Access-Control-Allow-Origin", "*");
+            respond_403.setHeader("Access-Control-Allow-Origin", "*");
+            respond_403.setHeader("Access-Control-Expose-Headers", "*"); //Headers are restricted, unless you explicitly expose them.  Darn Browsers.
             PrintWriter out = respond_403.getWriter();
             out.write("You did not have a valid session.");
             return HttpServletResponse.SC_UNAUTHORIZED + "";
