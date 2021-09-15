@@ -1322,8 +1322,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             try {
                 addSupportHeaders("", true);
                 addLocationHeader(ja);
-                System.out.println("Want to know buffer size before we change it: "+response.getBufferSize());
-                //response.setBufferSize(70000);
                 response.addHeader("Access-Control-Allow-Origin", "*");
                 response.setStatus(HttpServletResponse.SC_OK);
                 out = response.getWriter();
