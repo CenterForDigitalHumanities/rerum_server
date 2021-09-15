@@ -1299,16 +1299,13 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             query.append("__deleted", existsFlag);
             List<DBObject> ls_result;
             if(null!=lim){
-                System.out.println("Get with limits");
                 ls_result = mongoDBService.findByExample(Constant.COLLECTION_ANNOTATION, query, Integer.parseInt(skip), Integer.parseInt(lim));
             }
             else{
-                System.out.println("Get NO limits");
                 ls_result = mongoDBService.findByExample(Constant.COLLECTION_ANNOTATION, query);
             }
             
             JSONArray ja = new JSONArray();
-            System.out.println("Build ja...");
             for(DBObject dbo : ls_result){
                 BasicDBObject itemToAdd = (BasicDBObject) dbo;
                 itemToAdd.remove("_id");
@@ -1322,7 +1319,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 expandPrivateRerumProperty(itemToAdd);
                 ja.add((BasicDBObject) itemToAdd);
             }
-            System.out.println("ja built");
             try {
                 addSupportHeaders("", true);
                 addLocationHeader(ja);
