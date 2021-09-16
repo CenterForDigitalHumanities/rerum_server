@@ -1285,6 +1285,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         //System.out.println("v1 getByProperties");
         //want to use methodApproval(request, "get"), but these have body so...post
         if(null != processRequestBody(request, false) && methodApproval(request, "getProps")){
+            String lim = request.getParameter("limit");
+            String skip = request.getParameter("skip");
             JSONObject received = JSONObject.fromObject(content);
             BasicDBObject query = new BasicDBObject();
             Set<String> set_received = received.keySet();
@@ -1295,7 +1297,14 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             JSONObject existsFlag = new JSONObject();
             existsFlag.element("$exists", false);
             query.append("__deleted", existsFlag);
-            List<DBObject> ls_result = mongoDBService.findByExample(Constant.COLLECTION_ANNOTATION, query);
+            List<DBObject> ls_result;
+            if(null!=lim){
+                ls_result = mongoDBService.findByExample(Constant.COLLECTION_ANNOTATION, query, Integer.parseInt(skip), Integer.parseInt(lim));
+            }
+            else{
+                ls_result = mongoDBService.findByExample(Constant.COLLECTION_ANNOTATION, query);
+            }
+            
             JSONArray ja = new JSONArray();
             for(DBObject dbo : ls_result){
                 BasicDBObject itemToAdd = (BasicDBObject) dbo;
