@@ -324,7 +324,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         System.out.println("Here is the error response json object to return with status "+status);
         System.out.println(jo);
         try {
-            response.addHeader("Access-Control-Allow-Origin", "*");
+            response.setHeader("Access-Control-Allow-Origin", "*");
+            response.setHeader("Access-Control-Expose-Headers", "*");
             response.setContentType("UTF-8");
             response.setContentType("application/json; charset=utf-8");
             response.setStatus(status);
@@ -925,8 +926,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         input.close();
         content = requestBody;
         response.setContentType("application/json; charset=utf-8"); // We create JSON objects for the return body in most cases.  
-        response.addHeader("Access-Control-Allow-Headers", "Content-Type");
-        response.addHeader("Access-Control-Allow-Methods", "GET,OPTIONS,HEAD,PUT,PATCH,DELETE,POST"); // Must have OPTIONS for @webanno 
+        response.setHeader("Access-Control-Allow-Headers", "Content-Type");
+        response.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS,HEAD,PUT,PATCH,DELETE,POST"); // Must have OPTIONS for @webanno 
         return requestBody;
     }
     
@@ -941,23 +942,23 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     private void addWebAnnotationHeaders(String etag, Boolean isContainerType, Boolean isLD){
         response.setContentType("UTF-8");
         if(isLD){
-            response.addHeader("Content-Type", "application/ld+json;charset=utf-8;profile=\"http://www.w3.org/ns/anno.jsonld\""); 
+            response.setHeader("Content-Type", "application/ld+json;charset=utf-8;profile=\"http://www.w3.org/ns/anno.jsonld\""); 
         } 
         else {
-            response.addHeader("Content-Type", "application/json;charset=utf-8;"); 
+            response.setHeader("Content-Type", "application/json;charset=utf-8;"); 
             // This breaks Web Annotation compliance, but allows us to return requested
             // objects without misrepresenting the content.
         }
         if(isContainerType){
-            response.addHeader("Link", "<http://www.w3.org/ns/ldp#BasicContainer>; rel=\"type\""); 
-            response.addHeader("Link", "<http://www.w3.org/TR/annotation-protocol/>; rel=\"http://www.w3.org/ns/ldp#constrainedBy\"");  
+            response.setHeader("Link", "<http://www.w3.org/ns/ldp#BasicContainer>; rel=\"type\""); 
+            response.setHeader("Link", "<http://www.w3.org/TR/annotation-protocol/>; rel=\"http://www.w3.org/ns/ldp#constrainedBy\"");  
         }
         else{
-            response.addHeader("Link", "<http://www.w3.org/ns/ldp#Resource>; rel=\"type\""); 
+            response.setHeader("Link", "<http://www.w3.org/ns/ldp#Resource>; rel=\"type\""); 
         }
-        response.addHeader("Allow", "GET,OPTIONS,HEAD,PUT,PATCH,DELETE,POST"); 
+        response.setHeader("Allow", "GET,OPTIONS,HEAD,PUT,PATCH,DELETE,POST"); 
         if(!"".equals(etag)){
-            response.addHeader("Etag", etag);
+            response.setHeader("Etag", etag);
         }
         
     }
@@ -975,17 +976,17 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     private void addSupportHeaders(String etag, Boolean isLD){
         response.setContentType("UTF-8");
         if(isLD){
-            response.addHeader("Content-Type", "application/ld+json;charset=utf-8;profile=\"http://www.w3.org/ns/anno.jsonld\""); 
+            response.setHeader("Content-Type", "application/ld+json;charset=utf-8;profile=\"http://www.w3.org/ns/anno.jsonld\""); 
         } 
         else {
-            response.addHeader("Content-Type", "application/json;charset=utf-8;"); 
+            response.setHeader("Content-Type", "application/json;charset=utf-8;"); 
             // This breaks Web Annotation compliance, but allows us to return requested
             // objects without misrepresenting the content.
         }
-        response.addHeader("Link", "<http://store.rerum.io/v1/context.json>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
-        response.addHeader("Allow", "GET,OPTIONS,HEAD,PUT,PATCH,DELETE,POST"); 
+        response.setHeader("Link", "<http://store.rerum.io/v1/context.json>; rel=\"http://www.w3.org/ns/json-ld#context\"; type=\"application/ld+json\"");
+        response.setHeader("Allow", "GET,OPTIONS,HEAD,PUT,PATCH,DELETE,POST"); 
         if(!"".equals(etag)){
-            response.addHeader("Etag", etag);
+            response.setHeader("Etag", etag);
         }
     }
     
@@ -1045,7 +1046,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     //@cubap @theHabes TODO how can we make this Web Annotation compliant?
                     addSupportHeaders("", true);
                     addLocationHeader(ancestors);
-                    response.addHeader("Access-Control-Allow-Origin", "*"); 
+                    response.setHeader("Access-Control-Allow-Origin", "*"); 
+                    response.setHeader("Access-Control-Expose-Headers", "*"); //Headers are restricted, unless you explicitly expose them.  Darn Browsers.
                     response.setStatus(HttpServletResponse.SC_OK);
                     out = response.getWriter();
                     out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(ancestors));
@@ -1126,7 +1128,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     //@cubap @theHabes TODO how can we make this Web Annotation compliant?
                     addSupportHeaders("", true);
                     addLocationHeader(descendants);
-                    response.addHeader("Access-Control-Allow-Origin", "*");
+                    response.setHeader("Access-Control-Allow-Origin", "*");
+                    response.setHeader("Access-Control-Expose-Headers", "*"); //Headers are restricted, unless you explicitly expose them.  Darn Browsers.
                     response.setStatus(HttpServletResponse.SC_OK);
                     out = response.getWriter();
                     out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(descendants));
@@ -1259,7 +1262,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 try {
                     addWebAnnotationHeaders(oid, isContainerType(jo), isLD(jo));
                     addLocationHeader(jo);
-                    response.addHeader("Access-Control-Allow-Origin", "*");
+                    response.setHeader("Access-Control-Allow-Origin", "*");
+                    response.setHeader("Access-Control-Expose-Headers", "*"); //Headers are restricted, unless you explicitly expose them.  Darn Browsers.
                     response.setStatus(HttpServletResponse.SC_OK);
                     out = response.getWriter();
                     out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
@@ -1322,7 +1326,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             try {
                 addSupportHeaders("", true);
                 addLocationHeader(ja);
-                response.addHeader("Access-Control-Allow-Origin", "*");
+                response.setHeader("Access-Control-Allow-Origin", "*");
+                response.setHeader("Access-Control-Expose-Headers", "*"); //Headers are restricted, unless you explicitly expose them.  Darn Browsers.
                 response.setStatus(HttpServletResponse.SC_OK);
                 out = response.getWriter();
                 out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(ja));
@@ -1333,8 +1338,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             /*
             if(ls_result.size() > 0){
                 try {
-                    response.addHeader("Content-Type","application/json"); // not ld+json because it is an array
-                    response.addHeader("Access-Control-Allow-Origin", "*");
+                    response.setHeader("Content-Type","application/json"); // not ld+json because it is an array
+                    response.setHeader("Access-Control-Allow-Origin", "*");
                     response.setStatus(HttpServletResponse.SC_OK);
                     out = response.getWriter();
                     out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(ja));
@@ -1391,7 +1396,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 addSupportHeaders("", true);
                 addLocationHeader(newResources);
                 response.setStatus(HttpServletResponse.SC_CREATED);
-                response.addHeader("Access-Control-Allow-Origin", "*");
+                response.setHeader("Access-Control-Allow-Origin", "*");
+                response.setHeader("Access-Control-Expose-Headers", "*"); //Headers are restricted, unless you explicitly expose them.  Darn Browsers.
                 out = response.getWriter();
                 out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
             } catch (IOException ex) {
@@ -1442,7 +1448,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 try {
                     addWebAnnotationHeaders(newObjectID, isContainerType(received), isLD(received));
                     addLocationHeader(newObjWithID);
-                    response.addHeader("Access-Control-Allow-Origin", "*");
+                    response.setHeader("Access-Control-Allow-Origin", "*");
+                    response.setHeader("Access-Control-Expose-Headers", "*"); //Headers are restricted, unless you explicitly expose them.  Darn Browsers.
                     response.setStatus(HttpServletResponse.SC_CREATED);
                     out = response.getWriter();
                     out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
@@ -1519,7 +1526,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                                 try {
                                     addWebAnnotationHeaders(newNextID, isContainerType(newObject), isLD(newObject));
                                     addLocationHeader(newObject);
-                                    response.addHeader("Access-Control-Allow-Origin", "*");
+                                    response.setHeader("Access-Control-Allow-Origin", "*");
+                                    response.setHeader("Access-Control-Expose-Headers", "*"); //Headers are restricted, unless you explicitly expose them.  Darn Browsers.
                                     response.setStatus(HttpServletResponse.SC_OK);
                                     out = response.getWriter();
                                     out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
@@ -1625,7 +1633,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                                 try {
                                     addWebAnnotationHeaders(newNextID, isContainerType(newObject), isLD(newObject));
                                     addLocationHeader(newObject);
-                                    response.addHeader("Access-Control-Allow-Origin", "*");
+                                    response.setHeader("Access-Control-Allow-Origin", "*");
+                                    response.setHeader("Access-Control-Expose-Headers", "*"); //Headers are restricted, unless you explicitly expose them.  Darn Browsers.
                                     response.setStatus(HttpServletResponse.SC_OK);
                                     out = response.getWriter();
                                     out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
@@ -1736,7 +1745,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                                 try {
                                     addWebAnnotationHeaders(newNextID, isContainerType(newObject), isLD(newObject));                                  
                                     addLocationHeader(newObject);
-                                    response.addHeader("Access-Control-Allow-Origin", "*");
+                                    response.setHeader("Access-Control-Allow-Origin", "*");
+                                    response.setHeader("Access-Control-Expose-Headers", "*"); //Headers are restricted, unless you explicitly expose them.  Darn Browsers.
                                     response.setStatus(HttpServletResponse.SC_OK);
                                     out = response.getWriter();
                                     out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
@@ -1821,7 +1831,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                             try {
                                 addWebAnnotationHeaders(newNextID, isContainerType(newObject), isLD(newObject));
                                 addLocationHeader(newObject);
-                                response.addHeader("Access-Control-Allow-Origin", "*");
+                                response.setHeader("Access-Control-Allow-Origin", "*");
+                                response.setHeader("Access-Control-Expose-Headers", "*"); //Headers are restricted, unless you explicitly expose them.  Darn Browsers.
                                 response.setStatus(HttpServletResponse.SC_OK);
                                 out = response.getWriter();
                                 out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
@@ -1901,7 +1912,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         try {
                             addWebAnnotationHeaders(receivedID, isContainerType(newObject), isLD(newObject));
                             addLocationHeader(newObject);
-                            response.addHeader("Access-Control-Allow-Origin", "*");
+                            response.setHeader("Access-Control-Allow-Origin", "*");
+                            response.setHeader("Access-Control-Expose-Headers", "*"); //Headers are restricted, unless you explicitly expose them.  Darn Browsers.
                             response.setStatus(HttpServletResponse.SC_OK);
                             out = response.getWriter();
                             out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
@@ -1982,7 +1994,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                                 try {
                                     addWebAnnotationHeaders(updateToReleasedID, isContainerType(safe_original), isLD(safe_original));
                                     addLocationHeader(newObject);
-                                    response.addHeader("Access-Control-Allow-Origin", "*");
+                                    response.setHeader("Access-Control-Allow-Origin", "*");
+                                    response.setHeader("Access-Control-Expose-Headers", "*"); //Headers are restricted, unless you explicitly expose them.  Darn Browsers.
                                     response.setStatus(HttpServletResponse.SC_OK);                                   
                                     out = response.getWriter();
                                     out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
@@ -2528,7 +2541,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             jo.element("iiif_validation", iiif_validation_response);
             addWebAnnotationHeaders(newRootID, isContainerType(newObjState), isLD(newObjState));
             addLocationHeader(newObjState);
-            response.addHeader("Access-Control-Allow-Origin", "*");
+            response.setHeader("Access-Control-Allow-Origin", "*");
+            response.setHeader("Access-Control-Expose-Headers", "*"); //Headers are restricted, unless you explicitly expose them.  Darn Browsers.
             response.setStatus(HttpServletResponse.SC_CREATED);
             System.out.println("Object now internal to rerum: "+newRootID);
             out = response.getWriter();
