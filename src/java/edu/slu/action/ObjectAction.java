@@ -926,8 +926,9 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         input.close();
         content = requestBody;
         response.setContentType("application/json; charset=utf-8"); // We create JSON objects for the return body in most cases.  
-        response.setHeader("Access-Control-Allow-Headers", "Content-Type");
+        response.setHeader("Access-Control-Allow-Headers", "*");
         response.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS,HEAD,PUT,PATCH,DELETE,POST"); // Must have OPTIONS for @webanno 
+        response.setHeader("Access-Control-Expose-Headers", "*"); 
         return requestBody;
     }
     
@@ -1264,6 +1265,8 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     addLocationHeader(jo);
                     response.setHeader("Access-Control-Allow-Origin", "*");
                     response.setHeader("Access-Control-Expose-Headers", "*"); //Headers are restricted, unless you explicitly expose them.  Darn Browsers.
+                    //It will stay fresh in cache for 30 seconds.  After that, you have to get it from the server again
+                    response.setHeader("Cache-control", "max-age=30, must-revalidate");
                     response.setStatus(HttpServletResponse.SC_OK);
                     out = response.getWriter();
                     out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
