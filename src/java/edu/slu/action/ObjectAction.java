@@ -1266,7 +1266,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     response.setHeader("Access-Control-Allow-Origin", "*");
                     response.setHeader("Access-Control-Expose-Headers", "*"); //Headers are restricted, unless you explicitly expose them.  Darn Browsers.
                     //It will stay fresh in cache for 30 seconds.  After that, you have to get it from the server again
-                    response.setHeader("Cache-control", "max-age=30, must-revalidate");
+                    response.setHeader("Cache-Control", "max-age=30, must-revalidate");
                     response.setStatus(HttpServletResponse.SC_OK);
                     out = response.getWriter();
                     out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
