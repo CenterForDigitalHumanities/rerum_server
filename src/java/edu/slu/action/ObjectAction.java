@@ -1288,6 +1288,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
     public void getByID() throws IOException, ServletException, Exception{
         request.setCharacterEncoding("UTF-8");
         response.setHeader("Access-Control-Allow-Origin", "*");
+        response.setHeader("Access-Control-Allow-Headers", "*");
         response.setHeader("Access-Control-Expose-Headers", "*"); //Headers are restricted, unless you explicitly expose them.  Darn Browsers.
         if(null != oid && methodApproval(request, "get")){
             //find one version by objectID
@@ -1313,8 +1314,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     try {
                         addWebAnnotationHeaders(oid, isContainerType(jo), isLD(jo));
                         addLocationHeader(jo);
-                        //It will stay fresh in cache for 30 seconds.  After that, you have to get it from the server again
-                        response.setHeader("Cache-Control", "max-age=5, must-revalidate"); //Very little chance this has been overwritten, trust it for a while.
+                        response.setHeader("Cache-Control", "max-age=86400, must-revalidate"); //Very little chance this has been overwritten, trust it for 24 hours
                         //This is either isOverwritten or createdAt.  Stuff we do manually in mongo shell is not tracked, so make sure max-age is appropriate.
                         String lastModifiedDate = "";
                         if(jo.has("__rerum")){
