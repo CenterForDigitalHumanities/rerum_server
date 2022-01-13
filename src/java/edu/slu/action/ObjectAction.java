@@ -1245,14 +1245,14 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     lastModifiedDateObj = jo.getJSONObject("__rerum").getString("createdAt");
                 }
                 if(lastModifiedDateObj == null){
-                    System.out.println("Could not determine date from object, consider it modified");
+                    //System.out.println("Could not determine date from object, consider it modified");
                     //Could not get a date from the object...consider it modified
                     return true;
                 }
             }
             else{
                 //If it's not from RERUM, I have no way to check.  Consider it modified.
-                System.out.println("Obj does not have __rerum, consider it modified");
+                //System.out.println("Obj does not have __rerum, consider it modified");
                 return true;
             }
             //Note that dates like 2021-05-26T10:39:19.328 have been rounded to 2021-05-26T10:39:19.328 in browser headers.  Account for that here.
@@ -1272,7 +1272,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         }
         else{
             //There was no header, so consider this modified.
-            System.out.println("No 'If-Modified-Since' Header present, consider it modified");
+            //System.out.println("No 'If-Modified-Since' Header present, consider it modified");
             return true;
         }
     }
