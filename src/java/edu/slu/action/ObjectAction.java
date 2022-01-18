@@ -97,6 +97,8 @@ import java.net.ProtocolException;
 import java.security.interfaces.RSAPublicKey;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.MissingResourceException;
@@ -926,8 +928,10 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         input.close();
         content = requestBody;
         response.setContentType("application/json; charset=utf-8"); // We create JSON objects for the return body in most cases.  
-        response.setHeader("Access-Control-Allow-Headers", "Content-Type");
+        response.setHeader("Access-Control-Allow-Headers", "*");
         response.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS,HEAD,PUT,PATCH,DELETE,POST"); // Must have OPTIONS for @webanno 
+        response.setHeader("Access-Control-Expose-Headers", "*"); 
+        response.setHeader("Access-Control-Max-Age", "600"); //Cache preflight responses for 10 minutes.
         return requestBody;
     }
     
@@ -1227,6 +1231,51 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
         }
         return ls_versions;
     }
+    
+    public boolean checkModified(HttpServletRequest req, JSONObject jo){
+        if(request.getHeader("If-Modified-Since") != null && !request.getHeader("If-Modified-Since").equals("")){
+            //This is either isOverwritten or createdAt.  Stuff we do manually in mongo shell is not tracked, so make sure max-age is appropriate.
+            String lastModifiedDateHeader = request.getHeader("If-Modified-Since");
+            String lastModifiedDateObj = "";
+            if(jo.has("__rerum")){
+                if(!jo.getJSONObject("__rerum").getString("isOverwritten").equals("")){
+                    lastModifiedDateObj = jo.getJSONObject("__rerum").getString("isOverwritten");
+                }
+                else{
+                    lastModifiedDateObj = jo.getJSONObject("__rerum").getString("createdAt");
+                }
+                if(lastModifiedDateObj == null){
+                    //System.out.println("Could not determine date from object, consider it modified");
+                    //Could not get a date from the object...consider it modified
+                    return true;
+                }
+            }
+            else{
+                //If it's not from RERUM, I have no way to check.  Consider it modified.
+                //System.out.println("Obj does not have __rerum, consider it modified");
+                return true;
+            }
+            //Note that dates like 2021-05-26T10:39:19.328 have been rounded to 2021-05-26T10:39:19.328 in browser headers.  Account for that here.
+            if(lastModifiedDateObj.contains(".")){
+                //If-Modified-Since and Last-Modified headers are rounded.  Wed, 26 May 2021 10:39:19.629 GMT becomes Wed, 26 May 2021 10:39:19 GMT.
+                lastModifiedDateObj = lastModifiedDateObj.split("\\.")[0];
+            }
+            ZonedDateTime fromHeader = ZonedDateTime.parse(lastModifiedDateHeader, DateTimeFormatter.RFC_1123_DATE_TIME);
+            LocalDateTime ldt = LocalDateTime.parse(lastModifiedDateObj, DateTimeFormatter.ISO_DATE_TIME);
+            ZonedDateTime fromObject = ldt.atZone(ZoneId.of("GMT"));
+            if(fromHeader.isEqual(fromObject)){
+                return false;
+            }
+            else{
+                return fromHeader.isBefore(fromObject);
+            }
+        }
+        else{
+            //There was no header, so consider this modified.
+            //System.out.println("No 'If-Modified-Since' Header present, consider it modified");
+            return true;
+        }
+    }
         
         
     /**
@@ -1238,6 +1287,9 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
      */
     public void getByID() throws IOException, ServletException, Exception{
         request.setCharacterEncoding("UTF-8");
+        response.setHeader("Access-Control-Allow-Origin", "*");
+        response.setHeader("Access-Control-Allow-Headers", "*");
+        response.setHeader("Access-Control-Expose-Headers", "*"); //Headers are restricted, unless you explicitly expose them.  Darn Browsers.
         if(null != oid && methodApproval(request, "get")){
             //find one version by objectID
             BasicDBObject query = new BasicDBObject();
@@ -1246,30 +1298,48 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             if(null != myAnno){
                 BasicDBObject bdbo = (BasicDBObject) myAnno;
                 JSONObject jo = JSONObject.fromObject(myAnno.toMap());
-                //String idForHeader = jo.getString("_id");
-                //The following are rerum properties that should be stripped.  They should be in __rerum.
-                jo.remove("_id");
-                jo.remove("addedTime");
-                jo.remove("originalAnnoID");
-                jo.remove("version");
-                jo.remove("permission");
-                jo.remove("forkFromID"); // retained for legacy v0 objects
-                jo.remove("serverName");
-                jo.remove("serverIP");
-                expandPrivateRerumProperty(jo);
-                // @context may not be here and shall not be added, but the response
-                // will not be ld+json without it.
-                try {
-                    addWebAnnotationHeaders(oid, isContainerType(jo), isLD(jo));
-                    addLocationHeader(jo);
-                    response.setHeader("Access-Control-Allow-Origin", "*");
-                    response.setHeader("Access-Control-Expose-Headers", "*"); //Headers are restricted, unless you explicitly expose them.  Darn Browsers.
-                    response.setStatus(HttpServletResponse.SC_OK);
-                    out = response.getWriter();
-                    out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
-                } 
-                catch (IOException ex){
-                    Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
+                //Support conditional request of If-Modified-Since
+                if(checkModified(request, jo)){
+                    //The following are rerum properties that should be stripped.  They should be in __rerum.
+                    jo.remove("_id");
+                    jo.remove("addedTime");
+                    jo.remove("originalAnnoID");
+                    jo.remove("version");
+                    jo.remove("permission");
+                    jo.remove("forkFromID"); // retained for legacy v0 objects
+                    jo.remove("serverName");
+                    jo.remove("serverIP");
+                    expandPrivateRerumProperty(jo);
+                    // @context may not be here and shall not be added
+                    try {
+                        addWebAnnotationHeaders(oid, isContainerType(jo), isLD(jo));
+                        addLocationHeader(jo);
+                        response.setHeader("Cache-Control", "max-age=86400, must-revalidate"); //Very little chance this has been overwritten, trust it for 24 hours
+                        //This is either isOverwritten or createdAt.  Stuff we do manually in mongo shell is not tracked, so make sure max-age is appropriate.
+                        String lastModifiedDate = "";
+                        if(jo.has("__rerum")){
+                            if(!jo.getJSONObject("__rerum").getString("isOverwritten").equals("")){
+                                lastModifiedDate = jo.getJSONObject("__rerum").getString("isOverwritten");
+                            }
+                            else{
+                                lastModifiedDate = jo.getJSONObject("__rerum").getString("createdAt");
+                            }
+                        }
+                        LocalDateTime ldt = LocalDateTime.parse(lastModifiedDate, DateTimeFormatter.ISO_DATE_TIME);
+                        ZonedDateTime fromObject = ldt.atZone(ZoneId.of("GMT"));
+                        response.setHeader("Last-Modified", fromObject.format(DateTimeFormatter.RFC_1123_DATE_TIME));
+                        response.setStatus(HttpServletResponse.SC_OK);
+                        out = response.getWriter();
+                        out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
+                    } 
+                    catch (IOException ex){
+                        Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                }
+                else{
+                    //FIXME we seem to make it here, but the response is still 200 with the object in the body...doesn't seem to save any time.
+                    //No work necessary, send out the 304.
+                    response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
                 }
             }
             else{

@@ -12,12 +12,8 @@ package edu.slu.common;
 public class Constant {
     public static final String RERUM_API_VERSION="1.0.0";
     
-    //Mongo Connection String
-    public static final String DATABASE_CONNECTION = "mongodb://rerum-dev:69Trombones@f-vl-cdh-img-01:27017/annotationStoreDev?w=majority&authMechanism=SCRAM-SHA-256";
-    //public static final String DATABASE_CONNECTION = "mongodb://rerum:Singul4rity@f-vl-cdh-img-01:27017/annotationStore?w=majority&authMechanism=SCRAM-SHA-256";
-
     //Mongo Database Name
-    public static final String DATABASE_NAME = "annotationStoreDev"; // NOTE this changes between dev and prod.  Check the connection string.
+    public static final String DATABASE_NAME = "annotationStore"; // NOTE this changes between dev and prod.  Check the connection string.
 
     //Database Collection Name
     public static final String COLLECTION_ANNOTATION = "alpha"; //db.alpha.doStuff()
@@ -27,10 +23,10 @@ public class Constant {
     public static final String COLLECTION_V0 = "annotation"; // db.annotation.doStuff()
 
     //RERUM URL and endpoint paterns
-    public static final String RERUM_BASE="http://devstore.rerum.io";
-    public static final String RERUM_PREFIX="http://devstore.rerum.io/v1/";
-    public static final String RERUM_ID_PREFIX="http://devstore.rerum.io/v1/id/";
-    public static final String RERUM_AGENT_ClAIM="http://devstore.rerum.io/v1/agent";
+    public static final String RERUM_BASE="http://store.rerum.io";
+    public static final String RERUM_PREFIX="http://store.rerum.io/v1/";
+    public static final String RERUM_ID_PREFIX="http://store.rerum.io/v1/id/";
+    public static final String RERUM_AGENT_ClAIM="http://store.rerum.io/v1/agent";
 
     //RERUM API Linked Data context
     public static final String RERUM_CONTEXT="http://store.rerum.io/v1/context.json";
