@@ -1336,6 +1336,9 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                                     System.out.println("Last-Modified Header could not be formed.  Bad date value ' "+lastModifiedDate+" '");
                                     //Note the date on v1/id/11111 like '1532026503859' breaks this.  Not sure what kind of back support would need to be available...
                                 }
+                                catch(Exception e){
+                                    
+                                }
                             }
                         }
                         response.setStatus(HttpServletResponse.SC_OK);
