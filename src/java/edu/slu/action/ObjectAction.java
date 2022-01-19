@@ -95,11 +95,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.DataOutputStream;
 import java.net.ProtocolException;
 import java.security.interfaces.RSAPublicKey;
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Date;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
@@ -1324,10 +1326,18 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                             else{
                                 lastModifiedDate = jo.getJSONObject("__rerum").getString("createdAt");
                             }
+                            if(lastModifiedDate != null && !lastModifiedDate.equals("")){
+                                try{
+                                    LocalDateTime ldt = LocalDateTime.parse(lastModifiedDate, DateTimeFormatter.ISO_DATE_TIME);
+                                    ZonedDateTime fromObject = ldt.atZone(ZoneId.of("GMT"));
+                                    response.setHeader("Last-Modified", fromObject.format(DateTimeFormatter.RFC_1123_DATE_TIME));
+                                }
+                                catch(DateTimeParseException ex){
+                                    System.out.println("Last-Modified Header could not be formed.  Bad date value ' "+lastModifiedDate+" '");
+                                    //Note the date on v1/id/11111 like '1532026503859' breaks this.  Not sure what kind of back support would need to be available...
+                                }
+                            }
                         }
-                        LocalDateTime ldt = LocalDateTime.parse(lastModifiedDate, DateTimeFormatter.ISO_DATE_TIME);
-                        ZonedDateTime fromObject = ldt.atZone(ZoneId.of("GMT"));
-                        response.setHeader("Last-Modified", fromObject.format(DateTimeFormatter.RFC_1123_DATE_TIME));
                         response.setStatus(HttpServletResponse.SC_OK);
                         out = response.getWriter();
                         out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
