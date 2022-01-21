@@ -119,7 +119,7 @@
             <p class="handHoldy">
                 Interacting with RERUM requires server-to-server communication, so we suggest the registrant be the application developer.  
                 You may want to 
-                <a target="_blank" href="http://centerfordigitalhumanities.github.io/rerum/web/#/future" class="linkOut">learn more about the concepts around RERUM</a> 
+                <a target="_blank" href="https://centerfordigitalhumanities.github.io/rerum/#/future" class="linkOut">learn more about the concepts around RERUM</a> 
                 before reading the API.
             </p>
             <p class="handHoldy">
