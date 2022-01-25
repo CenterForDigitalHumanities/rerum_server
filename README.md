@@ -38,7 +38,7 @@ documentation, but broadly, you will find:
 
 ## Who is to blame?
 
-The developers at the Walter J. Ong, <sub><sup>S.J.</sup></sub> Center for Digital Humanities authored and maintain this service.
+The developers in the Research Computing Group at Saint Louis University authored and maintain this service.
 Neither specific warranty or rights are associated with RERUM; registering and contributing implies only those rights 
 each object asserts about itself. We welcome sister instances of RERUM, ports to other languages, package managers, builds, etc.
 Contributions to this repository will be accepted as pull requests.
