@@ -1326,19 +1326,17 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                             else{
                                 lastModifiedDate = jo.getJSONObject("__rerum").getString("createdAt");
                             }
-                            if(lastModifiedDate != null && !lastModifiedDate.equals("")){
-                                try{
-                                    LocalDateTime ldt = LocalDateTime.parse(lastModifiedDate, DateTimeFormatter.ISO_DATE_TIME);
-                                    ZonedDateTime fromObject = ldt.atZone(ZoneId.of("GMT"));
-                                    response.setHeader("Last-Modified", fromObject.format(DateTimeFormatter.RFC_1123_DATE_TIME));
-                                }
-                                catch(DateTimeParseException ex){
-                                    System.out.println("Last-Modified Header could not be formed.  Bad date value ' "+lastModifiedDate+" '");
-                                    //Note the date on v1/id/11111 like '1532026503859' breaks this.  Not sure what kind of back support would need to be available...
-                                }
-                                catch(Exception e){
-                                    
-                                }
+                            try{
+                                LocalDateTime ldt = LocalDateTime.parse(lastModifiedDate, DateTimeFormatter.ISO_DATE_TIME);
+                                ZonedDateTime fromObject = ldt.atZone(ZoneId.of("GMT"));
+                                response.setHeader("Last-Modified", fromObject.format(DateTimeFormatter.RFC_1123_DATE_TIME));
+                            }
+                            catch(DateTimeParseException ex){
+                                //Note the date on v1/id/11111 like '1532026503859' breaks this.  Not sure what kind of back support would need to be available...
+                                System.out.println("Last-Modified Header could not be formed.  Bad date value ' "+lastModifiedDate+" '");
+                            }
+                            catch(Exception e){
+
                             }
                         }
                         else if(jo.has("__deleted")){
@@ -1349,11 +1347,11 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                                 response.setHeader("Last-Modified", dtFormat.format(DateTimeFormatter.RFC_1123_DATE_TIME));
                             }
                             catch(DateTimeParseException ex){
-                                System.out.println("Last-Modified Header could not be formed.  Bad date value ' "+lastModifiedDate+" '");
                                 //Note the date on http://devstore.rerum.io/v1/id/61f2eef2f8a1836453e30fcf like '1643311168146' breaks this.  Not sure what kind of back support would need to be available...
+                                System.out.println("Last-Modified Header could not be formed.  Bad date value ' "+lastModifiedDate+" '");
                             }
                             catch(Exception e){
-                                //Make sure this responds with the current time, so the browser cache knows the resource should be considered stale.
+                                //Other special handling if desired 
                             }
                         }
                         response.setStatus(HttpServletResponse.SC_OK);
