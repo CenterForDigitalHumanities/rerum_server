@@ -1326,19 +1326,32 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                             else{
                                 lastModifiedDate = jo.getJSONObject("__rerum").getString("createdAt");
                             }
-                            if(lastModifiedDate != null && !lastModifiedDate.equals("")){
-                                try{
-                                    LocalDateTime ldt = LocalDateTime.parse(lastModifiedDate, DateTimeFormatter.ISO_DATE_TIME);
-                                    ZonedDateTime fromObject = ldt.atZone(ZoneId.of("GMT"));
-                                    response.setHeader("Last-Modified", fromObject.format(DateTimeFormatter.RFC_1123_DATE_TIME));
-                                }
-                                catch(DateTimeParseException ex){
-                                    System.out.println("Last-Modified Header could not be formed.  Bad date value ' "+lastModifiedDate+" '");
-                                    //Note the date on v1/id/11111 like '1532026503859' breaks this.  Not sure what kind of back support would need to be available...
-                                }
-                                catch(Exception e){
-                                    
-                                }
+                            try{
+                                LocalDateTime ldt = LocalDateTime.parse(lastModifiedDate, DateTimeFormatter.ISO_DATE_TIME);
+                                ZonedDateTime fromObject = ldt.atZone(ZoneId.of("GMT"));
+                                response.setHeader("Last-Modified", fromObject.format(DateTimeFormatter.RFC_1123_DATE_TIME));
+                            }
+                            catch(DateTimeParseException ex){
+                                //Note the date on v1/id/11111 like '1532026503859' breaks this.  Not sure what kind of back support would need to be available...
+                                System.out.println("Last-Modified Header could not be formed.  Bad date value ' "+lastModifiedDate+" '");
+                            }
+                            catch(Exception e){
+
+                            }
+                        }
+                        else if(jo.has("__deleted")){
+                            try{
+                                lastModifiedDate = jo.getJSONObject("__deleted").getString("time");
+                                LocalDateTime dt = LocalDateTime.parse(lastModifiedDate, DateTimeFormatter.ISO_DATE_TIME);
+                                ZonedDateTime dtFormat = dt.atZone(ZoneId.of("GMT"));
+                                response.setHeader("Last-Modified", dtFormat.format(DateTimeFormatter.RFC_1123_DATE_TIME));
+                            }
+                            catch(DateTimeParseException ex){
+                                //Note the date on http://devstore.rerum.io/v1/id/61f2eef2f8a1836453e30fcf like '1643311168146' breaks this.  Not sure what kind of back support would need to be available...
+                                System.out.println("Last-Modified Header could not be formed.  Bad date value ' "+lastModifiedDate+" '");
+                            }
+                            catch(Exception e){
+                                //Other special handling if desired 
                             }
                         }
                         response.setStatus(HttpServletResponse.SC_OK);
@@ -2331,7 +2344,10 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         JSONObject deletedFlag = new JSONObject(); //The __deleted flag is a JSONObject
                         deletedFlag.element("object", originalObject);
                         deletedFlag.element("deletor", generatorID); 
-                        deletedFlag.element("time", System.currentTimeMillis());
+                        LocalDateTime dt = LocalDateTime.now();
+                        DateTimeFormatter dtFormat = DateTimeFormatter.ISO_DATE_TIME;
+                        String formattedDeletedDateTime = dt.format(dtFormat);
+                        deletedFlag.element("time", formattedDeletedDateTime);
                         updatedWithFlag.element("@id", preserveID);
                         updatedWithFlag.element("__deleted", deletedFlag); //We want everything wrapped in deleted except the @id.
                         Object forMongo = JSON.parse(updatedWithFlag.toString()); //JSONObject cannot be converted to BasicDBObject
