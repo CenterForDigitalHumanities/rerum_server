@@ -7,3 +7,4 @@ nbproject/
 target/
 .vscode/settings.json
 build.xml
+nb-configuration.xml
