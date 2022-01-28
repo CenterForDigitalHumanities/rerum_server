@@ -4,5 +4,6 @@ build/
 *.properties
 src/java/rerum.properties
 nbproject/
+target/
 .vscode/settings.json
 build.xml
