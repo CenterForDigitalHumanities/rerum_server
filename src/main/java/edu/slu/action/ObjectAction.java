@@ -1252,24 +1252,37 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                     return true;
                 }
             }
+            else if(jo.has("__deleted")){
+                lastModifiedDateObj = jo.getJSONObject("__deleted").getString("time");
+            }
             else{
                 //If it's not from RERUM, I have no way to check.  Consider it modified.
                 //System.out.println("Obj does not have __rerum, consider it modified");
                 return true;
             }
-            //Note that dates like 2021-05-26T10:39:19.328 have been rounded to 2021-05-26T10:39:19.328 in browser headers.  Account for that here.
-            if(lastModifiedDateObj.contains(".")){
-                //If-Modified-Since and Last-Modified headers are rounded.  Wed, 26 May 2021 10:39:19.629 GMT becomes Wed, 26 May 2021 10:39:19 GMT.
-                lastModifiedDateObj = lastModifiedDateObj.split("\\.")[0];
+            try{
+                //Note that dates like 2021-05-26T10:39:19.328 have been rounded to 2021-05-26T10:39:19.328 in browser headers.  Account for that here.
+                if(lastModifiedDateObj.contains(".")){
+                    //If-Modified-Since and Last-Modified headers are rounded.  Wed, 26 May 2021 10:39:19.629 GMT becomes Wed, 26 May 2021 10:39:19 GMT.
+                    lastModifiedDateObj = lastModifiedDateObj.split("\\.")[0];
+                }
+                ZonedDateTime fromHeader = ZonedDateTime.parse(lastModifiedDateHeader, DateTimeFormatter.RFC_1123_DATE_TIME);
+                LocalDateTime ldt = LocalDateTime.parse(lastModifiedDateObj, DateTimeFormatter.ISO_DATE_TIME);
+                ZonedDateTime fromObject = ldt.atZone(ZoneId.of("GMT"));
+                if(fromHeader.isEqual(fromObject)){
+                    return false;
+                }
+                else{
+                    return fromHeader.isBefore(fromObject);
+                }
             }
-            ZonedDateTime fromHeader = ZonedDateTime.parse(lastModifiedDateHeader, DateTimeFormatter.RFC_1123_DATE_TIME);
-            LocalDateTime ldt = LocalDateTime.parse(lastModifiedDateObj, DateTimeFormatter.ISO_DATE_TIME);
-            ZonedDateTime fromObject = ldt.atZone(ZoneId.of("GMT"));
-            if(fromHeader.isEqual(fromObject)){
-                return false;
+            catch(DateTimeParseException ex){
+                //Note the date on v1/id/11111 like '1532026503859' breaks this.  Not sure what kind of back support would need to be available...
+                System.out.println("Last-Modified Header could not be formed.  Bad date value ' "+lastModifiedDateObj+" '");
+                return true;
             }
-            else{
-                return fromHeader.isBefore(fromObject);
+            catch(Exception e){
+                return true;
             }
         }
         else{
