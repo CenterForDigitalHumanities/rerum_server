@@ -8,6 +8,6 @@ package edu.slu.auxiliary;
  *
  * @author bhaberbe
  */
-public class Geez {
+public class Controller {
     
 }
