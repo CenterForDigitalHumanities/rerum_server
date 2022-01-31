@@ -102,11 +102,9 @@ public class CompressorService {
         Iterator keys = o.keys();
         JSONObject orig = JSONObject.fromObject(o);
         try{
-            while(keys.hasNext()){
-                String key = (String)keys.next();
-                if(Arrays.asList(alwaysRemove).contains(key)){
-                    o.remove(key);
-                }
+            for(int i=0; i<alwaysRemove.length; i++){
+                String key = alwaysRemove[i];
+                o.remove(key);
             }
             return o;
         }
