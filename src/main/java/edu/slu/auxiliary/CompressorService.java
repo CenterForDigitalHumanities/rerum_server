@@ -99,7 +99,6 @@ public class CompressorService {
     }
     
     private JSONObject polish(JSONObject o){
-        Iterator keys = o.keys();
         JSONObject orig = JSONObject.fromObject(o);
         try{
             for(int i=0; i<alwaysRemove.length; i++){
