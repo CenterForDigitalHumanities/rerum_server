@@ -77,7 +77,7 @@ public class CompressorService {
      * @return toCompress once the keys are removed, or the original if there was an error.
      */
     private JSONObject compress(JSONObject toCompress, String[] keysToKeep){
-        //Arrays.asList(keysToKeep).addAll(Arrays.asList(primitiveKeys)); //Add the primitive keys tracked in this class to the keys provided
+        Arrays.asList(keysToKeep).addAll(Arrays.asList(primitiveKeys)); //This way an implementor cannot override the keys we think need to stay.
         Iterator keys = toCompress.keys();
         JSONObject orig = JSONObject.fromObject(toCompress);
         try{
