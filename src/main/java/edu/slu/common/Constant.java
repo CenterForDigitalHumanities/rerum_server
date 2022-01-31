@@ -41,4 +41,3 @@ public class Constant {
     public static final String GOOD = "good";
     public static final String OK = "ok";
 }
-
