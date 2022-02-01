@@ -27,23 +27,27 @@ public class Controller {
      * Map of API flags from the query string and the resulting method call.
      * Organized in order of operations?
      */
-    private final Map<String, Method> flagMap = Map.of(
-            "expand", expand, // awaiting methods
-            "compact", compact,
-            "recurse", recurse,
-            "batch", batch,
-            "decscribe", decscribe,
-            "compress", compress);
+    private final List<String> flagsList = Array.asList(
+            "expand",
+            "compact",
+            "recurse",
+            "batch",
+            "decscribe",
+            "compress");
 
     public JSONObject processFlags(JSONObject documObject, String[] params) {
-        try {
-            for (String param : params) {
-                if (flagMap.containsKey(param)) {
-                    documObject = (JSONObject) flagMap.get(param).invoke(documObject);
-                }
+        Set<String> validFlags = params.stream()
+        .distinct()
+        .filter(flagsList::contains)
+        .collect(Collectors.toSet());
+        if (validFlags.size())
+        {
+            try {
+                // JSONObject serviced = new ServiceController().compress(jo);
+                // getting ready to if all these for Bryan
+            } catch (Exception e) {
+                Logger.getLogger(Controller.class.getName()).info("Could not process flag.\n" + e.getMessage());
             }
-        } catch (Exception e) {
-            Logger.getLogger(Controller.class.getName()).info("Could not process flag.\n" + e.getMessage());
         }
         return documObject;
     }
