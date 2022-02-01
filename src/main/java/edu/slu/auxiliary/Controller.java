@@ -18,6 +18,11 @@ public class Controller {
     private static final Method recurse = null;
     private static final Method batch = null;
     private static final Method decscribe = null;
+    
+public Document(JSONObject json) {
+    originalObject = json;
+}
+
     /**
      * Map of API flags from the query string and the resulting method call.
      * Organized in order of operations?
@@ -35,8 +40,9 @@ public class Controller {
         .distinct()
         .filter(flagsList::contains)
         .collect(Collectors.toSet());
-        if (validFlags.size())
+        if (validFlags.size()>0)
         {
+            if (validFlags.contains("expand"))
             try {
                 // JSONObject serviced = new ServiceController().compress(jo);
                 // getting ready to if all these for Bryan
