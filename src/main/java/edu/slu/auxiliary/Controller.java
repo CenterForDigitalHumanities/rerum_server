@@ -6,8 +6,13 @@
 package edu.slu.auxiliary;
 
 import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
+import java.util.stream.Collectors;
 
 import net.sf.json.JSONObject;
 
@@ -18,16 +23,25 @@ public class Controller {
     private static final Method recurse = null;
     private static final Method batch = null;
     private static final Method decscribe = null;
-    private final JSONObject document;
+    private JSONObject document = null;
+    public JSONObject processed;
+    
+    public Controller(){
+        
+    }
     
     public Controller(JSONObject json){
+        document = json;
+    }
+    
+    public Controller(JSONObject json, Map<String, String[]> flags){
         document = json;
     }
     /**
      * Map of API flags from the query string and the resulting method call.
      * Organized in order of operations?
      */
-    private final List<String> flagsList = Array.asList(
+    private final List<String> flagsList = Arrays.asList(
             "expand",
             "compact",
             "recurse",
@@ -35,15 +49,26 @@ public class Controller {
             "decscribe",
             "compress");
 
-    public JSONObject processFlags(JSONObject documObject, String[] params) {
-        Set<String> validFlags = params.stream()
-        .distinct()
-        .filter(flagsList::contains)
-        .collect(Collectors.toSet());
-        if (validFlags.size())
+    public JSONObject processFlags(JSONObject documObject, Map<String, String[]> params) {
+        //Want just the keys from the params map
+        Set<String> validFlags = params.keySet();
+        //Each one of these will map to a service
+        
+        /**
+         * So if URL is like store.rerum.io/v1/id/11111?compress=true&key[]=meat&key[]=dairy
+         * You will end up with {compress:true, key:[meat, dairy]}
+         * We want to filter out each `key` because that doesn't map to a service, there's nothing to run.
+         */
+        validFlags
+            .stream()
+            .distinct()
+            .filter(flagsList::contains)
+            .collect(Collectors.toSet());
+        
+        if (validFlags.size() > 0)
         {
             try {
-                // JSONObject serviced = new ServiceController().compress(jo);
+                //JSONObject serviced = new ServiceController().compress(jo);
                 // getting ready to if all these for Bryan
             } catch (Exception e) {
                 Logger.getLogger(Controller.class.getName()).info("Could not process flag.\n" + e.getMessage());
@@ -62,5 +87,9 @@ public class Controller {
     public JSONObject compress(String[] keysToKeep){
         //Either you get keys to keep, or you pass in a null/empty which will just use the default
         return new CompressorService().compress(document, keysToKeep);
+    }
+    
+    public JSONObject getDocument(){
+        return processed;
     }
 }

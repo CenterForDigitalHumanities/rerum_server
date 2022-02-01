@@ -103,7 +103,9 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 import javax.servlet.ServletInputStream;
@@ -1381,10 +1383,11 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         response.setStatus(HttpServletResponse.SC_OK);
                         out = response.getWriter();
                         //AUX services happen before the return.
-                        //By now, we know what parameters were passed in.  That may be a Set, List, or Map, may or may not be boolean.
-                        //Controller c = new Controller();
-                        
-                        jo = new CompressorService().compress(jo);
+                        Map<String, String[]> parameters = request.getParameterMap(); //Get these from the URL
+                        Controller c = new Controller(jo, parameters);
+                        //By passing in an object and the parameters of services to do to it, the controller now has the manipulated document.
+                        jo = c.getDocument();
+                        //Write that manipulated document out.
                         out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
                     } 
                     catch (IOException ex){
