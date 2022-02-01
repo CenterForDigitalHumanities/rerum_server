@@ -1382,7 +1382,9 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         out = response.getWriter();
                         //AUX services happen before the return.
                         //By now, we know what parameters were passed in.  That may be a Set, List, or Map, may or may not be boolean.
-                        JSONObject serviced = new CompressorService.compress(jo);
+                        //Controller c = new Controller();
+                        
+                        jo = new CompressorService().compress(jo);
                         out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
                     } 
                     catch (IOException ex){

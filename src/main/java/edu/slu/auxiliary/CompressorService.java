@@ -16,9 +16,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import net.sf.json.JSONObject;
 
-public class CompressorService {
-    //Bring in Global or Utility functionality from the auxiliary package.
-    private Controller aux_controller = new Controller();
+public class CompressorService extends Controller{
     
     //These are keys that we want to make sure stay with the JSONObject.
     //Think about things like "target" and "on"...are they special?  Current thinking is no, they are just as viable to be removed as any other property. 
