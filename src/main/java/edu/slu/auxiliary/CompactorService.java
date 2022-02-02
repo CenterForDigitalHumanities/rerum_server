@@ -31,8 +31,24 @@ public class CompactorService {
      * @return toCompress once the keys are removed, or the original if there was an error.
      */
     private JSONObject simplifyValues(JSONObject objectToCompact) {
-        JSONObject orig = JSONObject.fromObject(objectToCompact);
-        return orig;
+        Iterator values = objectToCompact.values();
+        List<String> valueKeys = Arrays.asList("val","value","@value");
+        while(values.hasNext()){
+            <T> val = values.next();
+            if(val instanceof Object){
+                Set<T> valuesOnly = val.keySet().stream()
+                    .filter(key->valueKeys.contains(key))
+                    .collect(Collectors.toSet());
+                if(valuesOnly.hasNext()>0) {
+                    val = valuesOnly.next().getValue();
+                    // There should only be one thing here, unless there are several
+                    // matches against `valueKeys` which is unexpected.
+                }
+            }
+        }
+        // changes to `val` should be back by the Object Map, so objectToCompact 
+        // ought to be changing.
+        return objectToCompact;
     }
 
     /**
@@ -45,12 +61,12 @@ public class CompactorService {
                 while(values.hasNext()){
                     <T> val = values.next();
                     if(val instanceof Object){
-                        if val.keySet().contains("@id") {
+                        if (val.keySet().contains("@id")) {
                             val = val.get("@id");
                             continue;
                         }
                         
-                        if val.keySet().contains("id") {
+                        if (val.keySet().contains("id")) {
                             val = val.get("id");
                         }   
                     }
