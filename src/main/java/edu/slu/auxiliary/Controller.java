@@ -102,6 +102,6 @@ public class Controller {
     }
     
     public JSONObject getOriginalDocument(){
-        return serviced_document;
+        return orig_document;
     }
 }
