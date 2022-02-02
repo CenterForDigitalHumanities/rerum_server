@@ -93,4 +93,8 @@ public class Controller {
     public JSONObject expand(){
         return new ExpanderService().expand(document);
     }
+    
+    public JSONObject getDocument(){
+        return document;
+    }
 }
