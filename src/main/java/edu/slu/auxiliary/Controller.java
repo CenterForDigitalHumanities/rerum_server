@@ -40,14 +40,11 @@ public class Controller {
             "compress");
 
     public void processFlags() {
-        System.out.println("In service controller processing flags...");
         Set<String> validFlags = params.keySet()
         .stream()
         .distinct()
         .filter(flagsList::contains)
         .collect(Collectors.toSet());
-        System.out.println("Flags detected, see below");
-        System.out.println(validFlags.toString());
         if (validFlags.size()>0)
         {
             try { // maybe everyone gets a try later
@@ -75,10 +72,7 @@ public class Controller {
      * @return compressed JSON or the original if there was an error.
      */
     public void compress(){
-        System.out.println("Controller detected the compress service");
         Set<String> keysToKeep = new HashSet<>(Arrays.asList(params.get("keysToKeep[]"))); 
-        System.out.println("Checking for keysToKeep...");
-        System.out.println(keysToKeep.toString());
         if(keysToKeep == null) {
             serviced_document = new CompressorService().compress(serviced_document);
         }

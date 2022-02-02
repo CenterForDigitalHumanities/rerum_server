@@ -16,7 +16,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
 import net.sf.json.JSONObject;
 
@@ -25,7 +24,8 @@ public class CompressorService{
     //These are keys that we want to make sure stay with the JSONObject.
     //Think about things like "target" and "on"...are they special?  Current thinking is no, they are just as viable to be removed as any other property. 
     
-    private Set<String> primitiveKeys = new HashSet<>(Arrays.asList("@id",
+    private Set<String> primitiveKeys = new HashSet<>(Arrays.asList(
+        "@id",
         "id", 
         "type", 
         "@type", 
@@ -57,21 +57,36 @@ public class CompressorService{
      * @return toCompress once the keys are removed, or the original if there was an error.
      */
     public JSONObject compress(JSONObject toCompress){
-        Iterator keys = toCompress.keys();
-        JSONObject orig = JSONObject.fromObject(toCompress);
-        System.out.println("Compress A");
+        Iterator<String> keys = toCompress.keySet().iterator();
+        JSONObject orig = JSONObject.fromObject(toCompress.toString());
+        ArrayList<String> keysToRemove = new ArrayList<>();
+        System.out.println("Compress B");
         try{
             while(keys.hasNext()){
-                String key = (String)keys.next();
-                if(!primitiveKeys.contains(key)){
-                    keys.remove();
+                Object key = keys.next();
+                System.out.println("key is "+key);
+                if(!primitiveKeys.contains((String)key)){
+                    System.out.println("Need to remove key "+key);
+                    keysToRemove.add((String)key);
+                    //keys.remove(); //This throws UnsupportedOperationException
+                    //toCompress.remove(key) throws ConcurrentModificationException
+                }
+            }
+            //Ok so we can learn of the keys above, but have to actually interact with the JSON object below.
+            Iterator<String> removal = keysToRemove.iterator();
+            while(removal.hasNext()){
+                String k = removal.next();
+                System.out.println("eliminate "+k);
+                if(toCompress.containsKey(k)){
+                    System.out.println("JSON has key "+k);
+                    toCompress.remove(k);
                 }
             }
             return toCompress;
         }
         catch(Exception e){
-            System.out.println("Could not compress object A.  See error below.");
-            System.out.println(e.getStackTrace());
+            System.out.println("Could not compress object B.  See error below.");
+            System.out.println(e);
             return orig;
         }
     }
