@@ -47,6 +47,7 @@
 
 package edu.slu.action;
 
+import edu.slu.auxiliary.*;
 import com.auth0.jwk.Jwk;
 import com.auth0.jwk.JwkException;
 import com.auth0.jwk.JwkProvider;
@@ -102,7 +103,9 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.Map;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 import javax.servlet.ServletInputStream;
@@ -1379,6 +1382,14 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         }
                         response.setStatus(HttpServletResponse.SC_OK);
                         out = response.getWriter();
+                        //AUX services happen before the return.
+                        Map<String, String[]> parameters = request.getParameterMap(); //Get these from the URL
+                        System.out.println("Make a new controller...");
+                        Controller c = new Controller(jo, parameters);
+                        //By passing in an object and the parameters of services to do to it, the controller now has the manipulated document.
+                        jo = c.getServicedDocument();
+                        System.out.println("JSON has been serviced...");
+                        //Write that manipulated document out.
                         out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
                     } 
                     catch (IOException ex){
