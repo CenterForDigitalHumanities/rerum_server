@@ -13,26 +13,27 @@
 package edu.slu.auxiliary;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Set;
 import net.sf.json.JSONObject;
 
 public class CompressorService{
     
     //These are keys that we want to make sure stay with the JSONObject.
     //Think about things like "target" and "on"...are they special?  Current thinking is no, they are just as viable to be removed as any other property. 
-    private final String[] primitiveKeys = 
-        {
-            //"__rerum", //Hmm do we want some kind of flag for whether or not to keep this?
-            "@id",
-            "id", 
-            "type", 
-            "@type", 
-            "label", 
-            "name", 
-            "summary", 
-            "description", 
-            "@context"
-        };
+    
+    private Set<String> primitiveKeys = new HashSet<>(Arrays.asList("@id",
+        "id", 
+        "type", 
+        "@type", 
+        "label", 
+        "name", 
+        "summary", 
+        "description", 
+        "@context"
+    )); 
+        
     
     //These are keys that will be removed 100% of the time.  Maybe just __rerum.
     private final String[] alwaysRemove = {
@@ -79,14 +80,13 @@ public class CompressorService{
      * @param keysToKeep A String[] Array of keys that should not be removed.
      * @return toCompress once the keys are removed, or the original if there was an error.
      */
-    public JSONObject compress(JSONObject toCompress, String[] keysToKeep){
-        Arrays.asList(keysToKeep).addAll(Arrays.asList(primitiveKeys)); //This way an implementor cannot override the keys we think need to stay.
+    public JSONObject compress(JSONObject toCompress, Set<String> keysToKeep){
         Iterator keys = toCompress.keys();
         JSONObject orig = JSONObject.fromObject(toCompress);
         try{
             while(keys.hasNext()){
                 String key = (String)keys.next();
-                if(!Arrays.asList(keysToKeep).contains(key)){
+                if(!keysToKeep.contains(key)){
                     toCompress.remove(key);
                 }
             }

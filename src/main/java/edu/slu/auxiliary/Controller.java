@@ -7,6 +7,7 @@ package edu.slu.auxiliary;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -38,15 +39,14 @@ public class Controller {
             "compress");
 
     public JSONObject processFlags() {
-        Set<String> validFlags = params.keyset()
+        Set<String> validFlags = params.keySet()
         .stream()
         .distinct()
         .filter(flagsList::contains)
         .collect(Collectors.toSet());
         if (validFlags.size()>0)
         {
-            JSONObject servicedDocument = new JSONObject(document.toString());
-
+            JSONObject servicedDocument = JSONObject.fromObject(document.toString());
             try { // maybe everyone gets a try later
                 if (validFlags.contains("compress")) {
                     servicedDocument = this.compress();
@@ -71,7 +71,7 @@ public class Controller {
      * @return compressed JSON or the original if there was an error.
      */
     public JSONObject compress(){
-        Set<String> keysToKeep = params.get("key[]")
+        Set<String> keysToKeep = new HashSet<String>(Arrays.asList(params.get("key[]"))); 
         if(keysToKeep == null) {
             return new CompressorService().compress(document);
         }
@@ -91,6 +91,6 @@ public class Controller {
      * @return expanded JSON or the original if there was an error.
      */
     public JSONObject expand(){
-        return new ExpansionService().expand(document);
+        return new ExpanderService().expand(document);
     }
 }
