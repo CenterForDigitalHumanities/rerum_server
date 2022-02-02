@@ -5,25 +5,26 @@
  */
 package edu.slu.auxiliary;
 
-import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
-import java.util.stream.Stream;
 import java.util.stream.Collectors;
 
 import net.sf.json.JSONObject;
 
 public class Controller {
-    private final JSONObject document;
+    private final JSONObject orig_document;
+    private JSONObject serviced_document;
     private final Map<String,String[]> params;
     
     public Controller(JSONObject json, Map<String,String[]> queryParameters){
-        document = json;
+        orig_document = JSONObject.fromObject(json.toString());
+        serviced_document = JSONObject.fromObject(json.toString());
         params = queryParameters;
+        processFlags();
     }
 
     /**
@@ -38,31 +39,34 @@ public class Controller {
             "decscribe",
             "compress");
 
-    public JSONObject processFlags() {
+    public void processFlags() {
+        System.out.println("In service controller processing flags...");
         Set<String> validFlags = params.keySet()
         .stream()
         .distinct()
         .filter(flagsList::contains)
         .collect(Collectors.toSet());
+        System.out.println("Flags detected, see below");
+        System.out.println(validFlags.toString());
         if (validFlags.size()>0)
         {
-            JSONObject servicedDocument = JSONObject.fromObject(document.toString());
             try { // maybe everyone gets a try later
                 if (validFlags.contains("compress")) {
-                    servicedDocument = this.compress();
+                    System.out.println("this.compress()");
+                    this.compress();
                 }
                 else if (validFlags.contains("compact")) {
-                    servicedDocument = this.compact();
+                    System.out.println("this.compact()");
+                    this.compact();
                 }
                 else if (validFlags.contains("expand")){
-                    servicedDocument = this.expand();
+                    System.out.println("this.expand()");
+                    this.expand();
                 }
             } catch (Exception e) {
                 Logger.getLogger(Controller.class.getName()).info("Could not process flag.\n" + e.getMessage());
             }
-            return servicedDocument;
         }
-        return document;
     }
     
     /**
@@ -70,12 +74,17 @@ public class Controller {
      * This will remove every key from the provided JSONObject that is not in the array of default primitive keys.
      * @return compressed JSON or the original if there was an error.
      */
-    public JSONObject compress(){
-        Set<String> keysToKeep = new HashSet<String>(Arrays.asList(params.get("key[]"))); 
+    public void compress(){
+        System.out.println("Controller detected the compress service");
+        Set<String> keysToKeep = new HashSet<>(Arrays.asList(params.get("keysToKeep[]"))); 
+        System.out.println("Checking for keysToKeep...");
+        System.out.println(keysToKeep.toString());
         if(keysToKeep == null) {
-            return new CompressorService().compress(document);
+            serviced_document = new CompressorService().compress(serviced_document);
         }
-        return new CompressorService().compress(document, keysToKeep);
+        else{
+            serviced_document = new CompressorService().compress(serviced_document, keysToKeep);
+        }
     }
     
     /**
@@ -83,7 +92,7 @@ public class Controller {
      * @return compacted JSON or the original if there was an error.
      */
     public JSONObject compact(){
-        return new CompactorService().compact(document);
+        return new CompactorService().compact(serviced_document);
     }
     
     /**
@@ -91,10 +100,14 @@ public class Controller {
      * @return expanded JSON or the original if there was an error.
      */
     public JSONObject expand(){
-        return new ExpanderService().expand(document);
+        return new ExpanderService().expand(serviced_document);
     }
     
-    public JSONObject getDocument(){
-        return document;
+    public JSONObject getServicedDocument(){
+        return serviced_document;
+    }
+    
+    public JSONObject getOriginalDocument(){
+        return serviced_document;
     }
 }

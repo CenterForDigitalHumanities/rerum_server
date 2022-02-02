@@ -1384,9 +1384,11 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         out = response.getWriter();
                         //AUX services happen before the return.
                         Map<String, String[]> parameters = request.getParameterMap(); //Get these from the URL
+                        System.out.println("Make a new controller...");
                         Controller c = new Controller(jo, parameters);
                         //By passing in an object and the parameters of services to do to it, the controller now has the manipulated document.
-                        jo = c.getDocument();
+                        jo = c.getServicedDocument();
+                        System.out.println("JSON has been serviced...");
                         //Write that manipulated document out.
                         out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
                     } 
