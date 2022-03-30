@@ -90,6 +90,7 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
+import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.DataOutputStream;
@@ -2808,7 +2809,11 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             Algorithm algorithm = Algorithm.RSA256(pubKey, null);
             JWTVerifier verifier = JWT.require(algorithm).build(); //Reusable verifier instance
                //.withIssuer("auth0")
-            generatorID = receivedToken.getClaim(Constant.RERUM_AGENT_ClAIM).asString();
+            Claim agent = receivedToken.getClaim(Constant.RERUM_AGENT_ClAIM);
+            if(agent.isNull()) {
+                throw new JWTVerificationException("Old or missing agent claim. Update access token.");
+            }
+            generatorID = agent.asString();
            //System.out.println("Generator id from key "+generatorID);
             if(botCheck(generatorID)){
                 System.out.println("It passed the bot check, no need to verify the access token.  I have the generator ID.  ");
