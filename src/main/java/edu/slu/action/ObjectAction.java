@@ -3166,7 +3166,7 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             String[] claimKeys = { Constant.RERUM_AGENT_CLAIM, "http://store.rerum.io/v1/agent",
                     "http://devstore.rerum.io/v1/agent" };
             for (int i = 0; i < claimKeys.length - 1; i++) {
-                agent = receivedToken.getClaim(Constant.RERUM_AGENT_CLAIM);
+                agent = receivedToken.getClaim(claimKeys[i]);
                 if (!agent.isNull()) {
                     break;
                 }
