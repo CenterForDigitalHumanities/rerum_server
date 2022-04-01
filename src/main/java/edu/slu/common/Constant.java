@@ -26,7 +26,7 @@ public class Constant {
     public static final String RERUM_BASE="http://store.rerum.io";
     public static final String RERUM_PREFIX="http://store.rerum.io/v1/";
     public static final String RERUM_ID_PREFIX="http://store.rerum.io/v1/id/";
-    public static final String RERUM_AGENT_ClAIM="http://store.rerum.io/agent";
+    public static final String RERUM_AGENT_CLAIM="http://store.rerum.io/agent";
 
     //RERUM API Linked Data context
     public static final String RERUM_CONTEXT="http://store.rerum.io/v1/context.json";
