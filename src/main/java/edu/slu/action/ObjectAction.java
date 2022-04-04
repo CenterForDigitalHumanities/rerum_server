@@ -3171,10 +3171,11 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             for (int i = 0; i < claimKeys.length - 1; i++) {
                 System.out.println("Check for claim "+claimKeys[i]);
                 agent = receivedToken.getClaim(claimKeys[i]);
+                System.out.println(agent.asString());
                 if (!agent.isNull()) {
                     break;
                 }
-                System.out.println(claimKeys[i]+ "is null");
+                System.out.println(claimKeys[i]+ " is note encoded on token");
             }
             System.out.println("agent is null? "+agent.isNull());
             if (agent.isNull()) {
