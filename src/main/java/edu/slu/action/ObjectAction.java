@@ -3163,23 +3163,16 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
             JWTVerifier verifier = JWT.require(algorithm).build(); // Reusable verifier instance
             // .withIssuer("auth0")
             // calm down, we're just making it work for now
-            System.out.println("Ok agent...");
             Claim agent = receivedToken.getClaim("null");
-            System.out.println("Look through keys for agent");
             String[] claimKeys = { Constant.RERUM_AGENT_CLAIM, "http://store.rerum.io/v1/agent","http://devstore.rerum.io/v1/agent" };
-            System.out.println("claimKeys has length "+claimKeys.length);
             for (int i = 0; i < claimKeys.length; i++) {
-                System.out.println("Index "+i);
-                System.out.println("Check for claim "+claimKeys[i]);
                 agent = receivedToken.getClaim(claimKeys[i]);
                 System.out.println(agent.asString());
                 if (!agent.isNull()) {
-                    System.out.println("agent is not null this time");
                     break;
                 }
                 System.out.println(claimKeys[i]+ " is note encoded on token");
             }
-            System.out.println("agent is null? "+agent.isNull());
             if (agent.isNull()) {
                 throw new JWTVerificationException("Old or missing agent claim. Update access token.");
             }
