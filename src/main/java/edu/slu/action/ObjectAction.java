@@ -3158,7 +3158,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 cache.put("pubKey", pubKey);
                 System.out.println("key in cache...");
             }
-            System.out.println("Ok...");
             Algorithm algorithm = Algorithm.RSA256(pubKey, null);
             JWTVerifier verifier = JWT.require(algorithm).build(); // Reusable verifier instance
             // .withIssuer("auth0")
@@ -3171,7 +3170,6 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                 if (!agent.isNull()) {
                     break;
                 }
-                System.out.println(claimKeys[i]+ " is note encoded on token");
             }
             if (agent.isNull()) {
                 throw new JWTVerificationException("Old or missing agent claim. Update access token.");
