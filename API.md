@@ -1,7 +1,7 @@
 # API (1.0.0)
 <!-- TOC -->
 
-- [API (1.0.0)](#api-10)
+- [API (1.0.0)](#api-100)
   - [GET](#get)
     - [Single object by id](#single-object-by-id)
     - [History tree before this version](#history-tree-before-this-version)
@@ -22,10 +22,11 @@
     - [Remove Properties](#remove-properties)
     - [RERUM released](#rerum-released)
   - [DELETE](#delete)
+    - [__deleted](#__deleted)
   - [Smart objects](#smart-objects)
   - [__rerum](#__rerum)
     - [History](#history)
-    - [Attribution](#generator-attribution)
+    - [Generator Attribution](#generator-attribution)
   - [Authentication](#authentication)
   - [@context](#context)
   - [IIIF](#iiif)
@@ -289,7 +290,7 @@ Example Response:
 ## PUT
  >**NB:** `__rerum`, `@id` and `_id` updates are ignored.
  >
- > Updates to released or deleted objects fail with an error.
+ > Updates to deleted objects fail with an error.
 
 ### Update
 
@@ -352,7 +353,7 @@ same order.
 
  >**NB:** `__rerum`, `@id` and `_id` updates are ignored.
  >
- > Updates to released or deleted objects fail with an error.
+ > Updates to deleted objects fail with an error.
 
 ### Patch Update
 
@@ -438,7 +439,7 @@ is a specialized PATCH update with the same request, response, and history behav
 
 RERUM allows for the Generator of a version of an object to assign a `released` state. 
 Objects in released states are locked such that further changes are refused. 
-Calling any update or delete action on a released object will result in an error response. 
+Calling any overwrite or delete action on a released object will result in an error response. 
 The release action will alter the `__rerum.isReleased` of the version identified 
 and alter `__rerum.releases` properties throughout the object's history without making a 
 new history state for the resulting object (the `@id` does not change). Any version of an object 
