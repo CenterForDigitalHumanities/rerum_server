@@ -47,6 +47,7 @@
 
 package edu.slu.action;
 
+import edu.slu.auxiliary.*;
 import com.auth0.jwk.Jwk;
 import com.auth0.jwk.JwkException;
 import com.auth0.jwk.JwkProvider;
@@ -1505,6 +1506,11 @@ public class ObjectAction extends ActionSupport implements ServletRequestAware, 
                         }
                         response.setStatus(HttpServletResponse.SC_OK);
                         out = response.getWriter();
+                        //AUX services happen before the return.
+                        //By now, we know what parameters were passed in.  That may be a Set, List, or Map, may or may not be boolean.
+                        //Controller c = new Controller();
+                        
+                        jo = new CompressorService().compress(jo);
                         out.write(mapper.writer().withDefaultPrettyPrinter().writeValueAsString(jo));
                     } catch (IOException ex) {
                         Logger.getLogger(ObjectAction.class.getName()).log(Level.SEVERE, null, ex);
